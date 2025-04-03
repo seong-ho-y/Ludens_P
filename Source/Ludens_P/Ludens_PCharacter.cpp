@@ -18,6 +18,10 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 ALudens_PCharacter::ALudens_PCharacter()
 {
+	//멀티 설정
+	bReplicates = true;
+	SetReplicatingMovement(true);
+	
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 	UE_LOG(LogTemp, Display, TEXT("Hello World"));
@@ -28,13 +32,13 @@ ALudens_PCharacter::ALudens_PCharacter()
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
-	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
-	Mesh1P->SetOnlyOwnerSee(true);
-	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
-	Mesh1P->bCastDynamicShadow = false;
-	Mesh1P->CastShadow = false;
-	//Mesh1P->SetRelativeRotation(FRotator(0.9f, -19.19f, 5.2f));
-	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
+	// 기본 메시 설정 (다른 사람이 보는 메시)
+	GetMesh()->SetOnlyOwnerSee(false); // 모든 사람이 보도록
+	GetMesh()->SetIsReplicated(true);
+	GetMesh()->SetupAttachment(GetCapsuleComponent());
+	GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -96.f)); // 캡슐 기준 정렬
+	GetMesh()->SetRelativeRotation(FRotator(0.f, 0.f, 0.f)); // 필요 시 방향 조절
+
 
 }
 

@@ -1,6 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Ludens_PGameMode.h"
+
+#include "EnemyAIController.h"
+#include "EnemyBase.h"
 #include "Ludens_PCharacter.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerStart.h"
@@ -15,7 +18,20 @@ ALudens_PGameMode::ALudens_PGameMode()
 	DefaultPawnClass = PlayerPawnClassFinder.Class;
 
 }
-// Ludens_PGameMode.cpp
+void ALudens_PGameMode::BeginPlay()
+{
+	Super::BeginPlay();
+	UE_LOG(LogEnemyAI, Warning, TEXT("초기화 텍스트"));
+
+	SpawnEnemyAtLocation(FVector(1800, 1870, 88));
+}
+void ALudens_PGameMode::SpawnEnemyAtLocation(FVector Location)
+{
+	if (HasAuthority() && EnemyToSpawn)
+	{
+		GetWorld()->SpawnActor<AEnemyBase>(EnemyToSpawn, Location, FRotator::ZeroRotator);
+	}
+}
 
 AActor* ALudens_PGameMode::ChoosePlayerStart_Implementation(AController* Player)
 {
