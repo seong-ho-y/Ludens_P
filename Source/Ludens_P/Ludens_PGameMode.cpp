@@ -21,7 +21,6 @@ ALudens_PGameMode::ALudens_PGameMode()
 void ALudens_PGameMode::BeginPlay()
 {
 	Super::BeginPlay();
-	UE_LOG(LogEnemyAI, Warning, TEXT("초기화 텍스트"));
 
 	SpawnEnemyAtLocation(FVector(1800, 1870, 88));
 }

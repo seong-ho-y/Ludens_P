@@ -1,6 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "CreatureCombatComponent.h"
+#include "WalkerAIComponent.h"
 #include "GameFramework/Character.h"
 #include "EnemyBase.generated.h"
 
@@ -14,11 +16,25 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	// === 전투 컴포넌트 ===
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Component")
+	UCreatureCombatComponent* Combat;
+
+	// === 워커 AI 컴포넌트 ===
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Component")
+	UWalkerAIComponent* WalkerAI;
+
+	// (선택) 시각 효과용 컴포넌트
+	// UPROPERTY(...)
+	// UEnemyVisualComponent* Visual;
 
 public:
+	void SetActive(bool bNewActive);
+	bool IsActive() const;
+	
 	virtual void Tick(float DeltaTime) override;
+	
+private:
+	bool bActive = false;
 
-	// 체력 변수 (기본값)
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Enemy")
-	float HP = 100.f;
 };
