@@ -17,13 +17,12 @@ protected:
 
 public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	
 
 private:
 	void UpdateAI();
 	APawn* FindNearestPlayer();
 	void MoveToTarget(APawn* Target);
-	void TryAttack(APawn* Target);
-
 	// 기본 레퍼런스
 	ACharacter* OwnerCharacter = nullptr;
 	class UCreatureCombatComponent* Combat = nullptr;
@@ -37,4 +36,5 @@ private:
 	float SearchInterval = 0.5f;
 
 	float TimeSinceLastSearch = 0.f;
+
 };

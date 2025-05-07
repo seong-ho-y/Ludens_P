@@ -1,6 +1,9 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Ludens_PCharacter.h"
+
+#include "EnemyBase.h"
+#include "EngineUtils.h"
 #include "Ludens_PProjectile.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
@@ -47,11 +50,32 @@ void ALudens_PCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 }
+void ALudens_PCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (PC && PC->IsInputKeyDown(EKeys::E))
+	{
+		for (TActorIterator<AEnemyBase> It(GetWorld()); It; ++It)
+		{
+			AEnemyBase* Enemy = *It;
+			if (Enemy && Enemy->Combat)
+			{
+				Enemy->Combat->TakeDamage(10);
+				break;
+			}
+		}
+	}
+}
+
+
 
 //////////////////////////////////////////////////////////////////////////// Input
 
 void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{	
+{	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{

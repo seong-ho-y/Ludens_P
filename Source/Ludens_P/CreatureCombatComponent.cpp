@@ -16,6 +16,8 @@ void UCreatureCombatComponent::BeginPlay()
 
 void UCreatureCombatComponent::Attack(AActor* Target)
 {
+	UE_LOG(LogTemp, Log, TEXT("Attack called on target: %s"), *Target->GetName());
+
 	if (bIsAttacking || bIsDead || !Target) return;
 
 	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
@@ -48,7 +50,7 @@ void UCreatureCombatComponent::TakeDamage(float Amount)
 void UCreatureCombatComponent::Die()
 {
 	bIsDead = true;
-
+	UE_LOG(LogTemp, Warning, TEXT("Enemy Died"));
 	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
 	if (OwnerChar)
 	{

@@ -2,12 +2,15 @@
 #include "CreatureCombatComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "AIController.h"
+#include "EnemyBase.h"
 #include "GameFramework/Character.h"
 #include "EngineUtils.h"
+
 
 UWalkerAIComponent::UWalkerAIComponent()
 {
     PrimaryComponentTick.bCanEverTick = true;
+    
 }
 
 void UWalkerAIComponent::BeginPlay()
@@ -25,7 +28,7 @@ void UWalkerAIComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAc
 {
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-    if (!OwnerCharacter || !Combat || Combat->IsDead()) return;
+    if (!OwnerCharacter || !Combat || Combat->IsDead()) return; 
 
     TimeSinceLastSearch += DeltaTime;
     if (TimeSinceLastSearch >= SearchInterval)
@@ -40,9 +43,9 @@ void UWalkerAIComponent::UpdateAI()
     CurrentTarget = FindNearestPlayer();
     if (!CurrentTarget) return;
 
-    float Distance = FVector::Dist(CurrentTarget->GetActorLocation(), OwnerCharacter->GetActorLocation());
+    float Distance = FVector::Dist(CurrentTarget->GetActorLocation(), OwnerCharacter->GetActorLocation()); //거리계산하기
 
-    if (Distance <= AttackRange)
+    if (Distance <= AttackRange) //공격 사거리 판정해서 공격
     {
         if (AAIController* AI = Cast<AAIController>(OwnerCharacter->GetController()))
         {

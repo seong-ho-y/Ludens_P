@@ -8,7 +8,8 @@ AEnemyBase::AEnemyBase()
 
 	Combat = CreateDefaultSubobject<UCreatureCombatComponent>(TEXT("Combat"));
 	WalkerAI = CreateDefaultSubobject<UWalkerAIComponent>(TEXT("WalkerAI"));
-
+	
+	
 	bReplicates = true;
 	SetReplicateMovement(true);
 

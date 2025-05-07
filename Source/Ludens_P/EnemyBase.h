@@ -14,7 +14,7 @@ class LUDENS_P_API AEnemyBase : public ACharacter
 public:
 	AEnemyBase();
 
-protected:
+	
 	virtual void BeginPlay() override;
 	// === 전투 컴포넌트 ===
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Component")

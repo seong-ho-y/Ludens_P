@@ -42,6 +42,7 @@ public:
 
 protected:
 	virtual void BeginPlay();
+	void Tick(float DeltaTime);
 
 public:
 		
