@@ -6,7 +6,8 @@
 #include "GameFramework/Character.h"
 #include "EngineUtils.h"
 
-
+// WalkerAI를 공유하는 Walker형 타입의 적들이 사용하는 소스코드
+// 
 UWalkerAIComponent::UWalkerAIComponent()
 {
     PrimaryComponentTick.bCanEverTick = true;
@@ -52,7 +53,7 @@ void UWalkerAIComponent::UpdateAI()
             AI->StopMovement();
         }
 
-        Combat->Attack(CurrentTarget);
+        Attack(CurrentTarget);
     }
     else
     {
@@ -90,4 +91,32 @@ void UWalkerAIComponent::MoveToTarget(APawn* Target)
     {
         AI->MoveToActor(Target);
     }
+}
+
+//공격 로직
+void UWalkerAIComponent::Attack(AActor* Target)
+{
+    UE_LOG(LogTemp, Log, TEXT("Attack called on target: %s"), *Target->GetName());
+
+    if (bIsAttacking || Combat->IsDead() || !Target) return;
+
+    ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
+    if (AttackMontage && OwnerChar)
+    {
+        OwnerChar->PlayAnimMontage(AttackMontage);
+    }
+
+    // 데미지 전달
+    if (UCreatureCombatComponent* TargetCombat = Target->FindComponentByClass<UCreatureCombatComponent>()) //상대의 UCreatureCombatComponent를 찾아서 TakeDamage 호출
+    {
+        TargetCombat->TakeDamage(Damage);
+    }
+
+    bIsAttacking = true;
+    GetWorld()->GetTimerManager().SetTimer(AttackCooldownHandle, this, &UWalkerAIComponent::EndAttack, AttackCooldown, false);
+}
+
+void UWalkerAIComponent::EndAttack()
+{
+    bIsAttacking = false;
 }

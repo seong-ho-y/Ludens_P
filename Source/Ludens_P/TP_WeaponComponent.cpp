@@ -66,7 +66,7 @@ void UTP_WeaponComponent::Fire()
 	}
 }
 
-bool UTP_WeaponComponent::AttachWeapon(ALudens_PCharacter* TargetCharacter)
+bool UTP_WeaponComponent::AttachWeapon(ALudens_PCharacter* TargetCharacter) //일단 이거는 필요가 없음
 {
 	Character = TargetCharacter;
 
