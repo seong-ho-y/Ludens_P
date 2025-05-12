@@ -13,6 +13,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "Engine/LocalPlayer.h"
+#include "Util/ColorConstants.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -24,10 +25,13 @@ ALudens_PCharacter::ALudens_PCharacter()
 	//멀티 설정
 	bReplicates = true;
 	SetReplicatingMovement(true);
+	//무기
+	Weapon = CreateDefaultSubobject<UTP_WeaponComponent>(TEXT("WeaponComponent"));
+	Weapon->SetupAttachment(RootComponent);
 	
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
-	UE_LOG(LogTemp, Display, TEXT("Hello World"));
+	
 	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
@@ -54,6 +58,7 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	//적의 TakeDamage 메서드 실행 확인 여부
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	if (PC && PC->IsInputKeyDown(EKeys::E))
 	{
@@ -79,7 +84,7 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		// Jumping
+		// Jumping 여기다가 Double Jumping으로 수정
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
@@ -88,6 +93,11 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ALudens_PCharacter::Look);
+
+		//Dash
+		//Fire 입력
+		PlayerInputComponent->BindAction("Fire", IE_Pressed, Weapon, &UTP_WeaponComponent::Fire);
+
 	}
 	else
 	{

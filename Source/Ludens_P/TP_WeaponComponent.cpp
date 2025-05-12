@@ -2,6 +2,9 @@
 
 
 #include "TP_WeaponComponent.h"
+
+#include "EnemyBase.h"
+#include "EnemyPoolManager.h"
 #include "Ludens_PCharacter.h"
 #include "Ludens_PProjectile.h"
 #include "GameFramework/PlayerController.h"
@@ -14,6 +17,7 @@
 #include "Engine/World.h"
 
 // Sets default values for this component's properties
+// 무기 종류와 Fire 메서드, 탄약, 재장전 등 무기와 관련된 메서드들
 UTP_WeaponComponent::UTP_WeaponComponent()
 {
 	// Default offset from the character location for projectiles to spawn
@@ -23,6 +27,8 @@ UTP_WeaponComponent::UTP_WeaponComponent()
 
 void UTP_WeaponComponent::Fire()
 {
+	UE_LOG(LogTemp, Log, TEXT("FireFIreFire"));
+	
 	if (Character == nullptr || Character->GetController() == nullptr)
 	{
 		return;
@@ -34,6 +40,7 @@ void UTP_WeaponComponent::Fire()
 		UWorld* const World = GetWorld();
 		if (World != nullptr)
 		{
+			// 소환할 프로젝타일의 위치 조정하기 (카메라 Vector 가져와서 위치조정하면 될듯)
 			APlayerController* PlayerController = Cast<APlayerController>(Character->GetController());
 			const FRotator SpawnRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
 			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
@@ -47,6 +54,7 @@ void UTP_WeaponComponent::Fire()
 			World->SpawnActor<ALudens_PProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
 		}
 	}
+	// -----여긱까지가 소환 로직-------
 	
 	// Try and play the sound if specified
 	if (FireSound != nullptr)
@@ -66,9 +74,9 @@ void UTP_WeaponComponent::Fire()
 	}
 }
 
-bool UTP_WeaponComponent::AttachWeapon(ALudens_PCharacter* TargetCharacter) //일단 이거는 필요가 없음
+/*bool UTP_WeaponComponent::AttachWeapon(ALudens_PCharacter* TargetCharacter) //일단 이거는 필요가 없음
 {
-	Character = TargetCharacter;
+	Character = TargetCharacter; //얘만 선언해주면 됨
 
 	// Check that the character is valid, and has no weapon component yet
 	if (Character == nullptr || Character->GetInstanceComponents().FindItemByClass<UTP_WeaponComponent>())
@@ -91,7 +99,6 @@ bool UTP_WeaponComponent::AttachWeapon(ALudens_PCharacter* TargetCharacter) //�
 			// Set the priority of the mapping to 1, so that it overrides the Jump action with the Fire action when using touch input
 			Subsystem->AddMappingContext(FireMappingContext, 1);
 		}
-
 		if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerController->InputComponent))
 		{
 			// Fire
@@ -101,8 +108,9 @@ bool UTP_WeaponComponent::AttachWeapon(ALudens_PCharacter* TargetCharacter) //�
 
 	return true;
 }
+*/
 
-void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) //필요 없을거같은데
 {
 	if (Character == nullptr)
 	{

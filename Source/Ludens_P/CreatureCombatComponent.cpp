@@ -5,7 +5,8 @@
 
 UCreatureCombatComponent::UCreatureCombatComponent()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+	PrimaryComponentTick.bCanEverTick = true;
+	bAutoActivate = true;
 }
 
 void UCreatureCombatComponent::BeginPlay()

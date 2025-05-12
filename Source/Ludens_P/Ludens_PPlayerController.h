@@ -23,9 +23,11 @@ protected:
 	UInputMappingContext* InputMappingContext;
 
 	// Begin Actor interface
-protected:
 
 	virtual void BeginPlay() override;
 
-	// End Actor interface
+public:
+	virtual void SetupInputComponent() override;
+	void SpawnEnemyFromPool();
+	
 };

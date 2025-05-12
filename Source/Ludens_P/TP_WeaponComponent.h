@@ -42,8 +42,8 @@ public:
 	UTP_WeaponComponent();
 
 	/** Attaches the actor to a FirstPersonCharacter */
-	UFUNCTION(BlueprintCallable, Category="Weapon")
-	bool AttachWeapon(ALudens_PCharacter* TargetCharacter);
+	//UFUNCTION(BlueprintCallable, Category="Weapon")
+	//bool AttachWeapon(ALudens_PCharacter* TargetCharacter);
 
 	/** Make the weapon Fire a Projectile */
 	UFUNCTION(BlueprintCallable, Category="Weapon")

@@ -16,11 +16,14 @@ public:
 
 	AEnemyBase* GetPooledEnemy(TSubclassOf<AEnemyBase> EnemyClass);
 	void ReturnEnemy(AEnemyBase* Enemy);
+	void SpawnEnemy();
 	void PrepopulatePool(TSubclassOf<AEnemyBase> EnemyClass, int32 Count);
 
 protected:
 	virtual void BeginPlay() override;
-
-private:
+	void Tick(float DeltaTime);
 	TMap<TSubclassOf<AEnemyBase>, TArray<AEnemyBase*>> EnemyPools;
+	
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AEnemyBase> WalkerEnemyClass;
 };

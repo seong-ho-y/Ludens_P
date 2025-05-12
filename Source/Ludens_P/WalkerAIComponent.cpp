@@ -11,6 +11,7 @@
 UWalkerAIComponent::UWalkerAIComponent()
 {
     PrimaryComponentTick.bCanEverTick = true;
+    bAutoActivate = true;
     
 }
 

@@ -21,15 +21,18 @@ public:
 	UCreatureCombatComponent* Combat;
 
 	// === 워커 AI 컴포넌트 ===
+	// EnemyBase에 WalkerComponent를 넣을 필요가 없어서 WalkerEnemy로 이동
+	/*
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Component")
 	UWalkerAIComponent* WalkerAI;
+	*/
 
 	// (선택) 시각 효과용 컴포넌트
 	// UPROPERTY(...)
 	// UEnemyVisualComponent* Visual;
 
 public:
-	void SetActive(bool bNewActive);
+	virtual void SetActive(bool bNewActive);
 	bool IsActive() const;
 	
 	virtual void Tick(float DeltaTime) override;

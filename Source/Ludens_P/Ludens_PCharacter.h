@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+#include "TP_WeaponComponent.h"
 #include "Ludens_PCharacter.generated.h"
 
 class UInputComponent;
@@ -36,6 +37,13 @@ class ALudens_PCharacter : public ACharacter
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
+	UInputAction* Fire;
+protected:
+	//WeaponComponenet
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Component")  
+	UTP_WeaponComponent* Weapon;
+	
 	
 public:
 	ALudens_PCharacter();
