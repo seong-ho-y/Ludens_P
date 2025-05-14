@@ -14,4 +14,8 @@ void AWalkerEnemy::SetActive(bool bNewActive)
 	{
 		WalkerAI->SetComponentTickEnabled(bNewActive);
 	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ WalkerAI is nullptr in SetActive!"));
+	}
 }

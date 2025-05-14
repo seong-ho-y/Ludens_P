@@ -1,10 +1,10 @@
+// EnemyPoolManager.h
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "GameFramework/Actor.h"
 #include "EnemyBase.h"
 #include "EnemyPoolManager.generated.h"
-
 
 UCLASS()
 class LUDENS_P_API AEnemyPoolManager : public AActor
@@ -14,16 +14,20 @@ class LUDENS_P_API AEnemyPoolManager : public AActor
 public:
 	AEnemyPoolManager();
 
-	AEnemyBase* GetPooledEnemy(TSubclassOf<AEnemyBase> EnemyClass);
+	UFUNCTION(BlueprintCallable)
+	AEnemyBase* SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, FVector Location, FRotator Rotation);
+
 	void ReturnEnemy(AEnemyBase* Enemy);
-	void SpawnEnemy();
-	void PrepopulatePool(TSubclassOf<AEnemyBase> EnemyClass, int32 Count);
+	UFUNCTION(BlueprintCallable)
+	void AddToPool(AEnemyBase* Enemy);
 
 protected:
 	virtual void BeginPlay() override;
-	void Tick(float DeltaTime);
-	TMap<TSubclassOf<AEnemyBase>, TArray<AEnemyBase*>> EnemyPools;
+
+private:
+	// 여러 종류의 적을 관리할 수 있게 클래스별 배열을 사용
 	
-	UPROPERTY(EditAnywhere)
-	TSubclassOf<AEnemyBase> WalkerEnemyClass;
+	TMap<TSubclassOf<AEnemyBase>, TArray<AEnemyBase*>> EnemyPools;
+
+	AEnemyBase* GetPooledEnemy(TSubclassOf<AEnemyBase> EnemyClass);
 };

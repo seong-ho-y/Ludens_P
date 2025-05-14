@@ -4,10 +4,9 @@
 
 AEnemyBase::AEnemyBase()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
-	Combat = CreateDefaultSubobject<UCreatureCombatComponent>(TEXT("Combat"));
-	//WalkerAI = CreateDefaultSubobject<UWalkerAIComponent>(TEXT("WalkerAI"));
+	Combat = CreateDefaultSubobject<UCreatureCombatComponent>(TEXT("CombatComponent"));
 	
 	
 	bReplicates = true;
@@ -19,7 +18,13 @@ AEnemyBase::AEnemyBase()
 void AEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (!Combat)
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ Combat is not assigned in %s!"), *GetName());
+	}
 }
+
 void AEnemyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -28,16 +33,30 @@ void AEnemyBase::Tick(float DeltaTime)
 
 void AEnemyBase::SetActive(bool bNewActive)
 {
+	
+	if (!Combat)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Combat is nullptr in SetActive"));
+		ensureAlwaysMsgf(false, TEXT("EnemyBase must have CombatComponent initialized!"));
+		return;
+	}
 	bActive = bNewActive;
+
 	SetActorHiddenInGame(!bNewActive);
 	SetActorEnableCollision(bNewActive);
 	SetActorTickEnabled(bNewActive);
+	Combat->SetComponentTickEnabled(bNewActive);
+	
 
-	if (Combat) Combat->SetComponentTickEnabled(bNewActive);
-	//if (WalkerAI) WalkerAI->SetComponentTickEnabled(bNewActive);
-}
-
-bool AEnemyBase::IsActive() const
-{
-	return bActive;
+	if (USkeletalMeshComponent* MeshComp = GetMesh())
+	{
+		MeshComp->SetVisibility(bNewActive, true);
+		MeshComp->SetHiddenInGame(!bNewActive, true);
+		MeshComp->bPauseAnims = !bNewActive;
+		MeshComp->SetComponentTickEnabled(bNewActive);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("❌ GetMesh() returned null!"));
+	}
 }

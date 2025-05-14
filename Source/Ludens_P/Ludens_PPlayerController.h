@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "EnemyBase.h"
 #include "GameFramework/PlayerController.h"
 #include "Ludens_PPlayerController.generated.h"
 
@@ -29,5 +30,6 @@ protected:
 public:
 	virtual void SetupInputComponent() override;
 	void SpawnEnemyFromPool();
-	
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AEnemyBase> WalkerEnemyBPClass;
 };
