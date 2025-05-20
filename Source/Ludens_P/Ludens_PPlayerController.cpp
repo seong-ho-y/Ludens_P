@@ -12,6 +12,7 @@ void ALudens_PPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 
+	
 	// get the enhanced input subsystem
 	if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(GetLocalPlayer()))
 	{
@@ -32,13 +33,15 @@ void ALudens_PPlayerController::SpawnEnemyFromPool()
 		AEnemyPoolManager* Pool = *It;
 		if (Pool)
 		{
-			UE_LOG(LogTemp,Log,TEXT("SpawnEnemyFrompool 호출"));
+			UE_LOG(LogTemp, Log, TEXT("📦 SpawnEnemyFromPool 호출"));
+
 			// 위치와 회전 지정
-			FVector SpawnLoc = FVector(100.f, 100.f, 200.f);
+			FVector SpawnLoc = FVector(300.f, 300.f, 300.f);
 			FRotator SpawnRot = FRotator::ZeroRotator;
 
 			// 스폰 호출
-			//Pool->SpawnEnemy(, SpawnLoc, SpawnRot);
+			Pool->SpawnEnemy(Pool->WalkerClass, SpawnLoc, SpawnRot);
+			Pool->SpawnEnemy(Pool->TankClass, SpawnLoc, SpawnRot);
 		}
 	}
 }

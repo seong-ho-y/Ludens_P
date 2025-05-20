@@ -24,10 +24,16 @@ public:
 
 public:
 	virtual void SetActive(bool bNewActive);
-	bool IsActive() const {return bActive;}	
-	
+	void PostNetInit();
+	void OnPostReplicationInit();
+	bool IsActive() const;
+
 	virtual void Tick(float DeltaTime) override;
 	
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSetActive(bool bNewActive);
+
+
 private:
 	bool bActive = false;
 
