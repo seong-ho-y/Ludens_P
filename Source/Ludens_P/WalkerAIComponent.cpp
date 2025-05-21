@@ -97,13 +97,14 @@ void UWalkerAIComponent::MoveToTarget(APawn* Target)
 //공격 로직
 void UWalkerAIComponent::Attack(AActor* Target)
 {
-    //UE_LOG(LogTemp, Log, TEXT("Attack called on target: %s"), *Target->GetName());
 
     if (bIsAttacking || Combat->IsDead() || !Target) return;
 
     ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
     if (AttackMontage && OwnerChar)
     {
+        UE_LOG(LogTemp, Log, TEXT("PlayAnimMontage"));
+
         OwnerChar->PlayAnimMontage(AttackMontage);
     }
 

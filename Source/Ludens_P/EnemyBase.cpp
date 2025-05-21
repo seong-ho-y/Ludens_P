@@ -20,15 +20,15 @@ void AEnemyBase::BeginPlay()
 	Super::BeginPlay();
 	NetUpdateFrequency = 100.0f; // 기본은 0.1~2.0
 	MinNetUpdateFrequency = 50.0f;
-	UE_LOG(LogTemp, Warning, TEXT("🐛 EnemyBase spawned on: %s | NetRole: %d"), 
+	/*UE_LOG(LogTemp, Warning, TEXT("🐛 EnemyBase spawned on: %s | NetRole: %d"), 
 		HasAuthority() ? TEXT("Server") : TEXT("Client"),
-		static_cast<int32>(GetLocalRole()));
+		static_cast<int32>(GetLocalRole()));*/
 
-	UE_LOG(LogTemp, Warning, TEXT("🔍 [%s] Replicated: %s | Role: %d | RemoteRole: %d"),
+	/*UE_LOG(LogTemp, Warning, TEXT("🔍 [%s] Replicated: %s | Role: %d | RemoteRole: %d"),
 		*GetName(),
 		bReplicates ? TEXT("true") : TEXT("false"),
 		(int32)GetLocalRole(),
-		(int32)GetRemoteRole());
+		(int32)GetRemoteRole());*/
 	if (!Combat)
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ Combat is not assigned in %s!"), *GetName());
@@ -45,12 +45,12 @@ void AEnemyBase::Tick(float DeltaTime)
 
 void AEnemyBase::SetActive(bool bNewActive)
 {
-	UE_LOG(LogTemp, Warning, TEXT("🔧 SetActive called on %s → new state: %s"),
-	*GetName(), bNewActive ? TEXT("ACTIVE") : TEXT("INACTIVE"));
+	//UE_LOG(LogTemp, Warning, TEXT("🔧 SetActive called on %s → new state: %s"),
+	//*GetName(), bNewActive ? TEXT("ACTIVE") : TEXT("INACTIVE"));
 
 	if (!Combat)
 	{
-		UE_LOG(LogTemp, Error, TEXT("Combat is nullptr in SetActive"));
+		//UE_LOG(LogTemp, Error, TEXT("Combat is nullptr in SetActive"));
 		ensureAlwaysMsgf(false, TEXT("EnemyBase must have CombatComponent initialized!"));
 		return;
 	}

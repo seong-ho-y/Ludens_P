@@ -5,7 +5,6 @@
 #include "EnhancedInputSubsystems.h"
 #include "EnemyPoolManager.h"
 #include "EngineUtils.h"
-#include "WalkerEnemy.h"
 #include "Engine/LocalPlayer.h"
 
 void ALudens_PPlayerController::BeginPlay()
@@ -33,7 +32,7 @@ void ALudens_PPlayerController::SpawnEnemyFromPool()
 		AEnemyPoolManager* Pool = *It;
 		if (Pool)
 		{
-			UE_LOG(LogTemp, Log, TEXT("📦 SpawnEnemyFromPool 호출"));
+			//UE_LOG(LogTemp, Log, TEXT("📦 SpawnEnemyFromPool 호출"));
 
 			// 위치와 회전 지정
 			FVector SpawnLoc = FVector(300.f, 300.f, 300.f);
@@ -42,6 +41,8 @@ void ALudens_PPlayerController::SpawnEnemyFromPool()
 			// 스폰 호출
 			Pool->SpawnEnemy(Pool->WalkerClass, SpawnLoc, SpawnRot);
 			Pool->SpawnEnemy(Pool->TankClass, SpawnLoc, SpawnRot);
+			Pool->SpawnEnemy(Pool->StealthClass, SpawnLoc, SpawnRot);
+
 		}
 	}
 }

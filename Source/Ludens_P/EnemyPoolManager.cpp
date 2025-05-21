@@ -17,18 +17,20 @@ AEnemyPoolManager::AEnemyPoolManager()
 void AEnemyPoolManager::BeginPlay()
 {
 	Super::BeginPlay();
-	UE_LOG(LogTemp, Warning, TEXT("Client WalkerClass is %s"),
+	/*UE_LOG(LogTemp, Warning, TEXT("Client WalkerClass is %s"),
 	   WalkerClass ? *WalkerClass->GetName() : TEXT("NULL"));
 	UE_LOG(LogTemp, Warning, TEXT("👁️ PoolManager BeginPlay on: %s | Role: %d"),
 		HasAuthority() ? TEXT("Server") : TEXT("Client"),
 		(int32)GetLocalRole());
+		*/
 	
-	for (int i = 0; i < 3; ++i)
+	for (int i = 0; i < 10; ++i)
 	{
 		if (HasAuthority())
 		{
 			AddToPool(WalkerClass, FVector(300, 300, 300), FRotator::ZeroRotator);
 			AddToPool(TankClass, FVector(300, 300, 300), FRotator::ZeroRotator);
+			AddToPool(StealthClass, FVector(300, 300, 300), FRotator::ZeroRotator);
 		}
 	}
 	if (!HasAuthority())
@@ -68,7 +70,7 @@ AEnemyBase* AEnemyPoolManager::AddToPool(TSubclassOf<AEnemyBase> EnemyClass, FVe
 			Enemy->SetActive(false);
 			UE_LOG(LogTemp, Warning, TEXT("🕒 SetActive(false) 완료: %s"), *Enemy->GetName());
 		}
-	}, 3.0f, false); // 기존처럼 3초 딜레이 고정
+	}, 10.0f, false); // 기존처럼 3초 딜레이 고정
 
 	return Enemy;
 }
@@ -152,7 +154,7 @@ void AEnemyPoolManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
     
 	DOREPLIFETIME(AEnemyPoolManager, WalkerClass);
 }
-void AEnemyPoolManager::LogReplicatedEnemies()
+void AEnemyPoolManager::LogReplicatedEnemies() //적이 잘 복제됐는지 확인
 {
 	TArray<AActor*> FoundEnemies;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEnemyBase::StaticClass(), FoundEnemies);
