@@ -5,6 +5,7 @@
 #include "EnemyAIController.h"
 #include "EnemyBase.h"
 #include "Ludens_PCharacter.h"
+#include "Ludens_PPlayerController.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
@@ -21,7 +22,8 @@ ALudens_PGameMode::ALudens_PGameMode()
 void ALudens_PGameMode::BeginPlay()
 {
 	Super::BeginPlay();
-
+	DefaultPawnClass = ALudens_PCharacter::StaticClass();
+	PlayerControllerClass = ALudens_PPlayerController::StaticClass();
 	SpawnEnemyAtLocation(FVector(1800, 1870, 88));
 }
 void ALudens_PGameMode::SpawnEnemyAtLocation(FVector Location)
@@ -49,4 +51,9 @@ AActor* ALudens_PGameMode::ChoosePlayerStart_Implementation(AController* Player)
 
 	// 모두 사용됐으면 기본 처리
 	return Super::ChoosePlayerStart_Implementation(Player);
+}
+void ALudens_PGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	Super::PostLogin(NewPlayer);
+	
 }

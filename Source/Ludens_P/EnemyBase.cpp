@@ -1,12 +1,14 @@
 #include "EnemyBase.h"
 
 #include "EnemyAIController.h"
+#include "StealthComponent.h"
 
 AEnemyBase::AEnemyBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	NetDormancy = DORM_Never;
 	Combat = CreateDefaultSubobject<UCreatureCombatComponent>(TEXT("CombatComponent"));
+
 	
 	bAlwaysRelevant = true;
 	bReplicates = true;
@@ -29,6 +31,7 @@ void AEnemyBase::BeginPlay()
 		bReplicates ? TEXT("true") : TEXT("false"),
 		(int32)GetLocalRole(),
 		(int32)GetRemoteRole());*/
+
 	if (!Combat)
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ Combat is not assigned in %s!"), *GetName());
@@ -45,22 +48,21 @@ void AEnemyBase::Tick(float DeltaTime)
 
 void AEnemyBase::SetActive(bool bNewActive)
 {
-	//UE_LOG(LogTemp, Warning, TEXT("🔧 SetActive called on %s → new state: %s"),
-	//*GetName(), bNewActive ? TEXT("ACTIVE") : TEXT("INACTIVE"));
-
-	if (!Combat)
-	{
-		//UE_LOG(LogTemp, Error, TEXT("Combat is nullptr in SetActive"));
-		ensureAlwaysMsgf(false, TEXT("EnemyBase must have CombatComponent initialized!"));
-		return;
-	}
 	bActive = bNewActive;
 
 	SetActorHiddenInGame(!bNewActive);
 	SetActorEnableCollision(bNewActive);
 	SetActorTickEnabled(bNewActive);
-	Combat->SetComponentTickEnabled(bNewActive);
-	
+	StealthComponent = FindComponentByClass<UStealthComponent>();
+
+	if (Combat)
+	{
+		Combat->SetComponentTickEnabled(bNewActive);
+	}
+	else
+	{
+		ensureAlwaysMsgf(false, TEXT("EnemyBase must have CombatComponent initialized!"));
+	}
 
 	if (USkeletalMeshComponent* MeshComp = GetMesh())
 	{
@@ -73,7 +75,18 @@ void AEnemyBase::SetActive(bool bNewActive)
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ GetMesh() returned null!"));
 	}
+
+	// 🔽 여기서 스텔스 상태 초기화
+	if (StealthComponent)
+	{
+		StealthComponent->ResetStealthState();
+	}
+	else
+	{
+		//UE_LOG(LogTemp, Error, TEXT("No StealthComponent"));
+	}
 }
+
 void AEnemyBase::PostNetInit()
 {
 	Super::PostNetInit();

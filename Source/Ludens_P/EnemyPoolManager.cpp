@@ -53,13 +53,13 @@ AEnemyBase* AEnemyPoolManager::AddToPool(TSubclassOf<AEnemyBase> EnemyClass, FVe
 	AEnemyBase* Enemy = GetWorld()->SpawnActor<AEnemyBase>(EnemyClass, Location, Rotation, Params);
 	if (!Enemy)
 	{
-		UE_LOG(LogTemp, Error, TEXT("❌ SpawnActor failed for class: %s"), *EnemyClass->GetName());
+		//UE_LOG(LogTemp, Error, TEXT("❌ SpawnActor failed for class: %s"), *EnemyClass->GetName());
 		return nullptr;
 	}
 
 	// ✅ 여기서만 풀에 추가
 	EnemyPools.FindOrAdd(EnemyClass).Add(Enemy);
-	UE_LOG(LogTemp, Log, TEXT("✅ Enemy spawned and added to pool: %s"), *Enemy->GetName());
+	//UE_LOG(LogTemp, Log, TEXT("✅ Enemy spawned and added to pool: %s"), *Enemy->GetName());
 
 	// ✅ 복제 완료 후에 SetActive(false) 처리 (복제 타이밍 보장용)
 	FTimerHandle DelayHandle;
@@ -68,7 +68,7 @@ AEnemyBase* AEnemyPoolManager::AddToPool(TSubclassOf<AEnemyBase> EnemyClass, FVe
 		if (IsValid(Enemy))
 		{
 			Enemy->SetActive(false);
-			UE_LOG(LogTemp, Warning, TEXT("🕒 SetActive(false) 완료: %s"), *Enemy->GetName());
+			//UE_LOG(LogTemp, Warning, TEXT("🕒 SetActive(false) 완료: %s"), *Enemy->GetName());
 		}
 	}, 10.0f, false); // 기존처럼 3초 딜레이 고정
 
@@ -80,36 +80,36 @@ AEnemyBase* AEnemyPoolManager::GetPooledEnemy(TSubclassOf<AEnemyBase> EnemyClass
 {
 	if (!EnemyPools.Contains(EnemyClass))
 	{
-		UE_LOG(LogTemp, Warning, TEXT("📦 Pool not found for class: %s → creating new pool"), *EnemyClass->GetName());
+		//UE_LOG(LogTemp, Warning, TEXT("📦 Pool not found for class: %s → creating new pool"), *EnemyClass->GetName());
 		EnemyPools.Add(EnemyClass, TArray<AEnemyBase*>());
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("📦 Found pool for class: %s → %d enemies in pool"), 
-			*EnemyClass->GetName(), EnemyPools[EnemyClass].Num());
+		//UE_LOG(LogTemp, Warning, TEXT("📦 Found pool for class: %s → %d enemies in pool"), 
+		//	*EnemyClass->GetName(), EnemyPools[EnemyClass].Num());
 	}
 
 	for (AEnemyBase* Enemy : EnemyPools[EnemyClass])
 	{
 		if (!IsValid(Enemy))
 		{
-			UE_LOG(LogTemp, Error, TEXT("❌ Invalid enemy pointer in pool for class: %s"), *EnemyClass->GetName());
+			//UE_LOG(LogTemp, Error, TEXT("❌ Invalid enemy pointer in pool for class: %s"), *EnemyClass->GetName());
 			continue;
 		}
 
 		if (!Enemy->IsActive())
 		{
-			UE_LOG(LogTemp, Warning, TEXT("🔄 Reusing inactive enemy: %s"), *Enemy->GetName());
+			//UE_LOG(LogTemp, Warning, TEXT("🔄 Reusing inactive enemy: %s"), *Enemy->GetName());
 			Enemy->MulticastSetActive(true);
 			return Enemy;
 		}
 		else
 		{
-			UE_LOG(LogTemp, Warning, TEXT("🟡 Skipping active enemy: %s"), *Enemy->GetName());
+			//UE_LOG(LogTemp, Warning, TEXT("🟡 Skipping active enemy: %s"), *Enemy->GetName());
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("🚫 No reusable enemies available in pool for class: %s"), *EnemyClass->GetName());
+	//UE_LOG(LogTemp, Warning, TEXT("🚫 No reusable enemies available in pool for class: %s"), *EnemyClass->GetName());
 	return nullptr;
 }
 
@@ -120,7 +120,7 @@ AEnemyBase* AEnemyPoolManager::SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, FV
 
 	if (!Enemy)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("📌 No pooled enemy available. Spawning new one."));
+		//UE_LOG(LogTemp, Warning, TEXT("📌 No pooled enemy available. Spawning new one."));
 		Enemy = AddToPool(EnemyClass, Location, Rotation);
 
 		// AddToPool()에서 자동으로 SetActive(false) 되었으므로,
@@ -159,11 +159,11 @@ void AEnemyPoolManager::LogReplicatedEnemies() //적이 잘 복제됐는지 확�
 	TArray<AActor*> FoundEnemies;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEnemyBase::StaticClass(), FoundEnemies);
 
-	UE_LOG(LogTemp, Warning, TEXT("⏱️ [DELAYED] Found %d replicated enemies"), FoundEnemies.Num());
+	//UE_LOG(LogTemp, Warning, TEXT("⏱️ [DELAYED] Found %d replicated enemies"), FoundEnemies.Num());
 	for (AActor* Actor : FoundEnemies)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("🧩 [Client] Replicated Enemy: %s at %s"),
-			*Actor->GetName(),
-			*Actor->GetActorLocation().ToString());
+		//UE_LOG(LogTemp, Warning, TEXT("🧩 [Client] Replicated Enemy: %s at %s"),
+		//	*Actor->GetName(),
+		//	*Actor->GetActorLocation().ToString());
 	}
 }

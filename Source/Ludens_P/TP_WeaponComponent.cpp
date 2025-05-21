@@ -12,6 +12,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "Projects.h"
 #include "Animation/AnimInstance.h"
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
@@ -23,36 +24,64 @@ UTP_WeaponComponent::UTP_WeaponComponent()
 	// Default offset from the character location for projectiles to spawn
 	MuzzleOffset = FVector(100.0f, 0.0f, 10.0f);
 }
+void UTP_WeaponComponent::BeginPlay()
+{
+	Super::BeginPlay();
 
+	if (!Character)
+	{
+		Character = Cast<ALudens_PCharacter>(GetOwner());
+		if (!Character)
+		{
+			UE_LOG(LogTemp, Error, TEXT("WeaponComponent could not find owning character!"));
+		}
+	}
+}
 
 void UTP_WeaponComponent::Fire()
 {
-	UE_LOG(LogTemp, Log, TEXT("FireFIreFire"));
-	
-	if (Character == nullptr || Character->GetController() == nullptr)
+	if (!Character)
 	{
-		return;
+		Character = Cast<ALudens_PCharacter>(GetOwner());
+		if (!Character)
+		{
+			UE_LOG(LogTemp, Error, TEXT("❌ Character is null"));
+			return;
+		}
 	}
 
-	// Try and fire a projectile
-	if (ProjectileClass != nullptr)
+	FRotator SpawnRotation = Character->GetActorRotation();
+
+	if (APlayerController* PC = Cast<APlayerController>(Character->GetController()))
 	{
+		SpawnRotation = PC->PlayerCameraManager->GetCameraRotation();
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("❗ GetController() is null, fallback to actor rotation"));
+	}
+
+		UE_LOG(LogTemp, Log, TEXT("Fire"));
 		UWorld* const World = GetWorld();
 		if (World != nullptr)
 		{
+			UE_LOG(LogTemp, Log, TEXT("FireFIRE"));
 			// 소환할 프로젝타일의 위치 조정하기 (카메라 Vector 가져와서 위치조정하면 될듯)
-			APlayerController* PlayerController = Cast<APlayerController>(Character->GetController());
-			const FRotator SpawnRotation = PlayerController->PlayerCameraManager->GetCameraRotation();
 			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
 			const FVector SpawnLocation = GetOwner()->GetActorLocation() + SpawnRotation.RotateVector(MuzzleOffset);
 	
 			//Set Spawn Collision Handling Override
-			FActorSpawnParameters ActorSpawnParams;
-			ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = GetOwner(); // 캐릭터 등
+			SpawnParams.Instigator = Cast<APawn>(GetOwner()); // 발사체를 쏜 주체
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 	
 			// Spawn the projectile at the muzzle
-			World->SpawnActor<ALudens_PProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+			ALudens_PProjectile* Projectile = World->SpawnActor<ALudens_PProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams);
 		}
+	else
+	{
+		UE_LOG(LogTemp, Log, TEXT("ProjectileCLass is nullptr"));
 	}
 	// -----여긱까지가 소환 로직-------
 	

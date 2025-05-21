@@ -103,7 +103,7 @@ void UWalkerAIComponent::Attack(AActor* Target)
     ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
     if (AttackMontage && OwnerChar)
     {
-        UE_LOG(LogTemp, Log, TEXT("PlayAnimMontage"));
+        //UE_LOG(LogTemp, Log, TEXT("PlayAnimMontage"));
 
         OwnerChar->PlayAnimMontage(AttackMontage);
     }

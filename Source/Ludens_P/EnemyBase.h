@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "CreatureCombatComponent.h"
 #include "WalkerAIComponent.h"
+#include "StealthComponent.h"
 #include "GameFramework/Character.h"
 #include "EnemyBase.generated.h"
 
@@ -20,7 +21,8 @@ public:
 	// === 전투 컴포넌트 ===
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Component")
 	UCreatureCombatComponent* Combat;
-
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
+	UStealthComponent* StealthComponent;
 
 public:
 	virtual void SetActive(bool bNewActive);

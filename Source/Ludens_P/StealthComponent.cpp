@@ -3,6 +3,8 @@
 
 #include "StealthComponent.h"
 
+#include "Math/UnitConversion.h"
+
 // Sets default values for this component's properties
 UStealthComponent::UStealthComponent()
 {
@@ -35,15 +37,17 @@ void UStealthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
         AActor* NearestPlayer = FindNearestPlayer();
         if (NearestPlayer)
         {
+
             float Dist = FVector::Dist(NearestPlayer->GetActorLocation(), GetOwner()->GetActorLocation());
 
-            if (Dist < RevealDistance && bIsStealthed)
-            {
-                DeactivateStealth();
-            }
-            else if (Dist >= RevealDistance && !bIsStealthed)
+
+            if (Dist >= RevealDistance && !bIsStealthed)
             {
                 ActivateStealth();
+            }
+            else if (Dist < RevealDistance && bIsStealthed)
+            {
+                DeactivateStealth();
             }
         }
     }
@@ -51,6 +55,7 @@ void UStealthComponent::TickComponent(float DeltaTime, ELevelTick TickType, FAct
 
 void UStealthComponent::ActivateStealth()
 {
+
     SetVisibility(false);
     bIsStealthed = true;
 }
@@ -100,4 +105,11 @@ AActor* UStealthComponent::FindNearestPlayer()
     }
 
     return Nearest;
+}
+void UStealthComponent::ResetStealthState()
+{
+    bIsStealthed = false;
+    SetVisibility(true);
+    //UE_LOG(LogTemp, Error, TEXT("ResetStealthState!"));
+
 }

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Ludens_PProjectile.h"
 #include "TP_WeaponComponent.generated.h"
 
 class ALudens_PCharacter;
@@ -15,8 +16,8 @@ class LUDENS_P_API UTP_WeaponComponent : public USkeletalMeshComponent
 
 public:
 	/** Projectile class to spawn */
-	UPROPERTY(EditDefaultsOnly, Category=Projectile)
-	TSubclassOf<class ALudens_PProjectile> ProjectileClass;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Projectile")
+	TSubclassOf<ALudens_PProjectile> ProjectileClass;
 
 	/** Sound to play each time we fire */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category=Gameplay)
@@ -40,6 +41,7 @@ public:
 
 	/** Sets default values for this component's properties */
 	UTP_WeaponComponent();
+	void BeginPlay();
 
 	/** Attaches the actor to a FirstPersonCharacter */
 	//UFUNCTION(BlueprintCallable, Category="Weapon")
@@ -56,5 +58,6 @@ protected:
 
 private:
 	/** The Character holding this weapon*/
+	UPROPERTY()
 	ALudens_PCharacter* Character;
 };

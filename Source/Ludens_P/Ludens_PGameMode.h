@@ -28,7 +28,7 @@ public:
 
 
 	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override; //ChoosePlayerStart
-
+	void PostLogin(APlayerController* NewPlayer);
 
 public:
 	ALudens_PGameMode();

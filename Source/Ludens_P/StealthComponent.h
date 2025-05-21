@@ -16,6 +16,9 @@ public:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	UFUNCTION()
+	void ResetStealthState();
+
 	void ActivateStealth();     // 투명화 시작
 	void DeactivateStealth();   // 투명화 해제
 
@@ -30,4 +33,5 @@ private:
 	void SetVisibility(bool bVisible);
 
 	AActor* FindNearestPlayer();
+
 };
