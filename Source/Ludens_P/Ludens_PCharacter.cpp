@@ -25,17 +25,22 @@ ALudens_PCharacter::ALudens_PCharacter()
 	//멀티 설정
 	bReplicates = true;
 	SetReplicatingMovement(true);
-	//무기
+	
+	//bReplicateMovement = true;
+	//필드가 private으로 되어있어서 SetReplciatingMovemt() Setter함수로 접근 및 설정
+
+	
+	//무기 컴포넌트 할당
 	Weapon = CreateDefaultSubobject<UTP_WeaponComponent>(TEXT("WeaponComponent"));
 	Weapon->SetupAttachment(RootComponent);
 	
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
 	
-	// Create a CameraComponent	
+	// 카메라 컴포넌트 생성 및 할당
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
-	FirstPersonCameraComponent->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // Position the camera
+	FirstPersonCameraComponent->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // 카메라 위치 조정
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)

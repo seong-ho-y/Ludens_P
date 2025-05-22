@@ -122,3 +122,21 @@ void UWalkerAIComponent::EndAttack()
 {
     bIsAttacking = false;
 }
+
+void UWalkerAIComponent::StopMovement()
+{
+    if (AAIController* AI = Cast<AAIController>(OwnerCharacter->GetController()))
+    {
+        AI->StopMovement();
+    }
+}
+
+void UWalkerAIComponent::StartChasing(AActor* Target)
+{
+    if (!Target || !OwnerCharacter) return;
+
+    if (AAIController* AI = Cast<AAIController>(OwnerCharacter->GetController()))
+    {
+        AI->MoveToActor(Target);
+    }
+}

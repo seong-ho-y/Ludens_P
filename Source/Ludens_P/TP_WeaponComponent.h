@@ -50,6 +50,10 @@ public:
 	/** Make the weapon Fire a Projectile */
 	UFUNCTION(BlueprintCallable, Category="Weapon")
 	void Fire();
+	UFUNCTION(Server, Reliable)
+	void ServerFire(); // 클라이언트가 서버에 발사 요청할 RPC
+
+	void HandleFire(); // 서버에서만 실행되는 진짜 발사 로직
 
 protected:
 	/** Ends gameplay for this component. */

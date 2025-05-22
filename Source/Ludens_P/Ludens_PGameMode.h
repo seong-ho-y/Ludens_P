@@ -4,7 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "EnemyBase.h"
 #include "Ludens_PGameMode.generated.h"
 
 
@@ -20,17 +19,10 @@ class ALudens_PGameMode : public AGameModeBase
 
 	//적 생성
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Enemy")
-	TSubclassOf<AEnemyBase> EnemyToSpawn;
-
-	UFUNCTION(BlueprintCallable)
-	void SpawnEnemyAtLocation(FVector Location);
-
 
 	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override; //ChoosePlayerStart
-	void PostLogin(APlayerController* NewPlayer);
 
-public:
+
 	ALudens_PGameMode();
 	void BeginPlay();
 };

@@ -6,6 +6,10 @@
 
 ALudens_PProjectile::ALudens_PProjectile() 
 {
+	bReplicates = true;
+	SetReplicatingMovement(true);
+	bAlwaysRelevant = true;
+	
 	// Use a sphere as a simple collision representation
 	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	CollisionComp->InitSphereRadius(5.0f);

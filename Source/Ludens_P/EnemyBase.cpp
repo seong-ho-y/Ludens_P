@@ -2,12 +2,14 @@
 
 #include "EnemyAIController.h"
 #include "StealthComponent.h"
+#include "TP_WeaponComponent.h"
 
 AEnemyBase::AEnemyBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	NetDormancy = DORM_Never;
 	Combat = CreateDefaultSubobject<UCreatureCombatComponent>(TEXT("CombatComponent"));
+	ShooterWeaponComponent = CreateDefaultSubobject<UTP_WeaponComponent>(TEXT("ShooterWeaponComponent"));
 
 	
 	bAlwaysRelevant = true;
@@ -111,4 +113,10 @@ void AEnemyBase::MulticastSetActive_Implementation(bool bNewActive)
 {
 	SetActive(bNewActive);
 }
-	
+void AEnemyBase::Fire()
+{
+	if (ShooterWeaponComponent)
+	{
+		ShooterWeaponComponent->Fire(); // 서버에서 실행되는 Projectile Fire
+	}
+}

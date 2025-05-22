@@ -24,7 +24,10 @@ private:
 	bool bIsAttacking = false;
 
 	FTimerHandle AttackCooldownHandle;
-	
+public:
+	void StopMovement();              // 현재 AI 이동 멈추기
+	void StartChasing(AActor* Target); // 특정 타겟을 향해 이동 시작
+
 	void EndAttack();
 	void UpdateAI();
 	APawn* FindNearestPlayer();
@@ -42,7 +45,8 @@ private:
 	float SearchInterval = 0.5f;
 
 	float TimeSinceLastSearch = 0.f;
-	
+
+
 protected:
 	UPROPERTY(EditAnywhere, Category="Combat")
 	float Damage = 10.f;
