@@ -59,6 +59,7 @@ void ALudens_PCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 	
+		/*
 		if (Controller)
 		{
 			UE_LOG(LogTemp, Log, TEXT("✅ Controller is %s"), *Controller->GetName());
@@ -67,6 +68,7 @@ void ALudens_PCharacter::BeginPlay()
 		{
 			UE_LOG(LogTemp, Warning, TEXT("❌ No Controller assigned to %s"), *GetName());
 		}
+		*/
 
 }
 void ALudens_PCharacter::Tick(float DeltaTime)

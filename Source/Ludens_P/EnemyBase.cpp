@@ -8,6 +8,8 @@ AEnemyBase::AEnemyBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	NetDormancy = DORM_Never;
+
+	
 	Combat = CreateDefaultSubobject<UCreatureCombatComponent>(TEXT("CombatComponent"));
 	ShooterWeaponComponent = CreateDefaultSubobject<UTP_WeaponComponent>(TEXT("ShooterWeaponComponent"));
 
