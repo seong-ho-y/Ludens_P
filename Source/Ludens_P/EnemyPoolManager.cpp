@@ -28,9 +28,10 @@ void AEnemyPoolManager::BeginPlay()
 	{
 		if (HasAuthority())
 		{
-			AddToPool(WalkerClass, FVector(300, 300, 300), FRotator::ZeroRotator);
-			AddToPool(TankClass, FVector(300, 300, 300), FRotator::ZeroRotator);
-			AddToPool(StealthClass, FVector(300, 300, 300), FRotator::ZeroRotator);
+			//AddToPool(WalkerClass, FVector(300, 300, 300), FRotator::ZeroRotator);
+			//AddToPool(TankClass, FVector(300, 300, 300), FRotator::ZeroRotator);
+			//AddToPool(StealthClass, FVector(300, 300, 300), FRotator::ZeroRotator);
+			AddToPool(ShooterClass, FVector(300, 300, 300), FRotator::ZeroRotator);
 		}
 	}
 	if (!HasAuthority())

@@ -29,6 +29,8 @@ public:
 	TSubclassOf<AEnemyBase> TankClass;
 	UPROPERTY(EditAnywhere, Replicated, Category = "Pooling")
 	TSubclassOf<AEnemyBase> StealthClass;
+	UPROPERTY(EditAnywhere, Replicated, Category = "Pooling")
+	TSubclassOf<AEnemyBase> ShooterClass;
 
 
 protected:

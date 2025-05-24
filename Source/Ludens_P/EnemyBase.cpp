@@ -1,6 +1,7 @@
 #include "EnemyBase.h"
 
 #include "EnemyAIController.h"
+#include "ShooterAIComponent.h"
 #include "StealthComponent.h"
 #include "TP_WeaponComponent.h"
 
@@ -11,8 +12,6 @@ AEnemyBase::AEnemyBase()
 
 	
 	Combat = CreateDefaultSubobject<UCreatureCombatComponent>(TEXT("CombatComponent"));
-	ShooterWeaponComponent = CreateDefaultSubobject<UTP_WeaponComponent>(TEXT("ShooterWeaponComponent"));
-
 	
 	bAlwaysRelevant = true;
 	bReplicates = true;
@@ -59,7 +58,7 @@ void AEnemyBase::SetActive(bool bNewActive)
 	SetActorTickEnabled(bNewActive);
 	StealthComponent = FindComponentByClass<UStealthComponent>();
 
-	if (Combat)
+	if (Combat) //전투 컴포넌트 비활성화
 	{
 		Combat->SetComponentTickEnabled(bNewActive);
 	}
@@ -79,9 +78,19 @@ void AEnemyBase::SetActive(bool bNewActive)
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ GetMesh() returned null!"));
 	}
+	TArray<UActorComponent*> AIComponents;
+	GetComponents(UActorComponent::StaticClass(), AIComponents);
+	for (UActorComponent* Component : AIComponents)
+	{
+		// 원하는 타입만 처리 (WalkerAI, ShooterAI 등)
+		if (Component->IsA<UWalkerAIComponent>() || Component->IsA<UShooterAIComponent>())
+		{
+			Component->SetComponentTickEnabled(bNewActive);
+		}
+	}
 
 	// 🔽 여기서 스텔스 상태 초기화
-	if (StealthComponent)
+	if (StealthComponent && bActive)
 	{
 		StealthComponent->ResetStealthState();
 	}
@@ -114,11 +123,4 @@ bool AEnemyBase::IsActive() const
 void AEnemyBase::MulticastSetActive_Implementation(bool bNewActive)
 {
 	SetActive(bNewActive);
-}
-void AEnemyBase::Fire()
-{
-	if (ShooterWeaponComponent)
-	{
-		ShooterWeaponComponent->Fire(); // 서버에서 실행되는 Projectile Fire
-	}
 }

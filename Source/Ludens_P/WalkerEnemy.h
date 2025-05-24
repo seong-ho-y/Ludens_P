@@ -17,7 +17,5 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "AI")
 	UWalkerAIComponent* WalkerAI;
-
-public:
-	virtual void SetActive(bool bNewActive) override;
+	
 };

@@ -29,7 +29,6 @@ public:
 	void PostNetInit();
 	void OnPostReplicationInit();
 	bool IsActive() const;
-	void Fire();
 
 	virtual void Tick(float DeltaTime) override;
 	

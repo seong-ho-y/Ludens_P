@@ -13,22 +13,23 @@ class LUDENS_P_API UShooterAIComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:
+	UShooterAIComponent();
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 private:
 	UPROPERTY(EditAnywhere, Category="AI")
-	float FireRange = 800.f;
+	float FireRange = 1500.f;
 
 	UPROPERTY(EditAnywhere, Category="AI")
-	float FireCooldown = 2.0f;
+	float FireCooldown = 0.5f;
 
 	bool bCanFire = true;
 	FTimerHandle FireCooldownHandle;
 
-	class AEnemyBase* OwnerEnemy;
+	class AShooterEnemyBase* OwnerEnemy;
 	class UWalkerAIComponent* WalkerComponent;
 
-	void TryFire();
+	void TryFire(AActor* Target);
 	void ResetCanFire();
 };

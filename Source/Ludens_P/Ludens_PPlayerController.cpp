@@ -39,9 +39,10 @@ void ALudens_PPlayerController::SpawnEnemyFromPool()
 			FRotator SpawnRot = FRotator::ZeroRotator;
 
 			// 스폰 호출
-			Pool->SpawnEnemy(Pool->WalkerClass, SpawnLoc, SpawnRot);
-			Pool->SpawnEnemy(Pool->TankClass, SpawnLoc, SpawnRot);
-			Pool->SpawnEnemy(Pool->StealthClass, SpawnLoc, SpawnRot);
+			//Pool->SpawnEnemy(Pool->WalkerClass, SpawnLoc, SpawnRot);
+			//Pool->SpawnEnemy(Pool->TankClass, SpawnLoc, SpawnRot);
+			//Pool->SpawnEnemy(Pool->StealthClass, SpawnLoc, SpawnRot);
+			Pool->SpawnEnemy(Pool->ShooterClass, SpawnLoc, SpawnRot);
 
 		}
 	}
