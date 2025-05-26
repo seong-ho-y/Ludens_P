@@ -19,16 +19,16 @@ public:
 
 private:
 	UPROPERTY(EditAnywhere, Category="AI")
-	float FireRange = 1500.f;
+	float FireRange = 1500.f; //사격사거리 설정
 
 	UPROPERTY(EditAnywhere, Category="AI")
-	float FireCooldown = 0.5f;
+	float FireCooldown = 0.5f; //공격 쿨타임
 
 	bool bCanFire = true;
 	FTimerHandle FireCooldownHandle;
 
 	class AShooterEnemyBase* OwnerEnemy;
-	class UWalkerAIComponent* WalkerComponent;
+	UWalkerAIComponent* WalkerComponent; //컴포넌트는 class로 선언할 필요가 없는 듯
 
 	void TryFire(AActor* Target);
 	void ResetCanFire();

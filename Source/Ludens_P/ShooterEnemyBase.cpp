@@ -1,5 +1,6 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// 슈터Enemy의 기본 클래스
+// 기본적으로 ShooterAIComponent, ShootingComponent, WalkerAIComponent를 갖고 있음
+// FireAt메서드를 가지고 있으며 Actor형 포인터 Target을 인자로 받아서 ShootingComponent의 FireAt호출
 
 #include "ShooterEnemyBase.h"
 
