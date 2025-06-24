@@ -1,9 +1,6 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Ludens_PCharacter.h"
-
-#include "EnemyBase.h"
-#include "EngineUtils.h"
 #include "Ludens_PProjectile.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
@@ -13,7 +10,6 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputActionValue.h"
 #include "Engine/LocalPlayer.h"
-#include "Util/ColorConstants.h"
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -22,35 +18,23 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 ALudens_PCharacter::ALudens_PCharacter()
 {
-	//멀티 설정
-	bReplicates = true;
-	SetReplicatingMovement(true);
-	
-	//bReplicateMovement = true;
-	//필드가 private으로 되어있어서 SetReplciatingMovemt() Setter함수로 접근 및 설정
-
-	
-	//무기 컴포넌트 할당
-	Weapon = CreateDefaultSubobject<UTP_WeaponComponent>(TEXT("WeaponComponent"));
-	Weapon->SetupAttachment(RootComponent);
-	
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
-	
-	// 카메라 컴포넌트 생성 및 할당
+		
+	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
-	FirstPersonCameraComponent->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // 카메라 위치 조정
+	FirstPersonCameraComponent->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
-	// 기본 메시 설정 (다른 사람이 보는 메시)
-	GetMesh()->SetOnlyOwnerSee(false); // 모든 사람이 보도록
-	GetMesh()->SetIsReplicated(true);
-	GetMesh()->SetupAttachment(GetCapsuleComponent());
-	GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -96.f)); // 캡슐 기준 정렬
-	GetMesh()->SetRelativeRotation(FRotator(0.f, 0.f, 0.f)); // 필요 시 방향 조절
-
+	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
+	Mesh1P->SetOnlyOwnerSee(true);
+	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
+	Mesh1P->bCastDynamicShadow = false;
+	Mesh1P->CastShadow = false;
+	//Mesh1P->SetRelativeRotation(FRotator(0.9f, -19.19f, 5.2f));
+	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
 
 }
 
@@ -58,50 +42,16 @@ void ALudens_PCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
-	
-		/*
-		if (Controller)
-		{
-			UE_LOG(LogTemp, Log, TEXT("✅ Controller is %s"), *Controller->GetName());
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("❌ No Controller assigned to %s"), *GetName());
-		}
-		*/
-
 }
-void ALudens_PCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	//적의 TakeDamage 메서드 실행 확인 여부
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (PC && PC->IsInputKeyDown(EKeys::E))
-	{
-		for (TActorIterator<AEnemyBase> It(GetWorld()); It; ++It)
-		{
-			AEnemyBase* Enemy = *It;
-			if (Enemy && Enemy->Combat)
-			{
-				Enemy->Combat->TakeDamage(10);
-				break;
-			}
-		}
-	}
-}
-
-
 
 //////////////////////////////////////////////////////////////////////////// Input
 
 void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
+{	
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		// Jumping 여기다가 Double Jumping으로 수정
+		// Jumping
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
@@ -110,11 +60,6 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ALudens_PCharacter::Look);
-
-		//Dash
-		//Fire 입력
-		PlayerInputComponent->BindAction("Fire", IE_Pressed, Weapon, &UTP_WeaponComponent::Fire);
-
 	}
 	else
 	{
