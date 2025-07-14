@@ -40,11 +40,11 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Weapon")
 	UTP_WeaponComponent* ShooterWeaponComponent;
 
-	UPROPERTY(BlueprintCallable, Category = "Enemy Color")
+	UFUNCTION(BlueprintCallable, Category = "Enemy Color")
 	void SetEnemyMeshMaterial(EEnemyColor NewColor);
 	
 protected:
-	UFUNCTION(EditAnywhere, BlueprintReadWrite, Category = "Enemy Color")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Enemy Color")
 	TMap<EEnemyColor, UMaterialInstance*> EnemyMaterials;
 
 	UPROPERTY(EditAnywhere, Category = "Enemy Color")

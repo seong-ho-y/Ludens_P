@@ -22,3 +22,4 @@ enum class EEnemyColor : uint8
 	Black = Blue | Green | Red UMETA(DisplayName = "Black"), // 0000 0111
 };
 ENUM_CLASS_FLAGS(EEnemyColor) // 비트 연산자 오버로딩을 위한 매크로
+
