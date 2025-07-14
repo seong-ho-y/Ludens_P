@@ -123,3 +123,15 @@ void AEnemyBase::MulticastSetActive_Implementation(bool bNewActive)
 {
 	SetActive(bNewActive);
 }
+
+void AEnemyBase::SetEnemyMeshMaterial(EEnemyColor NewColor)
+{
+	if (EnemyMaterials.Contains(NewColor))
+	{
+		UMaterialInstance* FoundMaterial = EnemyMaterials[NewColor];
+		if (FoundMaterial && GetMesh())
+		{
+			GetMesh()->SetMaterial(MaterialSlotIndex, FoundMaterial);
+		}
+	}
+}
