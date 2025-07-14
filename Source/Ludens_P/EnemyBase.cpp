@@ -48,7 +48,6 @@ void AEnemyBase::Tick(float DeltaTime)
 }
 
 
-
 void AEnemyBase::SetActive(bool bNewActive)
 {
 	bActive = bNewActive;

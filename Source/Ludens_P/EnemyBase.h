@@ -6,6 +6,7 @@
 #include "TP_WeaponComponent.h"
 #include "StealthComponent.h"
 #include "GameFramework/Character.h"
+#include "EnemyColorEnum.h"
 #include "EnemyBase.generated.h"
 
 UCLASS()
@@ -38,6 +39,17 @@ public:
 	//원거리 형 적들이 공격을 할 수 있게
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Weapon")
 	UTP_WeaponComponent* ShooterWeaponComponent;
+
+	UPROPERTY(BlueprintCallable, Category = "Enemy Color")
+	void SetEnemyMeshMaterial(EEnemyColor NewColor);
+	
+protected:
+	UFUNCTION(EditAnywhere, BlueprintReadWrite, Category = "Enemy Color")
+	TMap<EEnemyColor, UMaterialInstance*> EnemyMaterials;
+
+	UPROPERTY(EditAnywhere, Category = "Enemy Color")
+	int32 MaterialSlotIndex;
+	
 private:
 	bool bActive = false;
 
