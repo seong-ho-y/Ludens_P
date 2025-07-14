@@ -3,13 +3,15 @@
 #include "EnemyAIController.h"
 #include "ShooterAIComponent.h"
 #include "StealthComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "TP_WeaponComponent.h"
 
 AEnemyBase::AEnemyBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	NetDormancy = DORM_Never;
-
+	
+	MaterialSlotIndex = 0; // 첫 번째 Material 슬롯에 적용
 	
 	Combat = CreateDefaultSubobject<UCreatureCombatComponent>(TEXT("CombatComponent"));
 	
@@ -123,4 +125,29 @@ bool AEnemyBase::IsActive() const
 void AEnemyBase::MulticastSetActive_Implementation(bool bNewActive)
 {
 	SetActive(bNewActive);
+}
+
+void AEnemyBase::SetEnemyMeshMaterial(EEnemyColor NewColor)
+{
+	// 메시 컴포넌트가 유효한지 확인
+	if (!GetMesh())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AEnemyBase::SetEnemyMeshMaterial - Mesh component is null!"));
+		return;
+	}
+
+	// EnemyMaterials 맵에서 NewColor에 해당하는 Material을 찾습니다.
+	UMaterialInterface** FoundMaterial = EnemyMaterials.Find(NewColor);
+
+	if (FoundMaterial && *FoundMaterial)
+	{
+		// 찾은 Material을 메시 컴포넌트의 지정된 슬롯에 적용합니다.
+		GetMesh()->SetMaterial(MaterialSlotIndex, *FoundMaterial);
+		// CurrentEnemyColor = NewColor; // 필요하다면 현재 색상도 업데이트
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("AEnemyBase::SetEnemyMeshMaterial - No material found for color: %d"), (uint8)NewColor);
+		// 해당하는 Material이 없을 경우의 처리 (예: 기본 Material로 폴백)
+	}
 }
