@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "EnemyBase.h"
+#include "EnemyColorEnum.h"
 #include "EnemyPoolManager.generated.h"
 
 UCLASS()
@@ -15,7 +16,7 @@ public:
 	AEnemyPoolManager();
 
 	UFUNCTION(BlueprintCallable)
-	AEnemyBase* SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, FVector Location, FRotator Rotation);
+	AEnemyBase* SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, FVector Location, FRotator Rotation, EEnemyColor EnemyColor);
 
 	void ReturnEnemy(AEnemyBase* Enemy);
 	void LogReplicatedEnemies();

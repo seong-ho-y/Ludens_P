@@ -42,7 +42,8 @@ void ALudens_PPlayerController::SpawnEnemyFromPool()
 			//Pool->SpawnEnemy(Pool->WalkerClass, SpawnLoc, SpawnRot);
 			//Pool->SpawnEnemy(Pool->TankClass, SpawnLoc, SpawnRot);
 			//Pool->SpawnEnemy(Pool->StealthClass, SpawnLoc, SpawnRot);
-			Pool->SpawnEnemy(Pool->ShooterClass, SpawnLoc, SpawnRot);
+			Pool->SpawnEnemy(Pool->ShooterClass, SpawnLoc, SpawnRot, EEnemyColor::Blue);
+			Pool->SpawnEnemy(Pool->ShooterClass, SpawnLoc, SpawnRot, EEnemyColor::Red);
 
 		}
 	}
