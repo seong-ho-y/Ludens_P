@@ -115,7 +115,7 @@ AEnemyBase* AEnemyPoolManager::GetPooledEnemy(TSubclassOf<AEnemyBase> EnemyClass
 }
 
 
-AEnemyBase* AEnemyPoolManager::SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, FVector Location, FRotator Rotation)
+AEnemyBase* AEnemyPoolManager::SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, FVector Location, FRotator Rotation, EEnemyColor EnemyColor)
 {
 	AEnemyBase* Enemy = GetPooledEnemy(EnemyClass);
 
@@ -136,6 +136,7 @@ AEnemyBase* AEnemyPoolManager::SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, FV
 	{
 		Enemy->SetActorLocation(Location);
 		Enemy->SetActorRotation(Rotation);
+		Enemy->SetEnemyMeshMaterial(EnemyColor);
 	}
 
 	return Enemy;
