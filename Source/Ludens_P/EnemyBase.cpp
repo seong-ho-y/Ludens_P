@@ -124,8 +124,13 @@ void AEnemyBase::MulticastSetActive_Implementation(bool bNewActive)
 	SetActive(bNewActive);
 }
 
-void AEnemyBase::SetEnemyMeshMaterial(EEnemyColor NewColor)
+void AEnemyBase::SetupEnemyForColor(EEnemyColor NewColor)
 {
+	
+    // 새로운 색상에 맞춰 쉴드를 초기화
+    InitializeShields(NewColor);
+
+    // 머티리얼을 설정
 	if (EnemyMaterials.Contains(NewColor))
 	{
 		UMaterialInstance* FoundMaterial = EnemyMaterials[NewColor];
@@ -133,5 +138,48 @@ void AEnemyBase::SetEnemyMeshMaterial(EEnemyColor NewColor)
 		{
 			GetMesh()->SetMaterial(MaterialSlotIndex, FoundMaterial);
 		}
+	}
+}
+
+void AEnemyBase::InitializeShields(EEnemyColor enemyColor)
+{
+	// 기존 쉴드 정보 삭제
+	Shields.Empty();
+
+	// DefaultShields 맵에 정의된 각 기본 색상에 대해 반복
+	// TPair 사용
+	for (const TPair<EEnemyColor, int32>& ShieldInfo : DefaultShields)
+	{
+		const EEnemyColor& Color = ShieldInfo.Key; //key 값 저장하는 Color 변수
+		const int32& MaxShieldAmount = ShieldInfo.Value; //value 값 저장하는 변수
+
+		// 이 적의 EnemyColor가 해당 기본 색상을 포함하는지 비트 연산으로 확인
+		if (EnumHasAllFlags(enemyColor, Color))
+		{
+			// 포함한다면, 현재 쉴드 맵(Shields)에 최대치로 추가
+			Shields.Add(Color, MaxShieldAmount);
+			UE_LOG(LogTemp, Warning, TEXT("쉴드 추가"));
+		}
+	}
+}
+
+void AEnemyBase::ApplyShieldDamage(EEnemyColor DamageColor, int32 DamageAmount)
+{
+	// 데미지 타입에 해당하는 쉴드가 있는지 확인
+	if (int32* CurrentShield = Shields.Find(DamageColor))
+	{
+		// 쉴드가 있다면 데미지를 적용
+		*CurrentShield -= DamageAmount;
+
+		// 쉴드가 0 이하로 떨어졌다면 맵에서 제거
+		if (*CurrentShield <= 0)
+		{
+			Shields.Remove(DamageColor);
+			// 쉴드 파괴되었을 때의 로직
+		}
+	}
+	else
+	{
+		// 해당 색상의 쉴드가 없을 때
 	}
 }

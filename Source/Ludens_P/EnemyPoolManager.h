@@ -7,6 +7,8 @@
 #include "EnemyColorEnum.h"
 #include "EnemyPoolManager.generated.h"
 
+
+
 UCLASS()
 class LUDENS_P_API AEnemyPoolManager : public AActor
 {
