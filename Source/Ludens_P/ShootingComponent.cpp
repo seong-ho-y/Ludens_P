@@ -16,7 +16,6 @@ UShootingComponent::UShootingComponent()
 
 void UShootingComponent::FireAt(AActor* Target)
 {
-	UE_LOG(LogTemp, Log, TEXT("FireAt in ShootingComponent"));
 	if (!bCanFire || !Target || !GetOwner()->HasAuthority()) return;
 
 	FVector MuzzleLoc = GetOwner()->GetActorLocation() + GetOwner()->GetActorForwardVector() * MuzzleOffset;

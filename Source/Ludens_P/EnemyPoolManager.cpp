@@ -136,7 +136,7 @@ AEnemyBase* AEnemyPoolManager::SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, FV
 	{
 		Enemy->SetActorLocation(Location);
 		Enemy->SetActorRotation(Rotation);
-		Enemy->SetEnemyMeshMaterial(EnemyColor);
+		Enemy->SetupEnemyForColor(EnemyColor);
 	}
 
 	return Enemy;
