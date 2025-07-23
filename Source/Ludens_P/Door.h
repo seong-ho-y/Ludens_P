@@ -23,9 +23,20 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void Open();
 
-	UFUNCTION(BlueprintCallable) 
+	UFUNCTION(BlueprintCallable)
 	void Close();
 
 private:
+	// 문 외형
+	UPROPERTY(VisibleAnywhere)
+	UStaticMeshComponent* DoorMesh;
+
+	// 현재 열린 상태인지 여부
 	bool bIsOpen = false;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastOpen();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastClose();
 };

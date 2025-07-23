@@ -3,83 +3,123 @@
 
 #include "Room.h"
 #include "Door.h"
-#include "Components/BoxComponent.h"
-#include "Kismet/GameplayStatics.h"
-#include "GameFramework/PlayerController.h"
+#include "RoomManager.h"
+#include "Engine/Engine.h"
+#include "Engine/World.h"
 #include "TimerManager.h"
+#include "GameFramework/Character.h" // 플레이어 판별용
 
 // Sets default values
 ARoom::ARoom()
 {
+    bReplicates = true;
 
+    RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+
+    EntryTrigger = CreateDefaultSubobject<UBoxComponent>(TEXT("EntryTrigger"));
+    EntryTrigger->SetupAttachment(RootComponent);
+    EntryTrigger->SetBoxExtent(FVector(200.f, 200.f, 200.f));
+    EntryTrigger->SetCollisionProfileName(TEXT("Trigger"));
+    EntryTrigger->SetGenerateOverlapEvents(true);
 }
 
 // Called when the game starts or when spawned
 void ARoom::BeginPlay()
 {
-	Super::BeginPlay();
-	
-    // 10초 후 자동 클리어
-    GetWorld()->GetTimerManager().SetTimer(ClearTimerHandle, this, &ARoom::SimulateRoomClear, 10.f, false);
+    Super::BeginPlay();
+    // StartRoom()은 Manager에서 직접 호출
 
-    if (TriggerVolume)
+    if (EntryTrigger)
     {
-        TriggerVolume->OnActorBeginOverlap.AddDynamic(this, &ARoom::OnTriggerEnter);
-        TriggerVolume->OnActorEndOverlap.AddDynamic(this, &ARoom::OnTriggerExit);
+        EntryTrigger->OnComponentBeginOverlap.AddDynamic(this, &ARoom::OnEntryTriggerBegin);
+    }
+
+    if (DoorClass)
+    {
+        // 문 위치 설정 (원하는 위치로 조정)
+        FVector EntryLocation = GetActorLocation() + FVector(-1000.f, 0.f, 0.f);
+        FVector ExitLocation = GetActorLocation() + FVector(1000.f, 0.f, 0.f);
+        FRotator DoorRotation = FRotator::ZeroRotator;
+
+        FActorSpawnParameters SpawnParams;
+        SpawnParams.Owner = this;
+
+        // EntryDoor 생성
+        EntryDoor = GetWorld()->SpawnActor<ADoor>(DoorClass, EntryLocation, DoorRotation, SpawnParams);
+
+        // ExitDoor 생성
+        ExitDoor = GetWorld()->SpawnActor<ADoor>(DoorClass, ExitLocation, DoorRotation, SpawnParams);
     }
 }
 
-void ARoom::SimulateRoomClear()
+void ARoom::SetManager(ARoomManager* InManager)
 {
+    Manager = InManager;
+}
+
+void ARoom::SetRoomIndex(int32 Index)
+{
+    RoomIndex = Index;
+}
+
+void ARoom::StartRoom()
+{
+    bIsCleared = false;
+
+    if (GEngine && HasAuthority())
+    {
+        FString Msg = FString::Printf(TEXT("Room %d Start"), RoomIndex);
+        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, Msg);
+    }
+
+    // 5초 후 자동 클리어
+    GetWorld()->GetTimerManager().SetTimer(
+        AutoClearTimer,
+        this,
+        &ARoom::AutoClear,
+        5.f,
+        false
+    );
+}
+
+void ARoom::AutoClear()
+{
+    if (bIsCleared) return;
     bIsCleared = true;
 
-    if (ExitDoor)
+    if (GEngine && HasAuthority())
     {
-        ExitDoor->SetActorHiddenInGame(true);
-        ExitDoor->SetActorEnableCollision(false);
+        FString Msg = FString::Printf(TEXT("Room %d Cleared"), RoomIndex);
+        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, Msg);
     }
 
-    SpawnNextRoom(); // 새로운 방 생성
-}
-
-void ARoom::SpawnNextRoom()
-{
-    FVector NextLocation = GetActorLocation() + FVector(2000, 0, 0);
-
-    ARoom* NewRoom = GetWorld()->SpawnActor<ARoom>(RoomClass, NextLocation, FRotator::ZeroRotator);
-}
-
-void ARoom::OnTriggerEnter(AActor* OverlappedActor, AActor* OtherActor)
-{
-    APlayerController* PC = Cast<APlayerController>(OtherActor->GetInstigatorController());
-    if (PC && !OverlappedPlayers.Contains(PC))
+    if (Manager)
     {
-        OverlappedPlayers.Add(PC);
+        Manager->NotifyRoomCleared(RoomIndex);
+    }
+}
 
-        if (OverlappedPlayers.Num() >= RequiredPlayersToProceed)
+void ARoom::OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+    UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+    const FHitResult& SweepResult)
+{
+    if (!OtherActor) return;
+
+    ACharacter* OverlappingCharacter = Cast<ACharacter>(OtherActor);
+    if (OverlappingCharacter)
+    {
+        EnteredPlayers.Add(OverlappingCharacter);
+
+        FString Msg = FString::Printf(TEXT("Waiting: %d / 3"), EnteredPlayers.Num());
+        if (HasAuthority()) GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::White, Msg);
+
+        if (EnteredPlayers.Num() == 3)
         {
-            if (ExitDoor)
-            {
-                ExitDoor->SetActorHiddenInGame(false);
-                ExitDoor->SetActorEnableCollision(true);
-            }
+            if (EntryDoor)
+                EntryDoor->Close();  // 문 닫고
 
-            RemoveCurrentRoom(); // 이전 방 삭제
+            if (Manager)
+                Manager->StartNextRoom();  // 다음 방 시작
         }
     }
-}
-
-void ARoom::OnTriggerExit(AActor* OverlappedActor, AActor* OtherActor)
-{
-    APlayerController* PC = Cast<APlayerController>(OtherActor->GetInstigatorController());
-    if (PC)
-    {
-        OverlappedPlayers.Remove(PC);
-    }
-}
-
-void ARoom::RemoveCurrentRoom()
-{
-    // 일정 시간 후 자신을 제거
-    SetLifeSpan(2.f); // 2초 뒤 Destroy()
 }

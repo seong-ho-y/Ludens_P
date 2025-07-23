@@ -4,7 +4,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Components/BoxComponent.h"
 #include "Room.generated.h"
+
+class ARoomManager;
+class ADoor;
 
 UCLASS()
 class LUDENS_P_API ARoom : public AActor
@@ -19,29 +23,52 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+public:
+    // 방 시작 (5초 후 자동 클리어)
+    void StartRoom();
+
+    // RoomManager에서 호출
+    void SetManager(ARoomManager* InManager);
+    void SetRoomIndex(int32 Index);
+
+    // 문과 연결할 수 있도록 변수 노출
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Room")
+    ADoor* EntryDoor; // 방이 클리어되면 열릴 문
+
+protected:
+    // 자동 클리어 처리
+    void AutoClear();
+
 private:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room", meta = (AllowPrivateAccess = "true"))
-	class ADoor* ExitDoor;
+    UPROPERTY()
+    ARoomManager* Manager;
 
-	FTimerHandle ClearTimerHandle;
+    int32 RoomIndex = -1;
+    bool bIsCleared = false;
 
-	bool bIsCleared = false;
+    FTimerHandle AutoClearTimer;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room", meta = (AllowPrivateAccess = "true"))
-	TSubclassOf<ARoom> RoomClass;
+public:
+    // 방 입장 체크용 트리거
+    UPROPERTY(VisibleAnywhere, Category = "Room")
+    UBoxComponent* EntryTrigger;
 
-	AActor* TriggerVolume; // BoxTrigger 등
+    // 입구 쪽 문 (다음 방 입장 후 닫히게 될 문)
 
-	TSet<APlayerController*> OverlappedPlayers;
-	int32 RequiredPlayersToProceed = 3;
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Room")
+    ADoor* ExitDoor;
 
-	void SimulateRoomClear();
-	void SpawnNextRoom();
-	void RemoveCurrentRoom();
+    // 트리거 오버랩 처리
+    UFUNCTION()
+    void OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+        const FHitResult& SweepResult);
 
-	UFUNCTION()
-	void OnTriggerEnter(AActor* OverlappedActor, AActor* OtherActor);
+private:
+    TSet<AActor*> EnteredPlayers;  // 중복 방지를 위한 집합
 
-	UFUNCTION()
-	void OnTriggerExit(AActor* OverlappedActor, AActor* OtherActor);
+public:
+    // 어떤 종류의 문을 생성할지 결정하는 클래스 변수
+    UPROPERTY(EditAnywhere, Category = "Room")
+    TSubclassOf<ADoor> DoorClass;
 };
