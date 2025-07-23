@@ -14,7 +14,6 @@ AShooterEnemyBase::AShooterEnemyBase()
 
 void AShooterEnemyBase::FireAt(AActor* Target)
 {
-	UE_LOG(LogTemp, Log, TEXT("FireAt at ShooterEnemy"));
 	if (ShootingComponent)
 	{
 		ShootingComponent->FireAt(Target);

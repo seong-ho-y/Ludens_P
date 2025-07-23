@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "WalkerAIComponent.h"
 #include "ShooterAIComponent.generated.h"
 
 

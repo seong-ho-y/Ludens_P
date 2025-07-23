@@ -19,7 +19,6 @@ void UShooterAIComponent::BeginPlay()
 
 void UShooterAIComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
-	UE_LOG(LogTemp, Warning, TEXT("Shooter AI"));
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
 	if (!OwnerEnemy || !WalkerComponent || !OwnerEnemy->HasAuthority())
@@ -32,7 +31,6 @@ void UShooterAIComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 	if (Distance <= FireRange)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("FireRange"));
 		WalkerComponent->StopMovement(); // 이동 중지
 		TryFire(Target);
 	}
