@@ -54,81 +54,69 @@ AEnemyBase* AEnemyPoolManager::AddToPool(TSubclassOf<AEnemyBase> EnemyClass, FVe
 	AEnemyBase* Enemy = GetWorld()->SpawnActor<AEnemyBase>(EnemyClass, Location, Rotation, Params);
 	if (!Enemy)
 	{
-		//UE_LOG(LogTemp, Error, TEXT("❌ SpawnActor failed for class: %s"), *EnemyClass->GetName());
 		return nullptr;
 	}
 
-	// ✅ 여기서만 풀에 추가
+	// 풀에 추가합니다.
 	EnemyPools.FindOrAdd(EnemyClass).Add(Enemy);
-	//UE_LOG(LogTemp, Log, TEXT("✅ Enemy spawned and added to pool: %s"), *Enemy->GetName());
 
-	// ✅ 복제 완료 후에 SetActive(false) 처리 (복제 타이밍 보장용)
-	FTimerHandle DelayHandle;
-	GetWorldTimerManager().SetTimer(DelayHandle, [Enemy]()
-	{
-		if (IsValid(Enemy))
-		{
-			Enemy->SetActive(false);
-			//UE_LOG(LogTemp, Warning, TEXT("🕒 SetActive(false) 완료: %s"), *Enemy->GetName());
-		}
-	}, 10.0f, false); // 기존처럼 3초 딜레이 고정
+	// 생성 직후 즉시 비활성화 상태로 만듭니다.
+	// 이 상태는 클라이언트에 복제되며, SpawnEnemy에서 필요할 때 활성화됩니다.
+	Enemy->SetActive(false);
 
 	return Enemy;
 }
 
 
-AEnemyBase* AEnemyPoolManager::GetPooledEnemy(TSubclassOf<AEnemyBase> EnemyClass)
+AEnemyBase* AEnemyPoolManager::GetPooledEnemy(TSubclassOf<AEnemyBase> EnemyClass, EEnemyColor DesiredColor)
 {
 	if (!EnemyPools.Contains(EnemyClass))
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("📦 Pool not found for class: %s → creating new pool"), *EnemyClass->GetName());
 		EnemyPools.Add(EnemyClass, TArray<AEnemyBase*>());
-	}
-	else
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("📦 Found pool for class: %s → %d enemies in pool"), 
-		//	*EnemyClass->GetName(), EnemyPools[EnemyClass].Num());
 	}
 
 	for (AEnemyBase* Enemy : EnemyPools[EnemyClass])
 	{
 		if (!IsValid(Enemy))
 		{
-			//UE_LOG(LogTemp, Error, TEXT("❌ Invalid enemy pointer in pool for class: %s"), *EnemyClass->GetName());
 			continue;
 		}
 
-		if (!Enemy->IsActive())
+		// 비활성화 상태이고, 원하는 색상과 일치하는 적을 찾습니다.
+		if (!Enemy->IsActive() && Enemy->GetEnemyColor() == DesiredColor)
 		{
-			//UE_LOG(LogTemp, Warning, TEXT("🔄 Reusing inactive enemy: %s"), *Enemy->GetName());
 			Enemy->MulticastSetActive(true);
 			return Enemy;
 		}
-		else
+	}
+
+	// 만약 원하는 색상의 비활성 적이 없다면, 그냥 아무 비활성 적이나 찾아서 색상을 변경해 사용합니다.
+	for (AEnemyBase* Enemy : EnemyPools[EnemyClass])
+	{
+		if (IsValid(Enemy) && !Enemy->IsActive())
 		{
-			//UE_LOG(LogTemp, Warning, TEXT("🟡 Skipping active enemy: %s"), *Enemy->GetName());
+			Enemy->SetupEnemyForColor(DesiredColor); // 여기서 색상을 변경합니다.
+			Enemy->MulticastSetActive(true);
+			return Enemy;
 		}
 	}
 
-	//UE_LOG(LogTemp, Warning, TEXT("🚫 No reusable enemies available in pool for class: %s"), *EnemyClass->GetName());
-	return nullptr;
+	return nullptr; // 재사용할 적이 전혀 없음
 }
 
 
 AEnemyBase* AEnemyPoolManager::SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, FVector Location, FRotator Rotation, EEnemyColor EnemyColor)
 {
-	AEnemyBase* Enemy = GetPooledEnemy(EnemyClass);
+	AEnemyBase* Enemy = GetPooledEnemy(EnemyClass, EnemyColor);
 
 	if (!Enemy)
 	{
-		//UE_LOG(LogTemp, Warning, TEXT("📌 No pooled enemy available. Spawning new one."));
+		UE_LOG(LogTemp, Warning, TEXT("📌 No pooled enemy available. Spawning new one."));
 		Enemy = AddToPool(EnemyClass, Location, Rotation);
 
-		// AddToPool()에서 자동으로 SetActive(false) 되었으므로,
-		// SetActive(true)로 바꾸려면 여기서 명시적으로
 		if (Enemy)
 		{
-			Enemy->MulticastSetActive(true);
+			Enemy->SetupEnemyForColor(EnemyColor);
 		}
 	}
 
@@ -136,7 +124,7 @@ AEnemyBase* AEnemyPoolManager::SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, FV
 	{
 		Enemy->SetActorLocation(Location);
 		Enemy->SetActorRotation(Rotation);
-		Enemy->SetupEnemyForColor(EnemyColor);
+		Enemy->MulticastSetActive(true);
 	}
 
 	return Enemy;

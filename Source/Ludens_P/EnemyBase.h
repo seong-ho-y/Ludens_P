@@ -40,7 +40,7 @@ public:
 	UTP_WeaponComponent* ShooterWeaponComponent;
 
 	UFUNCTION(BlueprintCallable, Category = "Enemy Properties")
-	void SetupEnemyForColor(EEnemyColor NewColor);
+	EEnemyColor GetEnemyColor() const { return EnemyColor; }
 
 	// 특정 색상의 쉴드에 데미지를 적용하는 함수
 	UFUNCTION(BlueprintCallable, Category = "Enemy Properties|Shields")
@@ -49,8 +49,10 @@ public:
 	// 쉴드를 초기화하는 함수
 	UFUNCTION(BlueprintCallable, Category = "Enemy Properties|Shields")
 	void InitializeShields();
+	void SetupEnemyForColor(EEnemyColor NewColor);
 	
 protected:
+
 	// Called on clients when EnemyColor is replicated.
 	UFUNCTION()
 	void OnRep_EnemyColor();

@@ -43,5 +43,5 @@ protected:
 private:
 	TMap<TSubclassOf<AEnemyBase>, TArray<AEnemyBase*>> EnemyPools;
 
-	AEnemyBase* GetPooledEnemy(TSubclassOf<AEnemyBase> EnemyClass);
+	AEnemyBase* GetPooledEnemy(TSubclassOf<AEnemyBase> EnemyClass, EEnemyColor DesiredColor);
 };

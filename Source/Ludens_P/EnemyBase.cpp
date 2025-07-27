@@ -101,10 +101,15 @@ void AEnemyBase::PostNetInit()
 {
 	Super::PostNetInit();
 
-	if (!HasAuthority())
+	// 클라이언트에서만 실행 (AutonomousProxy: 플레이어가 직접 조종, SimulatedProxy: 다른 플레이어에 의해 시뮬레이션)
+	if (GetLocalRole() == ROLE_AutonomousProxy || GetLocalRole() == ROLE_SimulatedProxy)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("CLIENT: PostNetInit Called! Current Color is %d"), static_cast<int32>(EnemyColor));
+		
+		// 네트워크 초기화가 완료되었으므로, 현재 EnemyColor 값으로 머티리얼을 확실하게 업데이트합니다.
+		// 자원이 로드될 시간을 벌기 위해 약간의 딜레이를 줍니다.
 		FTimerHandle TimerHandle;
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AEnemyBase::OnPostReplicationInit, 0.1f, false);
+		GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AEnemyBase::UpdateMaterial, 0.1f, false);
 	}
 }
 
@@ -125,19 +130,26 @@ void AEnemyBase::SetupEnemyForColor(EEnemyColor NewColor)
 {
 	if (HasAuthority())
 	{
-		EnemyColor = NewColor;
-		
-		InitializeShields();
-		
-		// 서버에서도 즉시 머티리얼이 보이도록 직접 호출
-		UpdateMaterial();
+		// 이전 색상과 새 색상을 로그로 출력하여 실제로 값이 변경되는지 확인합니다.
+		UE_LOG(LogTemp, Warning, TEXT("SERVER: SetupEnemyForColor Called. OldColor: %d, NewColor: %d"), static_cast<int32>(EnemyColor), static_cast<int32>(NewColor));
+
+		if (EnemyColor != NewColor)
+		{
+			EnemyColor = NewColor;
+			InitializeShields();
+			UpdateMaterial(); // 서버에서도 즉시 머티리얼이 보이도록 직접 호출
+		}
 	}
 }
 
 void AEnemyBase::OnRep_EnemyColor()
 {
-	// EnemyColor 변수가 클라이언트에 복제되었을 때 호출됩니다.
-	UpdateMaterial();
+	// OnRep 함수가 클라이언트에서 호출되었는지, 어떤 색상 값으로 호출되었는지 확인합니다.
+	UE_LOG(LogTemp, Warning, TEXT("CLIENT: OnRep_EnemyColor Called! NewColor is %d"), static_cast<int32>(EnemyColor));
+	
+	// 자원이 로드될 시간을 벌기 위해 약간의 딜레이 후 머티리얼을 업데이트합니다.
+	FTimerHandle TimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(TimerHandle, this, &AEnemyBase::UpdateMaterial, 0.1f, false);
 }
 
 void AEnemyBase::UpdateMaterial()
