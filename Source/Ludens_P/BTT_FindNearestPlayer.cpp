@@ -38,8 +38,13 @@ EBTNodeResult::Type UBTT_FindNearestPlayer::ExecuteTask(UBehaviorTreeComponent& 
     // 찾은 플레이어의 위치를 블랙보드에 저장
     if (NearestPawn)
     {
-        OwnerComp.GetBlackboardComponent()->SetValueAsVector(PlayerLocationKey.SelectedKeyName, NearestPawn->GetActorLocation());
-        return EBTNodeResult::Succeeded;
+        UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
+        if (BlackboardComp)
+        {
+            // 찾은 Pawn 객체를 블랙보드에 저장합니다.
+            BlackboardComp->SetValueAsObject(TargetActorKey.SelectedKeyName, NearestPawn); //이 메서드가 blackoard에 연결된 키에 저장해줌
+            return EBTNodeResult::Succeeded;
+        }
     }
 
     return EBTNodeResult::Failed;

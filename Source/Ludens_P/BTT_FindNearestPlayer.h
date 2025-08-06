@@ -20,6 +20,6 @@ class LUDENS_P_API UBTT_FindNearestPlayer : public UBTTaskNode
 
 	//블랙보드 킬르 에디터에서 서정할 수 있도록 변수 선언하기
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Blakcboard")
-	FBlackboardKeySelector PlayerLocationKey;
+	FBlackboardKeySelector TargetActorKey;
 	
 };
