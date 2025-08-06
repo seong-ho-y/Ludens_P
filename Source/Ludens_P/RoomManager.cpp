@@ -98,6 +98,18 @@ void ARoomManager::NotifyRoomCleared(int32 RoomIndex)
             }
         }
 
+<<<<<<< Updated upstream
         CurrentRoomIndex++;
+=======
+        // 이전 방 비활성화
+        SpawnedRooms[CurrentRoomIndex]->EntryTrigger->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+        CurrentRoomIndex++;
+
+        if (SpawnedRooms.IsValidIndex(CurrentRoomIndex))
+        {
+            SpawnedRooms[CurrentRoomIndex]->EntryTrigger->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+        }
+>>>>>>> Stashed changes
     }
 }

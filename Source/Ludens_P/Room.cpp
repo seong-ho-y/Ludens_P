@@ -8,6 +8,10 @@
 #include "Engine/World.h"
 #include "TimerManager.h"
 #include "GameFramework/Character.h" // 플레이어 판별용
+<<<<<<< Updated upstream
+=======
+#include "RewardSystemComponent.h"
+>>>>>>> Stashed changes
 
 // Sets default values
 ARoom::ARoom()
@@ -34,7 +38,11 @@ void ARoom::BeginPlay()
         EntryTrigger->OnComponentBeginOverlap.AddDynamic(this, &ARoom::OnEntryTriggerBegin);
     }
 
+<<<<<<< Updated upstream
     if (DoorClass)
+=======
+    if (HasAuthority() && DoorClass)
+>>>>>>> Stashed changes
     {
         // 문 위치 설정 (원하는 위치로 조정)
         FVector EntryLocation = GetActorLocation() + FVector(-1000.f, 0.f, 0.f);
@@ -42,7 +50,11 @@ void ARoom::BeginPlay()
         FRotator DoorRotation = FRotator::ZeroRotator;
 
         FActorSpawnParameters SpawnParams;
+<<<<<<< Updated upstream
         SpawnParams.Owner = this;
+=======
+        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+>>>>>>> Stashed changes
 
         // EntryDoor 생성
         EntryDoor = GetWorld()->SpawnActor<ADoor>(DoorClass, EntryLocation, DoorRotation, SpawnParams);
@@ -97,6 +109,26 @@ void ARoom::AutoClear()
     {
         Manager->NotifyRoomCleared(RoomIndex);
     }
+<<<<<<< Updated upstream
+=======
+
+    // 모든 플레이어에게 보상 UI 띄우기
+    for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+    {
+        if (APlayerController* PC = Cast<APlayerController>(*It))
+        {
+            ACharacter* PlayerChar = Cast<ACharacter>(PC->GetPawn());
+            if (PlayerChar)
+            {
+                URewardSystemComponent* RewardComp = PlayerChar->FindComponentByClass<URewardSystemComponent>();
+                if (RewardComp)
+                {
+                    RewardComp->ShowRewardOptions();
+                }
+            }
+        }
+    }
+>>>>>>> Stashed changes
 }
 
 void ARoom::OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,

@@ -17,8 +17,12 @@
 #include "PlayerAttackComponent.h"
 #include "PlayerStateComponent.h"
 #include "Engine/LocalPlayer.h"
+<<<<<<< Updated upstream
 #include "Util/ColorConstants.h"
 #include "Net/UnrealNetwork.h"
+=======
+#include "RewardSystemComponent.h"
+>>>>>>> Stashed changes
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -56,6 +60,7 @@ ALudens_PCharacter::ALudens_PCharacter()
 	GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -96.f)); // 캡슐 기준 정렬
 	GetMesh()->SetRelativeRotation(FRotator(0.f, 0.f, 0.f)); // 필요 시 방향 조절
 
+<<<<<<< Updated upstream
 	JumpCount = 0; // Default 점프 수 설정
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->GravityScale = 2.0f;
@@ -72,6 +77,9 @@ ALudens_PCharacter::ALudens_PCharacter()
 
 	// 초기 탄알 수 설정
 	CurrentAmmo = MaxAmmo;
+=======
+	RewardSystem = CreateDefaultSubobject<URewardSystemComponent>(TEXT("RewardSystem"));
+>>>>>>> Stashed changes
 }
 
 void ALudens_PCharacter::BeginPlay()

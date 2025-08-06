@@ -14,6 +14,7 @@
 class UInputComponent;
 class USkeletalMeshComponent;
 class UCameraComponent;
+class URewardSystemComponent;
 class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
@@ -32,6 +33,9 @@ class ALudens_PCharacter : public ACharacter
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
+	URewardSystemComponent* RewardSystem;
 
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
@@ -108,6 +112,7 @@ public:
 	/** Returns FirstPersonCameraComponent subobject **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
 
+<<<<<<< Updated upstream
 	private:
 	UPROPERTY(Replicated)
 	int8 JumpCount = 0; // 점프 횟수
@@ -202,3 +207,6 @@ public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 };
 
+=======
+};
+>>>>>>> Stashed changes

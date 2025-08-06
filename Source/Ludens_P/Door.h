@@ -19,6 +19,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
+<<<<<<< Updated upstream
 public:
 	UFUNCTION(BlueprintCallable)
 	void Open();
@@ -39,4 +40,28 @@ private:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastClose();
+=======
+    //문 열림 상태를 복제 + 변경 시 함수 호출
+    UPROPERTY(ReplicatedUsing = OnRep_DoorStateChanged)
+    bool bIsOpen;
+
+    UFUNCTION()
+    void OnRep_DoorStateChanged();  // 클라이언트에서만 호출됨
+
+    // 문 시각 + 충돌 처리
+    void ApplyDoorState();
+
+public:
+    UPROPERTY(VisibleAnywhere)
+    UStaticMeshComponent* DoorMesh;
+
+    UFUNCTION(BlueprintCallable)
+    void Open();  // 문 열기
+
+    UFUNCTION(BlueprintCallable)
+    void Close(); // 문 닫기
+
+    // 복제 설정 함수
+    virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+>>>>>>> Stashed changes
 };
