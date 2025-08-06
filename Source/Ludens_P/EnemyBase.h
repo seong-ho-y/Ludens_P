@@ -39,15 +39,12 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Weapon")
 	UTP_WeaponComponent* ShooterWeaponComponent;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-	UFUNCTION(BlueprintCallable, Category = "Enemy Color")
-	void SetEnemyMeshMaterial(EEnemyColor NewColor);
+
+	//UFUNCTION(BlueprintCallable, Category = "Enemy Color")
+	//void SetEnemyMeshMaterial(EEnemyColor NewColor);
 	//헤더파일의 컴파일 오류?
 	//재빌드 해봤는데도 안됨. 뭐가 문제일까.
-=======
-=======
->>>>>>> cd2cb25531925455e0396575a40661cc9280f11e
+
 	UFUNCTION(BlueprintCallable, Category = "Enemy Properties")
 	void SetupEnemyForColor(EEnemyColor NewColor);
 
@@ -58,10 +55,7 @@ public:
 	// 쉴드를 초기화하는 함수
 	UFUNCTION(BlueprintCallable, Category = "Enemy Properties|Shields")
 	void InitializeShields();
-<<<<<<< HEAD
->>>>>>> cd2cb25531925455e0396575a40661cc9280f11e
-=======
->>>>>>> cd2cb25531925455e0396575a40661cc9280f11e
+
 	
 protected:
 	// Called on clients when EnemyColor is replicated.
