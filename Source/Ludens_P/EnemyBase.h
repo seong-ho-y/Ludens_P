@@ -56,7 +56,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Enemy Properties|Shields")
 	void InitializeShields();
 
-	
 protected:
 	// Called on clients when EnemyColor is replicated.
 	UFUNCTION()
