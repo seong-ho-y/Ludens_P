@@ -4,16 +4,26 @@
 #include "AIController.h"
 #include "ShooterCombatComponent.h"
 
-EBTNodeResult::Type UBTT_Fire::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8*)
+UBTT_Fire::UBTT_Fire()
 {
-	auto* AI = OwnerComp.GetAIOwner();
-	auto* Pawn = AI ? AI->GetPawn() : nullptr;
-	auto* Combat = Pawn ? Pawn->FindComponentByClass<UShooterCombatComponent>() : nullptr;
-	auto* BB = OwnerComp.GetBlackboardComponent();
-	auto* Target = BB ? Cast<AActor>(BB->GetValueAsObject(TargetActorKey.SelectedKeyName)) : nullptr;
+	NodeName = TEXT("Fire At Target");
+}
 
-	if (!Combat || !Target) return EBTNodeResult::Failed;
+EBTNodeResult::Type UBTT_Fire::ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory)
+{
+	AAIController* AICon = OwnerComp.GetAIOwner();
+	if (!AICon) return EBTNodeResult::Failed;
 
-	return Combat->TryFire(Target) ? EBTNodeResult::Succeeded
-								   : EBTNodeResult::Failed;
+	APawn* AIPawn = AICon->GetPawn();
+	if (!AIPawn) return EBTNodeResult::Failed;
+
+	UShooterCombatComponent* CombatComp = AIPawn->FindComponentByClass<UShooterCombatComponent>();
+	if (!CombatComp) return EBTNodeResult::Failed;
+
+	UBlackboardComponent* BBComp = OwnerComp.GetBlackboardComponent();
+	AActor* TargetActor = Cast<AActor>(BBComp->GetValueAsObject(TargetActorKey.SelectedKeyName));
+	if (!TargetActor) return EBTNodeResult::Failed;
+
+	bool bFired = CombatComp->TryFire(TargetActor);
+	return bFired ? EBTNodeResult::Succeeded : EBTNodeResult::Failed;
 }

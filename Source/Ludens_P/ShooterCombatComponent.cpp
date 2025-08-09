@@ -23,6 +23,12 @@ bool UShooterCombatComponent::CanFire() const
 
 bool UShooterCombatComponent::TryFire(AActor* Target)
 {
+	UE_LOG(LogTemp, Warning, TEXT("TryFire called. Authority: %d, CanFire: %d, Target: %s"),
+	   GetOwner() ? GetOwner()->HasAuthority() : -1,
+	   CanFire(),
+	   Target ? *Target->GetName() : TEXT("None"));
+
+	
 	if (!CanFire() || !IsValid(Target)) return false;
 
 	bFiring = true;

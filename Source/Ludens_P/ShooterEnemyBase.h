@@ -19,7 +19,7 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	UShootingComponent* ShootingComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
-	UShooterCombatComponent* ShooterAIComponent;
+	UShooterCombatComponent* ShooterCombatComponent;
 
 	UFUNCTION(Server, Reliable)
 	void Server_FireAt(AActor* Target);

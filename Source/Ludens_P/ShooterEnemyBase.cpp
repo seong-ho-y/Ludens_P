@@ -8,13 +8,15 @@
 
 AShooterEnemyBase::AShooterEnemyBase()
 {
-	ShooterAIComponent = CreateDefaultSubobject<UShooterCombatComponent>(TEXT("ShooterAIComponent"));
+	ShooterCombatComponent = CreateDefaultSubobject<UShooterCombatComponent>(TEXT("ShooterCombatComponent"));
 	ShootingComponent = CreateDefaultSubobject<UShootingComponent>(TEXT("ShootingComponent"));
 }
 
 
 void AShooterEnemyBase::FireAt(AActor* Target)
 {
+	UE_LOG(LogTemp, Warning, TEXT("FireAt called on %s (Authority: %d)"), *GetName(), HasAuthority());
+
 	if (HasAuthority())
 	{
 		Server_FireAt(Target); // 서버면 직접 실행
