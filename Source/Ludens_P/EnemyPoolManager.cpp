@@ -28,10 +28,10 @@ void AEnemyPoolManager::BeginPlay()
 	{
 		if (HasAuthority())
 		{
-			//AddToPool(WalkerClass, FVector(300, 300, 300), FRotator::ZeroRotator);
+			AddToPool(WalkerClass, FVector(300, 300, 300), FRotator::ZeroRotator);
 			//AddToPool(TankClass, FVector(300, 300, 300), FRotator::ZeroRotator);
 			//AddToPool(StealthClass, FVector(300, 300, 300), FRotator::ZeroRotator);
-			AddToPool(ShooterClass, FVector(300, 300, 300), FRotator::ZeroRotator);
+			//AddToPool(ShooterClass, FVector(300, 300, 300), FRotator::ZeroRotator);
 		}
 	}
 	if (!HasAuthority())
@@ -71,7 +71,7 @@ AEnemyBase* AEnemyPoolManager::AddToPool(TSubclassOf<AEnemyBase> EnemyClass, FVe
 			Enemy->SetActive(false);
 			//UE_LOG(LogTemp, Warning, TEXT("🕒 SetActive(false) 완료: %s"), *Enemy->GetName());
 		}
-	}, 10.0f, false); // 기존처럼 3초 딜레이 고정
+	}, 10.0f, false); // 딜레이 시간을 충분히 줘서 클라이언트에 복제가 잘 되도록
 
 	return Enemy;
 }
