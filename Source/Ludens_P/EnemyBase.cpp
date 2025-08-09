@@ -1,7 +1,7 @@
 #include "EnemyBase.h"
 
 #include "EnemyAIController.h"
-#include "ShooterAIComponent.h"
+#include "ShooterCombatComponent.h"
 #include "StealthComponent.h"
 #include "TP_WeaponComponent.h"
 #include "Net/UnrealNetwork.h"
@@ -81,7 +81,7 @@ void AEnemyBase::SetActive(bool bNewActive)
 	GetComponents(UActorComponent::StaticClass(), AIComponents);
 	for (UActorComponent* Component : AIComponents)
 	{
-		if (Component->IsA<UWalkerAIComponent>() || Component->IsA<UShooterAIComponent>())
+		if (Component->IsA<UWalkerAIComponent>() || Component->IsA<UShooterCombatComponent>())
 		{
 			Component->SetComponentTickEnabled(bNewActive);
 		}

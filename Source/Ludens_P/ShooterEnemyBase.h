@@ -5,7 +5,7 @@
 #include "CoreMinimal.h"
 #include "EnemyBase.h"
 #include "ShootingComponent.h"
-#include "ShooterAIComponent.h"
+#include "ShooterCombatComponent.h"
 #include "ShooterEnemyBase.generated.h"
 
 UCLASS()
@@ -19,7 +19,13 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
 	UShootingComponent* ShootingComponent;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Components")
-	UShooterAIComponent* ShooterAIComponent;
+	UShooterCombatComponent* ShooterAIComponent;
 
+	UFUNCTION(Server, Reliable)
+	void Server_FireAt(AActor* Target);
+
+	UFUNCTION(NetMulticast, UnReliable)
+	void Multicast_OnFiredFX();
+	
 	void FireAt(AActor* Target);
 };

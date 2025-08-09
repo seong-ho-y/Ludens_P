@@ -4,18 +4,40 @@
 
 #include "ShooterEnemyBase.h"
 
-#include "ShooterAIComponent.h"
+#include "ShooterCombatComponent.h"
 
 AShooterEnemyBase::AShooterEnemyBase()
 {
-	ShooterAIComponent = CreateDefaultSubobject<UShooterAIComponent>(TEXT("ShooterAIComponent"));
+	ShooterAIComponent = CreateDefaultSubobject<UShooterCombatComponent>(TEXT("ShooterAIComponent"));
 	ShootingComponent = CreateDefaultSubobject<UShootingComponent>(TEXT("ShootingComponent"));
 }
 
+
 void AShooterEnemyBase::FireAt(AActor* Target)
 {
-	if (ShootingComponent)
+	if (HasAuthority())
 	{
-		ShootingComponent->FireAt(Target);
+		Server_FireAt(Target); // 서버면 직접 실행
 	}
+	else
+	{
+		// 안전하게: 클라에서 호출됐다면 서버로 요청
+		Server_FireAt(Target);
+	}
+}
+
+void AShooterEnemyBase::Server_FireAt_Implementation(AActor* Target)
+{
+	if (!IsValid(Target)) return;
+
+	// 여기서 실제 프로젝타일 스폰/라인트레이스/데미지 적용
+	// SpawnActor<...>(...), SetVelocity(...), ApplyDamage(...) 등
+	// ...
+
+	Multicast_OnFiredFX();
+}
+
+void AShooterEnemyBase::Multicast_OnFiredFX_Implementation()
+{
+	// 총구 섬광, 사운드, 카메라쉐이크 등 클라 연출
 }
