@@ -24,7 +24,7 @@ void AEnemyPoolManager::BeginPlay()
 		(int32)GetLocalRole());
 		*/
 	
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < 1; ++i)
 	{
 		if (HasAuthority())
 		{

@@ -46,7 +46,9 @@ private:
     FTimerHandle BurstHandle;
     FTimerHandle CooldownHandle;
 
-    void DoSingleShot();
+    bool DoSingleShot();
     void EndBurst();
     void ResetCooldown();
+    void TickComponent(float dt, ELevelTick, FActorComponentTickFunction*);
+    void DoSingleShotTimerTick();
 };

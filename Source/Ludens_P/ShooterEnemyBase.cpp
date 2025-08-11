@@ -15,7 +15,8 @@ AShooterEnemyBase::AShooterEnemyBase()
 
 void AShooterEnemyBase::FireAt(AActor* Target)
 {
-	UE_LOG(LogTemp, Warning, TEXT("FireAt called on %s (Authority: %d)"), *GetName(), HasAuthority());
+	UE_LOG(LogTemp, Warning, TEXT("FireAt: %s Authority=%d Target=%s"),
+	   *GetName(), HasAuthority(), Target ? *Target->GetName() : TEXT("None"));
 
 	if (HasAuthority())
 	{
