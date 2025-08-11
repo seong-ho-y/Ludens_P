@@ -30,18 +30,20 @@ void UCreatureCombatComponent::TakeDamage(float Amount)
 
 void UCreatureCombatComponent::Die()
 {
+	if (bIsDead) return;
 	bIsDead = true;
 	UE_LOG(LogTemp, Warning, TEXT("Enemy Died"));
-	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
-	if (OwnerChar)
-	{
-		OwnerChar->DetachFromControllerPendingDestroy();
-		OwnerChar->SetLifeSpan(5.f);
-		OwnerChar->GetMesh()->SetSimulatePhysics(true);
-	}
+	OnDied.Broadcast();
 }
 
 float UCreatureCombatComponent::GetHealthPercent() const
 {
 	return (MaxHP > 0.f) ? CurrentHP / MaxHP : 0.f;
+}
+
+void UCreatureCombatComponent::InitStats(float InMaxHP)
+{
+	MaxHP    = FMath::Max(1.f, InMaxHP);
+	CurrentHP = MaxHP;
+	bIsDead   = false;
 }

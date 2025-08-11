@@ -1,7 +1,6 @@
 // EnemyPoolManager.cpp
 #include "EnemyPoolManager.h"
 
-#include "WalkerEnemy.h"
 #include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
@@ -24,14 +23,14 @@ void AEnemyPoolManager::BeginPlay()
 		(int32)GetLocalRole());
 		*/
 	
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < 1; ++i)
 	{
 		if (HasAuthority())
 		{
-			//AddToPool(WalkerClass, FVector(300, 300, 300), FRotator::ZeroRotator);
+			AddToPool(WalkerClass, FVector(300, 300, 300), FRotator::ZeroRotator);
 			//AddToPool(TankClass, FVector(300, 300, 300), FRotator::ZeroRotator);
 			//AddToPool(StealthClass, FVector(300, 300, 300), FRotator::ZeroRotator);
-			AddToPool(ShooterClass, FVector(300, 300, 300), FRotator::ZeroRotator);
+			//AddToPool(ShooterClass, FVector(300, 300, 300), FRotator::ZeroRotator);
 		}
 	}
 	if (!HasAuthority())
@@ -68,10 +67,10 @@ AEnemyBase* AEnemyPoolManager::AddToPool(TSubclassOf<AEnemyBase> EnemyClass, FVe
 	{
 		if (IsValid(Enemy))
 		{
-			Enemy->SetActive(false);
+			//Enemy->SetActive(false);
 			//UE_LOG(LogTemp, Warning, TEXT("🕒 SetActive(false) 완료: %s"), *Enemy->GetName());
 		}
-	}, 10.0f, false); // 기존처럼 3초 딜레이 고정
+	}, 10.0f, false); // 딜레이 시간을 충분히 줘서 클라이언트에 복제가 잘 되도록
 
 	return Enemy;
 }
@@ -98,13 +97,13 @@ AEnemyBase* AEnemyPoolManager::GetPooledEnemy(TSubclassOf<AEnemyBase> EnemyClass
 			continue;
 		}
 
-		if (!Enemy->IsActive())
+		//if (!Enemy->IsActive())
 		{
 			//UE_LOG(LogTemp, Warning, TEXT("🔄 Reusing inactive enemy: %s"), *Enemy->GetName());
-			Enemy->MulticastSetActive(true);
-			return Enemy;
+			//Enemy->MulticastSetActive(true);
+			//return Enemy;
 		}
-		else
+		//else
 		{
 			//UE_LOG(LogTemp, Warning, TEXT("🟡 Skipping active enemy: %s"), *Enemy->GetName());
 		}
@@ -128,7 +127,7 @@ AEnemyBase* AEnemyPoolManager::SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, FV
 		// SetActive(true)로 바꾸려면 여기서 명시적으로
 		if (Enemy)
 		{
-			Enemy->MulticastSetActive(true);
+			//Enemy->MulticastSetActive(true);
 		}
 	}
 
@@ -136,7 +135,7 @@ AEnemyBase* AEnemyPoolManager::SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, FV
 	{
 		Enemy->SetActorLocation(Location);
 		Enemy->SetActorRotation(Rotation);
-		Enemy->SetupEnemyForColor(EnemyColor);
+		//Enemy->SetupEnemyForColor(EnemyColor);
 	}
 
 	return Enemy;
@@ -147,7 +146,7 @@ void AEnemyPoolManager::ReturnEnemy(AEnemyBase* Enemy)
 {
 	if (Enemy)
 	{
-		Enemy->SetActive(false);
+		//Enemy->SetActive(false);
 	}
 }
 void AEnemyPoolManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

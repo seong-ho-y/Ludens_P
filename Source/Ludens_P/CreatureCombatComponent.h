@@ -10,6 +10,8 @@
 // TakeDamage - 피격 연산
 // Die - 사망처리
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDiedSignature);
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LUDENS_P_API UCreatureCombatComponent : public UActorComponent
 {
@@ -28,6 +30,11 @@ public:
 	bool IsDead() const { return bIsDead; } //죽었는지 확인 (IsDead의 캡슐화를 위해 사용하는 Getter함수임)
 
 	float GetHealthPercent() const;
+
+	UPROPERTY(BlueprintAssignable, Category="Combat")
+	FOnDiedSignature OnDied;
+	
+	void InitStats(float InMaxHP);
 
 
 protected:

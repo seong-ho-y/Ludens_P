@@ -12,6 +12,8 @@ class  LUDENS_P_API AEnemyAIController : public AAIController
 	void OnPossess(APawn* InPawn);
 
 protected:
+	virtual void BeginPlay() override;
+	
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")
 	class UBehaviorTree* BehaviorTreeAsset;
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "AI")

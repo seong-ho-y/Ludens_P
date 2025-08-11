@@ -82,9 +82,9 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 		for (TActorIterator<AEnemyBase> It(GetWorld()); It; ++It)
 		{
 			AEnemyBase* Enemy = *It;
-			if (Enemy && Enemy->Combat)
+			if (Enemy && Enemy->CCC)
 			{
-				Enemy->Combat->TakeDamage(10);
+				Enemy->CCC->TakeDamage(10);
 				break;
 			}
 		}
