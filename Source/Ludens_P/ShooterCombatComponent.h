@@ -4,51 +4,45 @@
 #include "Components/ActorComponent.h"
 #include "ShooterCombatComponent.generated.h"
 
-class AShooterEnemyBase; // 전방 선언
-
 UCLASS(ClassGroup=(Combat), meta=(BlueprintSpawnableComponent))
 class LUDENS_P_API UShooterCombatComponent : public UActorComponent
 {
     GENERATED_BODY()
 
 public:
-    UShooterCombatComponent();
 
-    // BT Task 등에서 호출
-    UFUNCTION(BlueprintCallable, Category="Combat")
-    bool CanFire() const;
+    //BT에서 호출하는 로직 딱 하나
+    UFUNCTION(BlueprintCallable) bool TryFire(AActor* Target);
 
-    UFUNCTION(BlueprintCallable, Category="Combat")
-    bool TryFire(AActor* Target); // 서버에서만 true
+    //파라미터
+    UPROPERTY(EditAnywhere) float FireCooldown = 0.3f;
+    UPROPERTY(EditAnywhere) int32 BurstCount = 1;
+    UPROPERTY(EditAnywhere) float BurstInterval = 0.06f;
 
-    // 연발(슈터형+/머신건) 파라미터
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat|Fire")
-    int32 BurstCount = 1;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat|Fire")
-    float BurstInterval = 0.06f;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Combat|Fire")
-    float FireCooldown = 0.4f;
+    //디버그 토글
+    UPROPERTY(EditAnywhere) bool bDebugLog = false;
 
 protected:
-    virtual void BeginPlay() override;
 
 private:
-    // Owner 캐시
-    UPROPERTY() AShooterEnemyBase* OwnerEnemy = nullptr;
+    enum class EFireState : uint8 {Idle, Burst, Cooldown};
+    EFireState State = EFireState::Idle;
 
-    // 상태
-    bool bFiring = false;
-    int32 ShotsLeftInBurst = 0;
     TWeakObjectPtr<AActor> CachedTarget;
+    int32 ShotsLeft = 0;
+    FTimerHandle BurstTimer;
+    FTimerHandle CooldownTimer;
 
-    FTimerHandle BurstHandle;
-    FTimerHandle CooldownHandle;
+    //의존성 : 적 전용 무기 컴포넌트(실제 스폰 담당)
+    //전방선언 후 c++에서 include
+    UPROPERTY() class UEnemyProjectileWeaponComponent* Weapon = nullptr;
 
-    bool DoSingleShot();
-    void EndBurst();
-    void ResetCooldown();
-    void TickComponent(float dt, ELevelTick, FActorComponentTickFunction*);
-    void DoSingleShotTimerTick();
+    bool CanFire() const;
+    bool DoSingleShot();          // 성공 시 true
+    void BeginBurst(AActor* Target);
+    void TickBurst();             // 타이머 콜백
+    void BeginCooldown();
+    void EndCooldown();
+    void Log(const TCHAR* Fmt, ...) const;  // bDebugLog일 때만 출력
 };
+
