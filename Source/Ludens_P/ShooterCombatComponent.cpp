@@ -2,9 +2,25 @@
 #include <cstdarg> // va_list
 #include "EnemyProjectileWeaponComponent.h"
 
+void UShooterCombatComponent::BeginPlay()
+{
+	Super::BeginPlay();
+
+	// 이 컴포넌트의 소유자(Owner)인 액터에서 UEnemyProjectileWeaponComponent를 찾습니다.
+	// GetComponentByClass는 해당 클래스의 첫 번째 컴포넌트를 바로 반환합니다.
+	Weapon = GetOwner()->GetComponentByClass<UEnemyProjectileWeaponComponent>();
+
+	// 만약 Weapon을 찾지 못했다면, 에러 로그를 남겨서 문제를 쉽게 파악하도록 합니다.
+	if (!Weapon)
+	{
+		UE_LOG(LogTemp, Error, TEXT("%s's ShooterCombatComponent could not find a UEnemyProjectileWeaponComponent on its owner!"), *GetOwner()->GetName());
+	}
+}
+
 bool UShooterCombatComponent::TryFire(AActor* Target)
 {
 	if (!CanFire() || !IsValid(Target)) return false;
+	
 	BeginBurst(Target); //쏠 수 있으면 BeginBurst 호출
 	return true;
 }

@@ -8,25 +8,13 @@ EBTNodeResult::Type UBTT_FindNearestPlayer::ExecuteTask(UBehaviorTreeComponent& 
 {
     // AI Controller 가져오기
     AAIController* AIController = OwnerComp.GetAIOwner();
-    if (!AIController)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("UBTT_FindNearestPlayer: AIController is null"));
-        return EBTNodeResult::Failed;
-    }
+    if (!AIController) return EBTNodeResult::Failed;
 
     APawn* MyPawn = AIController->GetPawn();
-    if (!MyPawn)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("UBTT_FindNearestPlayer: Controlled Pawn is null"));
-        return EBTNodeResult::Failed;
-    }
+    if (!MyPawn) return EBTNodeResult::Failed;
 
     // 멀티플레이에서는 서버에서만 로직 수행
-    if (!MyPawn->HasAuthority())
-    {
-        UE_LOG(LogTemp, Verbose, TEXT("UBTT_FindNearestPlayer: Skipped on client side"));
-        return EBTNodeResult::Succeeded; // 서버에서만 타겟 설정
-    }
+    if (!MyPawn->HasAuthority()) return EBTNodeResult::Succeeded; // 서버에서만 타겟 설정
 
     // 플레이어 Pawn 검색
     APawn* NearestPawn = nullptr;
@@ -55,7 +43,6 @@ EBTNodeResult::Type UBTT_FindNearestPlayer::ExecuteTask(UBehaviorTreeComponent& 
         if (BlackboardComp)
         {
             BlackboardComp->SetValueAsObject(TargetActorKey.SelectedKeyName, NearestPawn);
-            UE_LOG(LogTemp, Log, TEXT("UBTT_FindNearestPlayer: Found nearest player %s"), *NearestPawn->GetName());
             return EBTNodeResult::Succeeded;
         }
         else

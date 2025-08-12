@@ -10,7 +10,7 @@ class LUDENS_P_API UShooterCombatComponent : public UActorComponent
     GENERATED_BODY()
 
 public:
-
+    virtual void BeginPlay() override;
     //BT에서 호출하는 로직 딱 하나
     UFUNCTION(BlueprintCallable) bool TryFire(AActor* Target);
 
