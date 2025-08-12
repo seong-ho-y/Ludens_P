@@ -9,9 +9,6 @@
 
 void UEnemyProjectileWeaponComponent::Server_FireAt_Implementation(AActor* Target)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[EPWC] Server_FireAt %s -> %s"),
-	*GetNameSafe(GetOwner()), *GetNameSafe(Target));
-
 	if (!Target || !ProjectileClass) return; //nullptr 예외처리
 	AActor* Owner = GetOwner(); if (!Owner) return; //nullptr 예외처리
 

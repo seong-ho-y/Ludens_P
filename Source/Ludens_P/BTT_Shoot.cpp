@@ -22,7 +22,10 @@ EBTNodeResult::Type UBTT_Shoot::ExecuteTask(UBehaviorTreeComponent& OwnerComp, u
 
 	// 컴포넌트 찾기
 	auto* Shooter = Pawn->FindComponentByClass<UShooterCombatComponent>();
-	if (!Shooter) return EBTNodeResult::Failed;
+	if (!Shooter)
+	{
+		return EBTNodeResult::Failed;
+	}
 
 	// 타겟
 	UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent();
