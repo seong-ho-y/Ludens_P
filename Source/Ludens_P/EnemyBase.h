@@ -8,12 +8,17 @@
 class UEnemyDescriptor;
 
 UCLASS(Abstract)
-class AEnemyBase : public ACharacter
+class LUDENS_P_API AEnemyBase : public ACharacter
 {
 	GENERATED_BODY()
 public:
 	AEnemyBase();
 
+	void Activate(const FVector& Location, const FRotator& Rotation);
+	void Deactivate();
+
+	bool IsActive() const;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	UCreatureCombatComponent* CCC;
 
@@ -26,6 +31,24 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
+
+	// 활성화 상태를 저장하고 복제할 변수
+	UPROPERTY(ReplicatedUsing = OnRep_IsActive)
+	bool bIsActiveInPool;
+
+	// bIsActiveInPool 변수가 클라이언트에서 변경될 때 호출될 함수
+	UFUNCTION()
+	void OnRep_IsActive();
+
+	// 실제로 활성/비활성 처리를 하는 함수
+	void UpdateActiveState(bool bNewIsActive);
+	
 	UFUNCTION()
 	void HandleDied();
+	void EndPlay(EEndPlayReason::Type EndPlayReason);
+
+public:
+	// 액터가 파괴될 때 호출되는 가상 함수를 오버라이드합니다.
+	virtual void Destroyed() override;
 };

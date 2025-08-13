@@ -32,4 +32,8 @@ public:
 	void SpawnEnemyFromPool();
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<AEnemyBase> WalkerEnemyBPClass;
+
+	// "적 스폰을 요청"하는 서버 RPC 함수를 선언합니다.
+	UFUNCTION(Server, Reliable)
+	void Server_RequestSpawnEnemy();
 };

@@ -6,6 +6,7 @@
 #include "EnemyPoolManager.h"
 #include "EngineUtils.h"
 #include "Engine/LocalPlayer.h"
+#include "Kismet/GameplayStatics.h"
 
 void ALudens_PPlayerController::BeginPlay()
 {
@@ -22,7 +23,7 @@ void ALudens_PPlayerController::BeginPlay()
 {
 	Super::SetupInputComponent();
 	
-	InputComponent->BindAction("SpawnEnemy", IE_Pressed, this, &ALudens_PPlayerController::SpawnEnemyFromPool);
+	InputComponent->BindAction("SpawnEnemy", IE_Pressed, this, &ALudens_PPlayerController::Server_RequestSpawnEnemy);
 }
 
 void ALudens_PPlayerController::SpawnEnemyFromPool()
@@ -32,17 +33,34 @@ void ALudens_PPlayerController::SpawnEnemyFromPool()
 		AEnemyPoolManager* Pool = *It;
 		if (Pool)
 		{
-			//UE_LOG(LogTemp, Log, TEXT("📦 SpawnEnemyFromPool 호출"));
-
 			// 위치와 회전 지정
 			FVector SpawnLoc = FVector(300.f, 300.f, 300.f);
 			FRotator SpawnRot = FRotator::ZeroRotator;
 
 			// 스폰 호출
-			//Pool->SpawnEnemy(Pool->WalkerClass, SpawnLoc, SpawnRot);
-			//Pool->SpawnEnemy(Pool->TankClass, SpawnLoc, SpawnRot);
-			//Pool->SpawnEnemy(Pool->StealthClass, SpawnLoc, SpawnRot);
-			Pool->SpawnEnemy(Pool->WalkerClass, SpawnLoc, SpawnRot, EEnemyColor::Blue);
+			Pool->SpawnEnemy(WalkerEnemyBPClass, SpawnLoc, SpawnRot);
 		}
+	}
+}
+
+
+
+// 이 함수는 클라이언트의 요청을 받아 "서버에서" 실행될 실제 로직입니다.
+void ALudens_PPlayerController::Server_RequestSpawnEnemy_Implementation()
+{
+	// 이제 이 코드는 100% 서버에서 실행됩니다.
+    UE_LOG(LogTemp,Log,TEXT("Server_Request 호출"));
+	// 1. 서버 월드에 있는 PoolManager를 찾습니다.
+	AEnemyPoolManager* PoolManager = Cast<AEnemyPoolManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AEnemyPoolManager::StaticClass()));
+	if (PoolManager)
+	{
+		// 2. 서버의 가득 찬 창고에서 스폰을 호출합니다.
+		FVector SpawnLoc = FVector(300.f, 300.f, 300.f);
+		FRotator SpawnRot = FRotator::ZeroRotator;
+        
+		// 이 변수는 컨트롤러가 알고 있어야 합니다. EditAnywhere 등으로 설정하세요.
+		TSubclassOf<AEnemyBase> EnemyClassToSpawn = WalkerEnemyBPClass; 
+        
+		PoolManager->SpawnEnemy(EnemyClassToSpawn, SpawnLoc, SpawnRot);
 	}
 }
