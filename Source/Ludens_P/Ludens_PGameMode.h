@@ -21,6 +21,7 @@ class ALudens_PGameMode : public AGameModeBase
 public:
 
 	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override; //ChoosePlayerStart
+	void SpawnOneEnemy();
 
 
 	ALudens_PGameMode();

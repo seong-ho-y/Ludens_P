@@ -1,170 +1,98 @@
-// EnemyPoolManager.cpp
 #include "EnemyPoolManager.h"
-
-#include "Kismet/GameplayStatics.h"
-#include "Net/UnrealNetwork.h"
 
 AEnemyPoolManager::AEnemyPoolManager()
 {
-	PrimaryActorTick.bCanEverTick = false;
-	bReplicates = true;
-	bAlwaysRelevant = true;
-	SetReplicateMovement(false); // PoolManager는 고정 위치니까
-
+    PrimaryActorTick.bCanEverTick = false;
+    bReplicates = true; // 매니저 자체는 월드에 존재해야 하므로 복제
 }
 
+// 게임 시작 시 풀을 미리 생성 (서버에서만 실행)
 void AEnemyPoolManager::BeginPlay()
 {
-	Super::BeginPlay();
-	/*UE_LOG(LogTemp, Warning, TEXT("Client WalkerClass is %s"),
-	   WalkerClass ? *WalkerClass->GetName() : TEXT("NULL"));
-	UE_LOG(LogTemp, Warning, TEXT("👁️ PoolManager BeginPlay on: %s | Role: %d"),
-		HasAuthority() ? TEXT("Server") : TEXT("Client"),
-		(int32)GetLocalRole());
-		*/
-	
-	for (int i = 0; i < 1; ++i)
-	{
-		if (HasAuthority())
-		{
-			AddToPool(WalkerClass, FVector(300, 300, 300), FRotator::ZeroRotator);
-			//AddToPool(TankClass, FVector(300, 300, 300), FRotator::ZeroRotator);
-			//AddToPool(StealthClass, FVector(300, 300, 300), FRotator::ZeroRotator);
-			//AddToPool(ShooterClass, FVector(300, 300, 300), FRotator::ZeroRotator);
-		}
-	}
-	if (!HasAuthority())
-	{
-		FTimerHandle DelayHandle;
-		GetWorldTimerManager().SetTimer(DelayHandle, this, &AEnemyPoolManager::LogReplicatedEnemies, 1.0f, false);
-	}
-	TArray<AActor*> FoundEnemies;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEnemyBase::StaticClass(), FoundEnemies);
-	
+    Super::BeginPlay();
+
+    if (HasAuthority())
+    {
+        // WalkerClass를 미리 생성해서 풀에 넣어둠
+        if (WalkerClass)
+        {
+            for (int32 i = 0; i < WalkerPoolSize; ++i)
+            {
+                FActorSpawnParameters Params;
+                Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+                FVector SpawnLoc = FVector(300.f, 300.f, 300.f);
+                FRotator SpawnRot = FRotator::ZeroRotator;
+                AEnemyBase* NewEnemy = GetWorld()->SpawnActor<AEnemyBase>(WalkerClass, SpawnLoc, SpawnRot, Params);
+                if (NewEnemy)
+                {
+                    EnemyPools.FindOrAdd(WalkerClass).PooledEnemies.Add(NewEnemy);
+                    NewEnemy->Deactivate(); // 생성 직후 바로 비활성화
+                }
+            }
+        }
+        if (EnemyPools.Contains(WalkerClass))
+        {
+            UE_LOG(LogTemp, Warning, TEXT("초기 풀 생성 완료. 워커 풀의 적 개수: %d"), EnemyPools[WalkerClass].PooledEnemies.Num());
+            for (AEnemyBase* Enemy : EnemyPools[WalkerClass].PooledEnemies)
+            {
+                UE_LOG(LogTemp, Warning, TEXT(" - %s의 활성 상태: %s"), *Enemy->GetName(), Enemy->IsActive() ? TEXT("활성") : TEXT("비활성"));
+            }
+        }
+        // ... 다른 Enemy 타입 풀 생성 ...
+    }
 }
 
-AEnemyBase* AEnemyPoolManager::AddToPool(TSubclassOf<AEnemyBase> EnemyClass, FVector Location, FRotator Rotation)
+// 적 스폰 요청 처리 (서버에서만 실행)
+AEnemyBase* AEnemyPoolManager::SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, const FVector& Location, const FRotator& Rotation)
 {
-	if (!HasAuthority() || !EnemyClass) return nullptr;
+    if (!HasAuthority() || !EnemyClass) return nullptr;
 
-	FActorSpawnParameters Params;
-	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    // 해당 클래스의 풀이 있는지 확인
+    FEnemyPool* Pool = EnemyPools.Find(EnemyClass);
+    if (Pool)
+    {
+        // --- 여기부터 디버그 로그 추가 ---
+        UE_LOG(LogTemp, Error, TEXT("Checking pool for %s. Found %d enemies."), *EnemyClass->GetName(), Pool->PooledEnemies.Num());
+        for (AEnemyBase* Enemy : Pool->PooledEnemies)
+        {
+            if (Enemy)
+            {
+                // 이 로그가 가장 중요합니다. IsActive()가 무엇을 반환하는지 직접 확인합니다.
+                UE_LOG(LogTemp, Warning, TEXT("  -> Checking %s. IsActive() is returning: %s"), 
+                    *Enemy->GetName(), 
+                    Enemy->IsActive() ? TEXT("TRUE (활성)") : TEXT("FALSE (비활성)"));
 
-	AEnemyBase* Enemy = GetWorld()->SpawnActor<AEnemyBase>(EnemyClass, Location, Rotation, Params);
-	if (!Enemy)
-	{
-		//UE_LOG(LogTemp, Error, TEXT("❌ SpawnActor failed for class: %s"), *EnemyClass->GetName());
-		return nullptr;
-	}
+                if (!Enemy->IsActive())
+                {
+                    // 이 블록이 실행되어야 합니다.
+                    Enemy->Activate(Location, Rotation);
+                    UE_LOG(LogTemp, Log, TEXT("spawned via pool!!!"));
+                    return Enemy;
+                }
+            }
+            else {UE_LOG(LogTemp, Warning, TEXT("No Enemy"));}
+        }
+    }
 
-	// ✅ 여기서만 풀에 추가
-	EnemyPools.FindOrAdd(EnemyClass).Add(Enemy);
-	//UE_LOG(LogTemp, Log, TEXT("✅ Enemy spawned and added to pool: %s"), *Enemy->GetName());
-
-	// ✅ 복제 완료 후에 SetActive(false) 처리 (복제 타이밍 보장용)
-	FTimerHandle DelayHandle;
-	GetWorldTimerManager().SetTimer(DelayHandle, [Enemy]()
-	{
-		if (IsValid(Enemy))
-		{
-			//Enemy->SetActive(false);
-			//UE_LOG(LogTemp, Warning, TEXT("🕒 SetActive(false) 완료: %s"), *Enemy->GetName());
-		}
-	}, 10.0f, false); // 딜레이 시간을 충분히 줘서 클라이언트에 복제가 잘 되도록
-
-	return Enemy;
+    // 풀에 사용 가능한 적이 없으면 새로 생성
+    // (실제 게임에서는 풀 크기를 초과하지 않도록 제한하는 것이 좋음)
+    UE_LOG(LogTemp, Warning, TEXT("No available enemy in pool for %s. Spawning a new one."), *EnemyClass->GetName());
+    FActorSpawnParameters Params;
+    Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    AEnemyBase* NewEnemy = GetWorld()->SpawnActor<AEnemyBase>(EnemyClass, Location, Rotation, Params);
+    if (NewEnemy)
+    {
+        EnemyPools.FindOrAdd(EnemyClass).PooledEnemies.Add(NewEnemy);
+        // 새로 생성된 적은 기본적으로 활성화 상태로 시작
+        NewEnemy->Activate(Location, Rotation);
+    }
+    return NewEnemy;
 }
 
-
-AEnemyBase* AEnemyPoolManager::GetPooledEnemy(TSubclassOf<AEnemyBase> EnemyClass)
-{
-	if (!EnemyPools.Contains(EnemyClass))
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("📦 Pool not found for class: %s → creating new pool"), *EnemyClass->GetName());
-		EnemyPools.Add(EnemyClass, TArray<AEnemyBase*>());
-	}
-	else
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("📦 Found pool for class: %s → %d enemies in pool"), 
-		//	*EnemyClass->GetName(), EnemyPools[EnemyClass].Num());
-	}
-
-	for (AEnemyBase* Enemy : EnemyPools[EnemyClass])
-	{
-		if (!IsValid(Enemy))
-		{
-			//UE_LOG(LogTemp, Error, TEXT("❌ Invalid enemy pointer in pool for class: %s"), *EnemyClass->GetName());
-			continue;
-		}
-
-		//if (!Enemy->IsActive())
-		{
-			//UE_LOG(LogTemp, Warning, TEXT("🔄 Reusing inactive enemy: %s"), *Enemy->GetName());
-			//Enemy->MulticastSetActive(true);
-			//return Enemy;
-		}
-		//else
-		{
-			//UE_LOG(LogTemp, Warning, TEXT("🟡 Skipping active enemy: %s"), *Enemy->GetName());
-		}
-	}
-
-	//UE_LOG(LogTemp, Warning, TEXT("🚫 No reusable enemies available in pool for class: %s"), *EnemyClass->GetName());
-	return nullptr;
-}
-
-
-AEnemyBase* AEnemyPoolManager::SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, FVector Location, FRotator Rotation, EEnemyColor EnemyColor)
-{
-	AEnemyBase* Enemy = GetPooledEnemy(EnemyClass);
-
-	if (!Enemy)
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("📌 No pooled enemy available. Spawning new one."));
-		Enemy = AddToPool(EnemyClass, Location, Rotation);
-
-		// AddToPool()에서 자동으로 SetActive(false) 되었으므로,
-		// SetActive(true)로 바꾸려면 여기서 명시적으로
-		if (Enemy)
-		{
-			//Enemy->MulticastSetActive(true);
-		}
-	}
-
-	if (Enemy)
-	{
-		Enemy->SetActorLocation(Location);
-		Enemy->SetActorRotation(Rotation);
-		//Enemy->SetupEnemyForColor(EnemyColor);
-	}
-
-	return Enemy;
-}
-
-
+// 적을 풀로 반납 (서버에서만 실행)
 void AEnemyPoolManager::ReturnEnemy(AEnemyBase* Enemy)
 {
-	if (Enemy)
-	{
-		//Enemy->SetActive(false);
-	}
-}
-void AEnemyPoolManager::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
-{
-	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-    
-	DOREPLIFETIME(AEnemyPoolManager, WalkerClass);
-}
-void AEnemyPoolManager::LogReplicatedEnemies() //적이 잘 복제됐는지 확인
-{
-	TArray<AActor*> FoundEnemies;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEnemyBase::StaticClass(), FoundEnemies);
+    if (!HasAuthority() || !Enemy) return;
 
-	//UE_LOG(LogTemp, Warning, TEXT("⏱️ [DELAYED] Found %d replicated enemies"), FoundEnemies.Num());
-	for (AActor* Actor : FoundEnemies)
-	{
-		//UE_LOG(LogTemp, Warning, TEXT("🧩 [Client] Replicated Enemy: %s at %s"),
-		//	*Actor->GetName(),
-		//	*Actor->GetActorLocation().ToString());
-	}
+    Enemy->Deactivate();
 }
