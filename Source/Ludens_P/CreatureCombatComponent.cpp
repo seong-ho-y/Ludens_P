@@ -32,7 +32,6 @@ void UCreatureCombatComponent::Die()
 {
 	if (bIsDead) return;
 	bIsDead = true;
-	UE_LOG(LogTemp, Warning, TEXT("Enemy Died"));
 	OnDied.Broadcast();
 }
 

@@ -59,33 +59,3 @@ AActor* ALudens_PGameMode::ChoosePlayerStart_Implementation(AController* Player)
 // 파일을 사용하는 C++ 파일 상단에 헤더를 포함합니다.
 #include "EnemyPoolManager.h"
 #include "Kismet/GameplayStatics.h"
-
-// ...
-
-void ALudens_PGameMode::SpawnOneEnemy()
-{
-	// 1. 레벨에 배치된 EnemyPoolManager를 찾습니다.
-	// 이 코드는 한 번만 실행하고 결과를 저장해두는 것이 좋습니다 (예: BeginPlay)
-	AEnemyPoolManager* PoolManager = Cast<AEnemyPoolManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AEnemyPoolManager::StaticClass()));
-
-	if (!PoolManager)
-	{
-		UE_LOG(LogTemp, Error, TEXT("레벨에 EnemyPoolManager가 없습니다!"));
-		return;
-	}
-
-	// 2. 스폰할 적의 클래스와 위치를 정합니다.
-	TSubclassOf<AEnemyBase> EnemyClassToSpawn = PoolManager->WalkerClass; // 매니저에 설정된 클래스를 가져오거나, 직접 지정
-	FVector SpawnLocation = FVector(100.0f, 200.0f, 100.0f);
-	FRotator SpawnRotation = FRotator::ZeroRotator;
-    
-	// 3. 관리자에게 적 스폰을 요청합니다.
-	// 이 함수는 알아서 풀에 있는 적을 재활용하거나 새로 생성합니다.
-	AEnemyBase* SpawnedEnemy = PoolManager->SpawnEnemy(EnemyClassToSpawn, SpawnLocation, SpawnRotation);
-    
-	// 이제 SpawnedEnemy를 가지고 필요한 로직을 수행할 수 있습니다.
-	if (SpawnedEnemy)
-	{
-		UE_LOG(LogTemp, Log, TEXT("%s가 성공적으로 스폰되었습니다."), *SpawnedEnemy->GetName());
-	}
-}

@@ -26,7 +26,7 @@ public:
 	AEnemyPoolManager();
 
 	// 지정된 위치에 적을 스폰시키는 메인 함수 (서버에서만 호출되어야 함)
-	AEnemyBase* SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, const FVector& Location, const FRotator& Rotation);
+	AEnemyBase* SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, const FVector& Location, const FRotator& Rotation,EEnemyColor EnemyColor);
 
 	// 적을 풀로 되돌리는 함수 (서버에서만 호출되어야 함)
 	void ReturnEnemy(AEnemyBase* Enemy);
@@ -45,6 +45,6 @@ public:
     
 	UPROPERTY(EditAnywhere, Category="Pool Config")
 	int32 WalkerPoolSize = 10;
-
+	
 	// ... 다른 Enemy 타입들도 추가 ...
 };
