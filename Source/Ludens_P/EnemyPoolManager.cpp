@@ -43,7 +43,7 @@ void AEnemyPoolManager::BeginPlay()
 }
 
 // 적 스폰 요청 처리 (서버에서만 실행)
-AEnemyBase* AEnemyPoolManager::SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, const FVector& Location, const FRotator& Rotation)
+AEnemyBase* AEnemyPoolManager::SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, const FVector& Location, const FRotator& Rotation, EEnemyColor EnemyColor)
 {
     if (!HasAuthority() || !EnemyClass) return nullptr;
 
@@ -51,21 +51,14 @@ AEnemyBase* AEnemyPoolManager::SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, co
     FEnemyPool* Pool = EnemyPools.Find(EnemyClass);
     if (Pool)
     {
-        // --- 여기부터 디버그 로그 추가 ---
-        UE_LOG(LogTemp, Error, TEXT("Checking pool for %s. Found %d enemies."), *EnemyClass->GetName(), Pool->PooledEnemies.Num());
         for (AEnemyBase* Enemy : Pool->PooledEnemies)
         {
             if (Enemy)
             {
-                // 이 로그가 가장 중요합니다. IsActive()가 무엇을 반환하는지 직접 확인합니다.
-                UE_LOG(LogTemp, Warning, TEXT("  -> Checking %s. IsActive() is returning: %s"), 
-                    *Enemy->GetName(), 
-                    Enemy->IsActive() ? TEXT("TRUE (활성)") : TEXT("FALSE (비활성)"));
-
                 if (!Enemy->IsActive())
                 {
-                    // 이 블록이 실행되어야 합니다.
                     Enemy->Activate(Location, Rotation);
+                    Enemy->ChangeColorType(EnemyColor);
                     UE_LOG(LogTemp, Log, TEXT("spawned via pool!!!"));
                     return Enemy;
                 }

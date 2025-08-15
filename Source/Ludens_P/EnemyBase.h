@@ -2,10 +2,12 @@
 
 #include "CoreMinimal.h"
 #include "CreatureCombatComponent.h"
+#include "EEnemyColor.h"
 #include "GameFramework/Character.h"
 #include "EnemyBase.generated.h"
 
 class UEnemyDescriptor;
+class UShieldComponent;
 
 UCLASS(Abstract)
 class LUDENS_P_API AEnemyBase : public ACharacter
@@ -24,15 +26,25 @@ public:
 
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 							 AController* EventInstigator, AActor* DamageCauser) override;
+	EEnemyColor GetDamageColorFrom(AActor* Damagecauser);
 
 	UPROPERTY(EditDefaultsOnly, Category="Config")
 	UEnemyDescriptor* Descriptor = nullptr;
+
+	UFUNCTION(BlueprintCallable, Category="Color")
+	void ChangeColorType(EEnemyColor Color);
+
 	
 protected:
 	virtual void BeginPlay() override;
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 
+	UFUNCTION()
+	void OnRep_ColorType();
+	UPROPERTY(EditAnywhere, ReplicatedUsing = OnRep_ColorType, Category="Color")
+	EEnemyColor ColorType;
+	
 	// 활성화 상태를 저장하고 복제할 변수
 	UPROPERTY(ReplicatedUsing = OnRep_IsActive)
 	bool bIsActiveInPool;
@@ -47,6 +59,15 @@ protected:
 	UFUNCTION()
 	void HandleDied();
 	void EndPlay(EEndPlayReason::Type EndPlayReason);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shield")
+	UShieldComponent* ShieldComponent;
+
+	UPROPERTY()
+	UMaterialInstanceDynamic* BodyMID;
+
+	//색상을 설정하는 함수
+	void SetBodyColor(EEnemyColor NewColor);
 
 public:
 	// 액터가 파괴될 때 호출되는 가상 함수를 오버라이드합니다.

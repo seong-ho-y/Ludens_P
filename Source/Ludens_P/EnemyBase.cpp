@@ -2,7 +2,10 @@
 #include "Net/UnrealNetwork.h"
 #include "EnemyDescriptor.h"
 #include "EnemyPoolManager.h"
+#include "ShieldComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Kismet/GameplayStatics.h"
 
 AEnemyBase::AEnemyBase()
@@ -10,10 +13,23 @@ AEnemyBase::AEnemyBase()
 	bIsActiveInPool = false;
 	PrimaryActorTick.bCanEverTick = false;
 	CCC = CreateDefaultSubobject<UCreatureCombatComponent>(TEXT("CreatureCombat"));
+	
+	bReplicates = true;
 }
 
 void AEnemyBase::BeginPlay()
 {
+	Super::BeginPlay();
+	USkeletalMeshComponent* BodyMesh = GetMesh();
+	if (BodyMesh)
+	{
+		BodyMID = BodyMesh->CreateAndSetMaterialInstanceDynamic(0); //BodyMID에 현재 BodyMesh MID 할당
+	}
+	// 3. "핵심 보험 코드": 현재 ColorType 값으로 색상을 한번 더 설정합니다.
+	// OnRep이 먼저 실행되어 색 변경을 놓쳤더라도, BeginPlay가 끝나는 시점에
+	// 최종적으로 올바른 색상을 보장해주는 매우 중요한 코드입니다.
+	SetBodyColor(ColorType);
+
 	// Descriptor와 CCC가 모두 유효할 때만 초기화 로직을 실행합니다.
 	if (Descriptor && CCC)
 	{
@@ -22,13 +38,11 @@ void AEnemyBase::BeginPlay()
 		// HP 적용
 		CCC->InitStats(Descriptor->MaxHP);
 	}
-
-	Super::BeginPlay();
-
 	if (CCC)
 	{
 		CCC->OnDied.AddDynamic(this, &AEnemyBase::HandleDied);
 	}
+
 }
 
 void AEnemyBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -38,6 +52,7 @@ void AEnemyBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 
 	// 이제 이 클래스에서 복제할 변수를 등록합니다.
 	DOREPLIFETIME(AEnemyBase, bIsActiveInPool);
+	DOREPLIFETIME(AEnemyBase, ColorType);
 }
 
 // 1. 서버에서 호출되는 활성화 함수
@@ -118,16 +133,81 @@ void AEnemyBase::UpdateActiveState(bool bNewIsActive)
 
 	// 기타 파티클, 사운드 등 필요한 컴포넌트들을 켜고 끄는 로직 추가...
 }
+// 이 함수는 서버에서만 호출되어야 합니다.
+void AEnemyBase::ChangeColorType(EEnemyColor NewColor)
+{
+	if (!HasAuthority()) return;
+
+	UE_LOG(LogTemp, Warning, TEXT("[SERVER] ChangeColorType called for %s. OldColor: %d, NewColor: %d"), 
+			*GetName(), (int32)ColorType, (int32)NewColor);
+	
+	ColorType = NewColor;
+	OnRep_ColorType();
+}
+// ColorType 변수가 서버로부터 복제 완료되면 클라이언트에서 자동으로 호출됩니다.
+void AEnemyBase::OnRep_ColorType()
+{
+
+	// SetBodyColor 함수를 호출하여 MID의 색상을 실제로 변경합니다.
+	SetBodyColor(ColorType);
+
+	// 필요하다면 ShieldComponent의 쉴드 구성도 여기서 다시 초기화할 수 있습니다.
+	// if (ShieldComponent)
+	// {
+	//     ShieldComponent->InitializeShields(ColorType);
+	// }
+}
 
 bool AEnemyBase::IsActive() const
 {
 	return bIsActiveInPool;
 }
 
+void AEnemyBase::SetBodyColor(EEnemyColor NewColor)
+{
+	if (!BodyMID) return;
+	
+	FLinearColor TargetColor;
+	switch (NewColor)
+	{
+	case EEnemyColor::Red:
+		TargetColor = FLinearColor::Red;
+		break;
+	case EEnemyColor::Green:
+		TargetColor = FLinearColor::Green;
+		break;
+	case EEnemyColor::Blue:
+		TargetColor = FLinearColor::Blue;
+		break;
+	case EEnemyColor::Yellow:
+		TargetColor = FLinearColor::Yellow;
+		break;
+	case EEnemyColor::Magenta:
+		TargetColor = FLinearColor(1.f, 0.f, 1.f);
+	case EEnemyColor::Cyan:
+		TargetColor = FLinearColor(0.f,1.f,1.f);
+	case EEnemyColor::Black:
+	default:
+		TargetColor = FLinearColor::Black;
+		break;
+	}
+	BodyMID->SetVectorParameterValue(TEXT("BodyColor"), TargetColor);
+}
+
 float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	if (ShieldComponent && !ShieldComponent->AreAllShieldsBroken())
+	{
+		EEnemyColor DamageColor = GetDamageColorFrom(DamageCauser);
+		ShieldComponent->TakeShieldDamage(DamageAmount, DamageColor);
+	}
 	if (HasAuthority() && CCC) {CCC->TakeDamage(DamageAmount);}
 	return DamageAmount;
+}
+
+EEnemyColor AEnemyBase::GetDamageColorFrom(AActor* Damagecauser)
+{
+	return EEnemyColor::Green;
 }
 
 void AEnemyBase::HandleDied()

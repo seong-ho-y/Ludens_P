@@ -26,24 +26,6 @@ void ALudens_PPlayerController::BeginPlay()
 	InputComponent->BindAction("SpawnEnemy", IE_Pressed, this, &ALudens_PPlayerController::Server_RequestSpawnEnemy);
 }
 
-void ALudens_PPlayerController::SpawnEnemyFromPool()
-{
-	for (TActorIterator<AEnemyPoolManager> It(GetWorld()); It; ++It)
-	{
-		AEnemyPoolManager* Pool = *It;
-		if (Pool)
-		{
-			// 위치와 회전 지정
-			FVector SpawnLoc = FVector(300.f, 300.f, 300.f);
-			FRotator SpawnRot = FRotator::ZeroRotator;
-
-			// 스폰 호출
-			Pool->SpawnEnemy(WalkerEnemyBPClass, SpawnLoc, SpawnRot);
-		}
-	}
-}
-
-
 
 // 이 함수는 클라이언트의 요청을 받아 "서버에서" 실행될 실제 로직입니다.
 void ALudens_PPlayerController::Server_RequestSpawnEnemy_Implementation()
@@ -61,6 +43,6 @@ void ALudens_PPlayerController::Server_RequestSpawnEnemy_Implementation()
 		// 이 변수는 컨트롤러가 알고 있어야 합니다. EditAnywhere 등으로 설정하세요.
 		TSubclassOf<AEnemyBase> EnemyClassToSpawn = WalkerEnemyBPClass; 
         
-		PoolManager->SpawnEnemy(EnemyClassToSpawn, SpawnLoc, SpawnRot);
+		PoolManager->SpawnEnemy(EnemyClassToSpawn, SpawnLoc, SpawnRot, EEnemyColor::Green);
 	}
 }
