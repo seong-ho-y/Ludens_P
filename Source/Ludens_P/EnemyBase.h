@@ -26,7 +26,6 @@ public:
 
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
 							 AController* EventInstigator, AActor* DamageCauser) override;
-	EEnemyColor GetDamageColorFrom(AActor* Damagecauser);
 
 	UPROPERTY(EditDefaultsOnly, Category="Config")
 	UEnemyDescriptor* Descriptor = nullptr;

@@ -2,6 +2,7 @@
 #include "Net/UnrealNetwork.h"
 #include "EnemyDescriptor.h"
 #include "EnemyPoolManager.h"
+#include "PlayerStateComponent.h"
 #include "ShieldComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -13,7 +14,7 @@ AEnemyBase::AEnemyBase()
 	bIsActiveInPool = false;
 	PrimaryActorTick.bCanEverTick = false;
 	CCC = CreateDefaultSubobject<UCreatureCombatComponent>(TEXT("CreatureCombat"));
-	
+	ShieldComponent = CreateDefaultSubobject<UShieldComponent>(TEXT("Shield"));
 	bReplicates = true;
 }
 
@@ -137,12 +138,14 @@ void AEnemyBase::UpdateActiveState(bool bNewIsActive)
 void AEnemyBase::ChangeColorType(EEnemyColor NewColor)
 {
 	if (!HasAuthority()) return;
-
-	UE_LOG(LogTemp, Warning, TEXT("[SERVER] ChangeColorType called for %s. OldColor: %d, NewColor: %d"), 
-			*GetName(), (int32)ColorType, (int32)NewColor);
 	
 	ColorType = NewColor;
 	OnRep_ColorType();
+
+	if (ShieldComponent)
+	{
+		ShieldComponent->InitializeShields(NewColor);
+	}
 }
 // ColorType 변수가 서버로부터 복제 완료되면 클라이언트에서 자동으로 호출됩니다.
 void AEnemyBase::OnRep_ColorType()
@@ -196,18 +199,50 @@ void AEnemyBase::SetBodyColor(EEnemyColor NewColor)
 
 float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	if (!HasAuthority()) return 0.f;
+	
+	// ... (쉴드 체크 로직) ...
 	if (ShieldComponent && !ShieldComponent->AreAllShieldsBroken())
 	{
-		EEnemyColor DamageColor = GetDamageColorFrom(DamageCauser);
+		EEnemyColor DamageColor = EEnemyColor::Black;
+
+		// --- ✨ 진단용 로그 시작 ---
+		if (!EventInstigator)
+		{
+			UE_LOG(LogTemp, Error, TEXT("TakeDamage FAILED: EventInstigator is NULL."));
+		}
+		else
+		{
+			APawn* InstigatorPawn = EventInstigator->GetPawn();
+			if (!InstigatorPawn)
+			{
+				UE_LOG(LogTemp, Error, TEXT("TakeDamage FAILED: InstigatorPawn is NULL. (Controller is not possessing a Pawn)"));
+			}
+			else
+			{
+				UPlayerStateComponent* InstigatorStateComp = InstigatorPawn->FindComponentByClass<UPlayerStateComponent>();
+				if (!InstigatorStateComp)
+				{
+					UE_LOG(LogTemp, Error, TEXT("TakeDamage FAILED: PlayerStateComponent not found on Pawn %s."), *InstigatorPawn->GetName());
+				}
+				else
+				{
+					// 모든 검사를 통과!
+					DamageColor = InstigatorStateComp->PlayerColor;
+					UE_LOG(LogTemp, Log, TEXT("TakeDamage SUCCESS: DamageColor set to %s"), *UEnum::GetValueAsString(DamageColor));
+				}
+			}
+		}
+		// --- 진단용 로그 끝 ---
+        
 		ShieldComponent->TakeShieldDamage(DamageAmount, DamageColor);
 	}
-	if (HasAuthority() && CCC) {CCC->TakeDamage(DamageAmount);}
+	else
+	{
+		if (CCC)
+			CCC->TakeDamage(DamageAmount);
+	}
 	return DamageAmount;
-}
-
-EEnemyColor AEnemyBase::GetDamageColorFrom(AActor* Damagecauser)
-{
-	return EEnemyColor::Green;
 }
 
 void AEnemyBase::HandleDied()
