@@ -36,8 +36,7 @@ public:
 	
 	void InitStats(float InMaxHP);
 
-
-protected:
+	
 	UPROPERTY(EditAnywhere, Category="Combat")
 	float MaxHP = 100.f;
 

@@ -1,13 +1,17 @@
 #include "EnemyBase.h"
 #include "Net/UnrealNetwork.h"
 #include "EnemyDescriptor.h"
+#include "EnemyHealthBarBase.h"
 #include "EnemyPoolManager.h"
 #include "PlayerStateComponent.h"
 #include "ShieldComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/WidgetComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "UObject/ConstructorHelpers.h"
+#include "Blueprint/UserWidget.h"
 
 AEnemyBase::AEnemyBase()
 {
@@ -16,6 +20,22 @@ AEnemyBase::AEnemyBase()
 	CCC = CreateDefaultSubobject<UCreatureCombatComponent>(TEXT("CreatureCombat"));
 	ShieldComponent = CreateDefaultSubobject<UShieldComponent>(TEXT("Shield"));
 	bReplicates = true;
+
+	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarWidget"));
+	HealthBarWidget->SetupAttachment(RootComponent);
+	HealthBarWidget->SetWidgetSpace(EWidgetSpace::World);
+	HealthBarWidget->SetVisibility(false); // 처음에는 숨겨둡니다.
+
+	static ConstructorHelpers::FClassFinder<UUserWidget> HealthBarClassFinder(TEXT("/Game/Enemy/UI/WBP_EnemyHealthBar.WBP_EnemyHealthBar_C"));
+
+	if (HealthBarClassFinder.Succeeded())
+	{
+		HealthBarWidget->SetWidgetClass(HealthBarClassFinder.Class);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("FATAL ERROR: Could not find WBP_EnemyHealthBar at the specified path!"));
+	}
 }
 
 void AEnemyBase::BeginPlay()
@@ -30,7 +50,48 @@ void AEnemyBase::BeginPlay()
 	// OnRep이 먼저 실행되어 색 변경을 놓쳤더라도, BeginPlay가 끝나는 시점에
 	// 최종적으로 올바른 색상을 보장해주는 매우 중요한 코드입니다.
 	SetBodyColor(ColorType);
+	if (HealthBarWidget)
+	{
+		UUserWidget* WidgetObject = HealthBarWidget->GetUserWidgetObject();
+        
+		// --- ✨ 최종 진단 로그 ---
+		if (WidgetObject)
+		{
+			// 이 위젯의 실제 클래스 이름을 가져와서 로그로 출력합니다.
+			FString ActualWidgetClassName = WidgetObject->GetClass()->GetName();
+			UE_LOG(LogTemp, Error, TEXT("HealthBarWidget is using a widget of class: [%s]"), *ActualWidgetClassName);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("HealthBarWidget exists, but GetUserWidgetObject() returned NULL."));
+			return;
+		}
+		// --- 진단 로그 끝 ---
 
+		HealthBarUI = Cast<UEnemyHealthBarBase>(WidgetObject);
+        
+		if (HealthBarUI)
+		{
+			UE_LOG(LogTemp, Log, TEXT("SUCCESS: Cast to EnemyHealthBarBase is successful."));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("CAST FAILED: The class name printed above should be 'WBP_EnemyHealthBar_C'. If it's something else, the Parent Class setting is being ignored by the engine."));
+		}
+	}
+
+	if (HealthBarWidget)
+	{
+		HealthBarUI = Cast<UEnemyHealthBarBase>(HealthBarWidget->GetUserWidgetObject());
+		if (HealthBarUI)
+		{
+			UE_LOG(LogTemp, Log, TEXT("%s: HealthBarUI successfully linked."), *GetName());
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("%s: FAILED to cast widget to EnemyHealthBarBase. Check Parent Class in WBP."), *GetName());
+		}
+	}
 	// Descriptor와 CCC가 모두 유효할 때만 초기화 로직을 실행합니다.
 	if (Descriptor && CCC)
 	{
@@ -205,14 +266,33 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 	if (ShieldComponent && !ShieldComponent->AreAllShieldsBroken())
 	{
 		EEnemyColor DamageColor = EEnemyColor::Black;
-
-		// --- ✨ 진단용 로그 시작 ---
-		if (!EventInstigator)
+		if (HealthBarWidget && !HealthBarWidget->IsVisible())
 		{
-			UE_LOG(LogTemp, Error, TEXT("TakeDamage FAILED: EventInstigator is NULL."));
+			HealthBarWidget->SetVisibility(true);
+		}
+    
+		// 위젯에 직접 업데이트 명령을 내립니다.
+		if (HealthBarUI && CCC)
+		{
+			const float NewHealthPercent = CCC->CurrentHP / CCC->MaxHP;
+			HealthBarUI->UpdateHealthBar(NewHealthPercent);
+		}
+		// --- ✨ 진단용 로그 시작 ---
+
+		if (!HealthBarUI)
+		{
+			UE_LOG(LogTemp, Error, TEXT("TakeDamage: Cannot update UI because HealthBarUI is NULL."));
+		}
+		else if (!CCC)
+		{
+			UE_LOG(LogTemp, Error, TEXT("TakeDamage: Cannot update UI because CCC is NULL."));
 		}
 		else
 		{
+			const float NewHealthPercent = CCC->CurrentHP / CCC->MaxHP;
+			HealthBarUI->UpdateHealthBar(NewHealthPercent);
+		}
+
 			APawn* InstigatorPawn = EventInstigator->GetPawn();
 			if (!InstigatorPawn)
 			{
@@ -231,7 +311,6 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 					DamageColor = InstigatorStateComp->PlayerColor;
 					UE_LOG(LogTemp, Log, TEXT("TakeDamage SUCCESS: DamageColor set to %s"), *UEnum::GetValueAsString(DamageColor));
 				}
-			}
 		}
 		// --- 진단용 로그 끝 ---
         

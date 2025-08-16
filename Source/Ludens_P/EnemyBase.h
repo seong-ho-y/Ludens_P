@@ -8,6 +8,8 @@
 
 class UEnemyDescriptor;
 class UShieldComponent;
+class UWidgetComponent;
+class UEnemyHealthBarBase;
 
 UCLASS(Abstract)
 class LUDENS_P_API AEnemyBase : public ACharacter
@@ -58,7 +60,15 @@ protected:
 	UFUNCTION()
 	void HandleDied();
 	void EndPlay(EEndPlayReason::Type EndPlayReason);
+	
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
+	UWidgetComponent* HealthBarWidget;
+
+	UPROPERTY()
+	UEnemyHealthBarBase* HealthBarUI;
+	// ✨ 위젯의 실제 인스턴스를 저장할 변수
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shield")
 	UShieldComponent* ShieldComponent;
 
