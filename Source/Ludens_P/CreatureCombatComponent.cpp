@@ -20,8 +20,9 @@ void UCreatureCombatComponent::BeginPlay()
 void UCreatureCombatComponent::TakeDamage(float Amount)
 {
 	if (bIsDead) return;
-
 	CurrentHP -= Amount;
+	UE_LOG(LogTemp,Warning,TEXT("Enemy Attackted : %f"),CurrentHP);
+
 	if (CurrentHP <= 0.f)
 	{
 		Die();
