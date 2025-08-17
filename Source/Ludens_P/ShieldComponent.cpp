@@ -16,6 +16,8 @@ void UShieldComponent::TakeShieldDamage(float DamageAmount, EEnemyColor DamageCo
 {
 	//서버에서만 처리
 	if (!GetOwner()->HasAuthority()) return;
+	// 클라이언트에 쉴드 상태 변경을 알리기
+
 
 	for (FShieldLayer& Shield: ActiveShields)
 	{
@@ -26,8 +28,6 @@ void UShieldComponent::TakeShieldDamage(float DamageAmount, EEnemyColor DamageCo
 
 			UE_LOG(LogTemp, Log, TEXT("%s Shield took %.1f damage. Current Health: %.1f"), 
 				*UEnum::GetValueAsString(DamageColor), AbsorbedDamage, Shield.CurrentHealth);
-
-			// 클라이언트에 쉴드 상태 변경을 알리기
 			OnRep_ActiveShields();
 		}
 	}

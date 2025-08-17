@@ -8,12 +8,16 @@
 
 class UEnemyDescriptor;
 class UShieldComponent;
+class UWidgetComponent;
+class UEnemyHealthBarBase;
 
 UCLASS(Abstract)
 class LUDENS_P_API AEnemyBase : public ACharacter
 {
 	GENERATED_BODY()
 public:
+	virtual void Tick(float DeltaTime) override;
+	
 	AEnemyBase();
 
 	void Activate(const FVector& Location, const FRotator& Rotation);
@@ -24,8 +28,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	UCreatureCombatComponent* CCC;
 
-	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent,
-							 AController* EventInstigator, AActor* DamageCauser) override;
+	// AActor로부터 상속받은 TakeDamage 함수를 정확한 시그니처로 오버라이드합니다.
+	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
 	UPROPERTY(EditDefaultsOnly, Category="Config")
 	UEnemyDescriptor* Descriptor = nullptr;
@@ -58,7 +62,15 @@ protected:
 	UFUNCTION()
 	void HandleDied();
 	void EndPlay(EEndPlayReason::Type EndPlayReason);
+	
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "UI")
+	UWidgetComponent* HealthBarWidget;
+
+	UPROPERTY()
+	UEnemyHealthBarBase* HealthBarUI;
+	// ✨ 위젯의 실제 인스턴스를 저장할 변수
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shield")
 	UShieldComponent* ShieldComponent;
 
@@ -67,6 +79,11 @@ protected:
 
 	//색상을 설정하는 함수
 	void SetBodyColor(EEnemyColor NewColor);
+
+	UFUNCTION()
+	void OnHealthUpdated(float NewCurrentHP, float NewMaxHP);
+	UFUNCTION()
+	void OnShieldsUpdated();
 
 public:
 	// 액터가 파괴될 때 호출되는 가상 함수를 오버라이드합니다.
