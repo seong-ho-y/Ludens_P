@@ -6,9 +6,23 @@
 #include "Blueprint/UserWidget.h"
 #include "EnemyHealthBarBase.generated.h"
 
+enum class EEnemyColor : uint8;
 /**
  * 
  */
+USTRUCT(BlueprintType)
+struct FShieldUIData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(BlueprintReadOnly)
+	EEnemyColor ShieldColor;
+
+	UPROPERTY(BlueprintReadOnly)
+	float CurrentHealth;
+	UPROPERTY(BlueprintReadOnly)
+	float MaxHealth;
+};
 UCLASS()
 class LUDENS_P_API UEnemyHealthBarBase : public UUserWidget
 {
@@ -17,4 +31,6 @@ class LUDENS_P_API UEnemyHealthBarBase : public UUserWidget
 public:
 	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
 	void UpdateHealthBar(float NewPercent);
+	UFUNCTION(BlueprintImplementableEvent, Category = "UI")
+	void UpdateShields(const TArray<FShieldUIData>& ShieldUIData);
 };

@@ -16,7 +16,7 @@
 AEnemyBase::AEnemyBase()
 {
 	bIsActiveInPool = false;
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 	CCC = CreateDefaultSubobject<UCreatureCombatComponent>(TEXT("CreatureCombat"));
 	ShieldComponent = CreateDefaultSubobject<UShieldComponent>(TEXT("Shield"));
 	bReplicates = true;
@@ -37,6 +37,18 @@ AEnemyBase::AEnemyBase()
 		UE_LOG(LogTemp, Error, TEXT("FATAL ERROR: Could not find WBP_EnemyHealthBar at the specified path!"));
 	}
 }
+void AEnemyBase::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (!HasAuthority())
+	{
+		if (CCC)
+		{
+			UE_LOG(LogTemp, Log, TEXT("[CLIENT TICK] Enemy: %s, CCC->CurrentHP: %f"), *GetName(), CCC->GetCurrentHP());
+		}
+	}
+}
 
 void AEnemyBase::BeginPlay()
 {
@@ -50,47 +62,17 @@ void AEnemyBase::BeginPlay()
 	// OnRep이 먼저 실행되어 색 변경을 놓쳤더라도, BeginPlay가 끝나는 시점에
 	// 최종적으로 올바른 색상을 보장해주는 매우 중요한 코드입니다.
 	SetBodyColor(ColorType);
-	if (HealthBarWidget)
+	if (CCC)
 	{
-		UUserWidget* WidgetObject = HealthBarWidget->GetUserWidgetObject();
-        
-		// --- ✨ 최종 진단 로그 ---
-		if (WidgetObject)
-		{
-			// 이 위젯의 실제 클래스 이름을 가져와서 로그로 출력합니다.
-			FString ActualWidgetClassName = WidgetObject->GetClass()->GetName();
-			UE_LOG(LogTemp, Error, TEXT("HealthBarWidget is using a widget of class: [%s]"), *ActualWidgetClassName);
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("HealthBarWidget exists, but GetUserWidgetObject() returned NULL."));
-			return;
-		}
-		// --- 진단 로그 끝 ---
-
-		HealthBarUI = Cast<UEnemyHealthBarBase>(WidgetObject);
-        
-		if (HealthBarUI)
-		{
-			UE_LOG(LogTemp, Log, TEXT("SUCCESS: Cast to EnemyHealthBarBase is successful."));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("CAST FAILED: The class name printed above should be 'WBP_EnemyHealthBar_C'. If it's something else, the Parent Class setting is being ignored by the engine."));
-		}
+		CCC->OnHealthChanged.AddDynamic(this, &AEnemyBase::OnHealthUpdated);
 	}
-
+	if (ShieldComponent)
+	{
+		ShieldComponent->OnShieldsUpdated.AddDynamic(this, &AEnemyBase::OnShieldsUpdated);
+	}
 	if (HealthBarWidget)
 	{
 		HealthBarUI = Cast<UEnemyHealthBarBase>(HealthBarWidget->GetUserWidgetObject());
-		if (HealthBarUI)
-		{
-			UE_LOG(LogTemp, Log, TEXT("%s: HealthBarUI successfully linked."), *GetName());
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("%s: FAILED to cast widget to EnemyHealthBarBase. Check Parent Class in WBP."), *GetName());
-		}
 	}
 	// Descriptor와 CCC가 모두 유효할 때만 초기화 로직을 실행합니다.
 	if (Descriptor && CCC)
@@ -107,6 +89,34 @@ void AEnemyBase::BeginPlay()
 
 }
 
+void AEnemyBase::OnHealthUpdated(float NewCurrentHP, float NewMaxHP)
+{
+	UE_LOG(LogTemp, Warning, TEXT("[%s] AEnemyBase::OnHealthUpdated triggered!"),
+		   HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
+	// 위젯에 업데이트 명령을 내립니다.
+	if (HealthBarUI && NewMaxHP > 0)
+	{
+		const float NewHealthPercent = NewCurrentHP / NewMaxHP;
+		UE_LOG(LogTemp, Log, TEXT("NewHealthPercent : %f"), NewHealthPercent);
+		HealthBarUI->UpdateHealthBar(NewHealthPercent);
+	}
+}
+void AEnemyBase::OnShieldsUpdated()
+{
+	if (HealthBarUI && ShieldComponent)
+	{
+		TArray<FShieldUIData> ShieldDataForUI;
+		for (const FShieldLayer& Shield : ShieldComponent->GetActiveShields())
+		{
+			FShieldUIData Data;
+			Data.ShieldColor = Shield.ShieldColor;
+			Data.CurrentHealth = Shield.CurrentHealth;
+			Data.MaxHealth = Shield.MaxHealth;
+			ShieldDataForUI.Add(Data);
+		}
+		HealthBarUI->UpdateShields(ShieldDataForUI);
+	}
+}
 void AEnemyBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	// 부모 클래스의 함수를 호출할 때 반드시 인자를 전달해야 합니다.
@@ -260,58 +270,23 @@ void AEnemyBase::SetBodyColor(EEnemyColor NewColor)
 
 float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	// 위젯 컴포넌트를 보이게 합니다.
+	if (HealthBarWidget && !HealthBarWidget->IsVisible())
+	{
+		HealthBarWidget->SetVisibility(true);
+		if (ShieldComponent) OnShieldsUpdated();
+		
+	}
 	if (!HasAuthority()) return 0.f;
-	
 	// ... (쉴드 체크 로직) ...
 	if (ShieldComponent && !ShieldComponent->AreAllShieldsBroken())
 	{
 		EEnemyColor DamageColor = EEnemyColor::Black;
-		if (HealthBarWidget && !HealthBarWidget->IsVisible())
-		{
-			HealthBarWidget->SetVisibility(true);
-		}
-    
-		// 위젯에 직접 업데이트 명령을 내립니다.
-		if (HealthBarUI && CCC)
-		{
-			const float NewHealthPercent = CCC->CurrentHP / CCC->MaxHP;
-			HealthBarUI->UpdateHealthBar(NewHealthPercent);
-		}
-		// --- ✨ 진단용 로그 시작 ---
-
-		if (!HealthBarUI)
-		{
-			UE_LOG(LogTemp, Error, TEXT("TakeDamage: Cannot update UI because HealthBarUI is NULL."));
-		}
-		else if (!CCC)
-		{
-			UE_LOG(LogTemp, Error, TEXT("TakeDamage: Cannot update UI because CCC is NULL."));
-		}
-		else
-		{
-			const float NewHealthPercent = CCC->CurrentHP / CCC->MaxHP;
-			HealthBarUI->UpdateHealthBar(NewHealthPercent);
-		}
-
-			APawn* InstigatorPawn = EventInstigator->GetPawn();
-			if (!InstigatorPawn)
-			{
-				UE_LOG(LogTemp, Error, TEXT("TakeDamage FAILED: InstigatorPawn is NULL. (Controller is not possessing a Pawn)"));
-			}
-			else
-			{
-				UPlayerStateComponent* InstigatorStateComp = InstigatorPawn->FindComponentByClass<UPlayerStateComponent>();
-				if (!InstigatorStateComp)
-				{
-					UE_LOG(LogTemp, Error, TEXT("TakeDamage FAILED: PlayerStateComponent not found on Pawn %s."), *InstigatorPawn->GetName());
-				}
-				else
-				{
-					// 모든 검사를 통과!
-					DamageColor = InstigatorStateComp->PlayerColor;
-					UE_LOG(LogTemp, Log, TEXT("TakeDamage SUCCESS: DamageColor set to %s"), *UEnum::GetValueAsString(DamageColor));
-				}
-		}
+		
+		APawn* InstigatorPawn = EventInstigator->GetPawn();
+		UPlayerStateComponent* InstigatorStateComp = InstigatorPawn->FindComponentByClass<UPlayerStateComponent>();
+		
+		DamageColor = InstigatorStateComp->PlayerColor;
 		// --- 진단용 로그 끝 ---
         
 		ShieldComponent->TakeShieldDamage(DamageAmount, DamageColor);
