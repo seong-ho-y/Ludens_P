@@ -125,7 +125,9 @@ void AEnemyBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 	// 이제 이 클래스에서 복제할 변수를 등록합니다.
 	DOREPLIFETIME(AEnemyBase, bIsActiveInPool);
 	DOREPLIFETIME(AEnemyBase, ColorType);
+	DOREPLIFETIME(AEnemyBase, bShouldShowUI);
 }
+
 
 // 1. 서버에서 호출되는 활성화 함수
 void AEnemyBase::Activate(const FVector& Location, const FRotator& Rotation)
@@ -137,6 +139,11 @@ void AEnemyBase::Activate(const FVector& Location, const FRotator& Rotation)
 
 	bIsActiveInPool = true;
 	UpdateActiveState(true); // 서버에서도 직접 호출
+
+	if (CCC && Descriptor)
+	{
+		CCC->InitStats(Descriptor->MaxHP);
+	}
 }
 
 // 2. 서버에서 호출되는 비활성화 함수
@@ -144,8 +151,18 @@ void AEnemyBase::Deactivate()
 {
 	if (!HasAuthority()) return; // 서버에서만 실행
 
+
 	bIsActiveInPool = false;
 	UpdateActiveState(false); // 서버에서도 직접 호출
+	bShouldShowUI = false;
+	// 이 적은 이제 데미지를 입은 적이 없음 (다음 재사용을 위해)
+	bHasTakenDamage = false; 
+	OnRep_ShouldShowUI();
+	if (HealthBarWidget)
+	{
+		HealthBarWidget->SetVisibility(false);
+	}
+	UpdateActiveState(false);
 }
 
 // 3. 클라이언트에서 bIsActiveInPool 값이 복제 완료되면 자동으로 호출됨
@@ -218,6 +235,29 @@ void AEnemyBase::ChangeColorType(EEnemyColor NewColor)
 		ShieldComponent->InitializeShields(NewColor);
 	}
 }
+void AEnemyBase::OnRep_ShouldShowUI()
+{
+	if (HealthBarWidget)
+	{
+		// ✨ bShouldShowUI의 현재 값에 따라 UI를 켜거나 끕니다.
+		HealthBarWidget->SetVisibility(bShouldShowUI);
+
+		if (bShouldShowUI)
+		{
+			// 현재 체력 정보로 체력바 그리기
+			if (CCC)
+			{
+				OnHealthUpdated(CCC->GetCurrentHP(), CCC->GetMaxHP());
+			}
+			// 현재 쉴드 정보로 쉴드바 그리기
+			if (ShieldComponent)
+			{
+				OnShieldsUpdated();
+			}
+		}
+	}
+}
+
 // ColorType 변수가 서버로부터 복제 완료되면 클라이언트에서 자동으로 호출됩니다.
 void AEnemyBase::OnRep_ColorType()
 {

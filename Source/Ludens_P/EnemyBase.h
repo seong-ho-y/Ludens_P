@@ -37,7 +37,6 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Color")
 	void ChangeColorType(EEnemyColor Color);
 
-	
 protected:
 	virtual void BeginPlay() override;
 
@@ -84,6 +83,17 @@ protected:
 	void OnHealthUpdated(float NewCurrentHP, float NewMaxHP);
 	UFUNCTION()
 	void OnShieldsUpdated();
+
+	// ✨ UI를 표시할지 여부를 결정하는 '상태' 변수입니다.
+	UPROPERTY(ReplicatedUsing = OnRep_ShouldShowUI)
+	bool bShouldShowUI = false;
+
+	// ✨ bShouldShowUI 변수가 복제될 때 클라이언트에서 자동으로 호출될 함수입니다.
+	UFUNCTION()
+	void OnRep_ShouldShowUI();
+
+	UPROPERTY(Replicated)
+	bool bHasTakenDamage = false;
 
 public:
 	// 액터가 파괴될 때 호출되는 가상 함수를 오버라이드합니다.

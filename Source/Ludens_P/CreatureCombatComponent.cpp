@@ -28,8 +28,7 @@ void UCreatureCombatComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 
 void UCreatureCombatComponent::TakeDamage(float Amount)
 {
-	if (!GetOwner()->HasAuthority()) return;
-	if (bIsDead) return;
+	if (!GetOwner()->HasAuthority() || bIsDead) return;
 	CurrentHP -= Amount;
 	UE_LOG(LogTemp,Warning,TEXT("Enemy Attackted : %f, Max HP : %f"),CurrentHP, MaxHP);
 	OnRep_CurrentHP();
@@ -40,9 +39,6 @@ void UCreatureCombatComponent::TakeDamage(float Amount)
 }
 void UCreatureCombatComponent::OnRep_CurrentHP()
 {
-	UE_LOG(LogTemp, Warning, TEXT("[%s] CCC::OnRep_CurrentHP fired. Broadcasting OnHealthChanged."), 
-		  GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
-	// ✨ 체력이 변경되었음을 외부에 알리는 신호를 보냅니다(Broadcast).
 	OnHealthChanged.Broadcast(CurrentHP, MaxHP);
 }
 
