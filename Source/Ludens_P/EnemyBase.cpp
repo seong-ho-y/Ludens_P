@@ -219,7 +219,13 @@ void AEnemyBase::UpdateActiveState(bool bNewIsActive)
 			// Cast<AAIController>(AIController)->BrainComponent->StopLogic("Deactivated by pool");
 		}
 	}
-
+	// ✨ UI 위젯 컴포넌트의 가시성을 여기서 최종적으로 제어합니다.
+	if (HealthBarWidget)
+	{
+		// bNewIsActive가 false이면(비활성화), bShouldShowUI가 뭐든 상관없이 무조건 UI를 숨깁니다.
+		// bNewIsActive가 true이면(활성화), bShouldShowUI의 상태에 따라 UI를 보여줄지 말지 결정합니다.
+		HealthBarWidget->SetVisibility(bNewIsActive && bShouldShowUI);
+	}
 	// 기타 파티클, 사운드 등 필요한 컴포넌트들을 켜고 끄는 로직 추가...
 }
 // 이 함수는 서버에서만 호출되어야 합니다.
@@ -310,6 +316,10 @@ void AEnemyBase::SetBodyColor(EEnemyColor NewColor)
 
 float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser)
 {
+	if (!bShouldShowUI)
+	{
+		bShouldShowUI = true;
+	}
 	// 위젯 컴포넌트를 보이게 합니다.
 	if (HealthBarWidget && !HealthBarWidget->IsVisible())
 	{
