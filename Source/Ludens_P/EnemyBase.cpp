@@ -1,4 +1,7 @@
 #include "EnemyBase.h"
+
+#include "BrainComponent.h"
+#include "EnemyAIController.h"
 #include "Net/UnrealNetwork.h"
 #include "EnemyDescriptor.h"
 #include "EnemyHealthBarBase.h"
@@ -40,7 +43,7 @@ AEnemyBase::AEnemyBase()
 void AEnemyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	/*
 	if (!HasAuthority())
 	{
 		if (CCC)
@@ -48,6 +51,7 @@ void AEnemyBase::Tick(float DeltaTime)
 			UE_LOG(LogTemp, Log, TEXT("[CLIENT TICK] Enemy: %s, CCC->CurrentHP: %f"), *GetName(), CCC->GetCurrentHP());
 		}
 	}
+	*/
 }
 
 void AEnemyBase::BeginPlay()
@@ -209,14 +213,11 @@ void AEnemyBase::UpdateActiveState(bool bNewIsActive)
 	{
 		if (bNewIsActive)
 		{
-			// AI의 모든 로직을 다시 시작시킵니다.
-			// 아래는 예시이며, 사용하는 AI 클래스에 따라 다를 수 있습니다.
-			// Cast<AAIController>(AIController)->BrainComponent->RestartLogic();
+			Cast<AEnemyAIController>(AIController)->BrainComponent->RestartLogic();
 		}
 		else
 		{
-			// AI의 모든 로직을 멈춥니다.
-			// Cast<AAIController>(AIController)->BrainComponent->StopLogic("Deactivated by pool");
+			Cast<AEnemyAIController>(AIController)->BrainComponent->StopLogic("Deactivated by pool");
 		}
 	}
 	// ✨ UI 위젯 컴포넌트의 가시성을 여기서 최종적으로 제어합니다.
@@ -304,8 +305,10 @@ void AEnemyBase::SetBodyColor(EEnemyColor NewColor)
 		break;
 	case EEnemyColor::Magenta:
 		TargetColor = FLinearColor(1.f, 0.f, 1.f);
+		break;
 	case EEnemyColor::Cyan:
 		TargetColor = FLinearColor(0.f,1.f,1.f);
+		break;
 	case EEnemyColor::Black:
 	default:
 		TargetColor = FLinearColor::Black;
@@ -332,12 +335,23 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 	if (ShieldComponent && !ShieldComponent->AreAllShieldsBroken())
 	{
 		EEnemyColor DamageColor = EEnemyColor::Black;
-		
-		APawn* InstigatorPawn = EventInstigator->GetPawn();
-		UPlayerStateComponent* InstigatorStateComp = InstigatorPawn->FindComponentByClass<UPlayerStateComponent>();
-		
-		DamageColor = InstigatorStateComp->PlayerColor;
-		// --- 진단용 로그 끝 ---
+
+		// 1. 공격자 컨트롤러가 있는지 확인
+		if (EventInstigator)
+		{
+			// 2. 컨트롤러가 조종하는 폰(캐릭터)이 있는지 확인
+			APawn* InstigatorPawn = EventInstigator->GetPawn();
+			if (InstigatorPawn)
+			{
+				// 3. 폰에 PlayerStateComponent가 있는지 확인
+				UPlayerStateComponent* InstigatorStateComp = InstigatorPawn->FindComponentByClass<UPlayerStateComponent>();
+				if (InstigatorStateComp)
+				{
+					// ✨ 4. 모든 것이 유효할 때만 PlayerColor에 접근합니다.
+					DamageColor = InstigatorStateComp->PlayerColor;
+				}
+			}
+		}
         
 		ShieldComponent->TakeShieldDamage(DamageAmount, DamageColor);
 	}

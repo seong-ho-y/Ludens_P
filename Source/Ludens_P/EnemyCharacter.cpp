@@ -10,7 +10,7 @@ AEnemyCharacter::AEnemyCharacter()
 {
 	bUseControllerRotationYaw = false;
 	GetCharacterMovement()->bOrientRotationToMovement = true;
-	GetCharacterMovement()->MaxWalkSpeed = 360.f;
+	GetCharacterMovement()->MaxWalkSpeed = 1000.f;
 
 	AIControllerClass = AEnemyAIController::StaticClass();
 	AutoPossessAI = EAutoPossessAI::PlacedInWorldOrSpawned;

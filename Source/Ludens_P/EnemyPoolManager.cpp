@@ -14,28 +14,23 @@ void AEnemyPoolManager::BeginPlay()
     if (HasAuthority())
     {
         // WalkerClass를 미리 생성해서 풀에 넣어둠
-        if (WalkerClass)
+        if (WalkerClass && TankerClass)
         {
-            for (int32 i = 0; i < WalkerPoolSize; ++i)
+            for (int32 i = 0; i < PoolSize; ++i)
             {
                 FActorSpawnParameters Params;
                 Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
                 FVector SpawnLoc = FVector(300.f, 300.f, 300.f);
                 FRotator SpawnRot = FRotator::ZeroRotator;
                 AEnemyBase* NewEnemy = GetWorld()->SpawnActor<AEnemyBase>(WalkerClass, SpawnLoc, SpawnRot, Params);
-                if (NewEnemy)
+                AEnemyBase* NewEnemy_T = GetWorld()->SpawnActor<AEnemyBase>(TankerClass, SpawnLoc, SpawnRot, Params);
+                if (NewEnemy && NewEnemy_T)
                 {
                     EnemyPools.FindOrAdd(WalkerClass).PooledEnemies.Add(NewEnemy);
+                    EnemyPools.FindOrAdd(TankerClass).PooledEnemies.Add(NewEnemy_T);
                     NewEnemy->Deactivate(); // 생성 직후 바로 비활성화
+                    NewEnemy_T->Deactivate();
                 }
-            }
-        }
-        if (EnemyPools.Contains(WalkerClass))
-        {
-            UE_LOG(LogTemp, Warning, TEXT("초기 풀 생성 완료. 워커 풀의 적 개수: %d"), EnemyPools[WalkerClass].PooledEnemies.Num());
-            for (AEnemyBase* Enemy : EnemyPools[WalkerClass].PooledEnemies)
-            {
-                UE_LOG(LogTemp, Warning, TEXT(" - %s의 활성 상태: %s"), *Enemy->GetName(), Enemy->IsActive() ? TEXT("활성") : TEXT("비활성"));
             }
         }
         // ... 다른 Enemy 타입 풀 생성 ...
