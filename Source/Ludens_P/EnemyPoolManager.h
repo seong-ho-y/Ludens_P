@@ -42,9 +42,11 @@ public:
 	// 미리 생성해둘 Enemy 클래스들
 	UPROPERTY(EditAnywhere, Category="Pool Config")
 	TSubclassOf<AEnemyBase> WalkerClass;
+	UPROPERTY(EditAnywhere, Category="Pool Config")
+	TSubclassOf<AEnemyBase> TankerClass;
     
 	UPROPERTY(EditAnywhere, Category="Pool Config")
-	int32 WalkerPoolSize = 10;
+	int32 PoolSize = 10;
 	
 	// ... 다른 Enemy 타입들도 추가 ...
 };

@@ -40,9 +40,7 @@ void ALudens_PPlayerController::Server_RequestSpawnEnemy_Implementation()
 		FVector SpawnLoc = FVector(300.f, 300.f, 300.f);
 		FRotator SpawnRot = FRotator::ZeroRotator;
         
-		// 이 변수는 컨트롤러가 알고 있어야 합니다. EditAnywhere 등으로 설정하세요.
-		TSubclassOf<AEnemyBase> EnemyClassToSpawn = WalkerEnemyBPClass; 
-        
-		PoolManager->SpawnEnemy(EnemyClassToSpawn, SpawnLoc, SpawnRot, EEnemyColor::Green);
+		PoolManager->SpawnEnemy(WalkerEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Green);
+		PoolManager->SpawnEnemy(TankerEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Cyan);
 	}
 }
