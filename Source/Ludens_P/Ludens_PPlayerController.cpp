@@ -40,7 +40,9 @@ void ALudens_PPlayerController::Server_RequestSpawnEnemy_Implementation()
 		FVector SpawnLoc = FVector(300.f, 300.f, 300.f);
 		FRotator SpawnRot = FRotator::ZeroRotator;
         
-		PoolManager->SpawnEnemy(WalkerEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Green);
+		PoolManager->SpawnEnemy(WalkerEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Magenta);
 		PoolManager->SpawnEnemy(TankerEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Cyan);
+		PoolManager->SpawnEnemy(RunnerEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Red);
+		PoolManager->SpawnEnemy(SniperEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Black);
 	}
 }

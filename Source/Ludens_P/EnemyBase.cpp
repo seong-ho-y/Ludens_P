@@ -82,7 +82,7 @@ void AEnemyBase::BeginPlay()
 	if (Descriptor && CCC)
 	{
 		// 이동속도 적용
-		GetCharacterMovement()->MaxWalkSpeed = FMath::Max(120.f, Descriptor->WalkSpeed);
+		GetCharacterMovement()->MaxWalkSpeed = Descriptor->WalkSpeed;
 		// HP 적용
 		CCC->InitStats(Descriptor->MaxHP);
 	}
@@ -95,13 +95,10 @@ void AEnemyBase::BeginPlay()
 
 void AEnemyBase::OnHealthUpdated(float NewCurrentHP, float NewMaxHP)
 {
-	UE_LOG(LogTemp, Warning, TEXT("[%s] AEnemyBase::OnHealthUpdated triggered!"),
-		   HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
 	// 위젯에 업데이트 명령을 내립니다.
 	if (HealthBarUI && NewMaxHP > 0)
 	{
 		const float NewHealthPercent = NewCurrentHP / NewMaxHP;
-		UE_LOG(LogTemp, Log, TEXT("NewHealthPercent : %f"), NewHealthPercent);
 		HealthBarUI->UpdateHealthBar(NewHealthPercent);
 	}
 }

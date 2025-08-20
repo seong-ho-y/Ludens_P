@@ -44,6 +44,10 @@ public:
 	TSubclassOf<AEnemyBase> WalkerClass;
 	UPROPERTY(EditAnywhere, Category="Pool Config")
 	TSubclassOf<AEnemyBase> TankerClass;
+	UPROPERTY(EditAnywhere, Category="Pool Config")
+	TSubclassOf<AEnemyBase> RunnerClass;
+	UPROPERTY(EditAnywhere, Category="Pool Config")
+	TSubclassOf<AEnemyBase> SniperClass;
     
 	UPROPERTY(EditAnywhere, Category="Pool Config")
 	int32 PoolSize = 10;

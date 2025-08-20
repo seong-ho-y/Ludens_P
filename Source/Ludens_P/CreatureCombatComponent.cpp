@@ -14,7 +14,6 @@ UCreatureCombatComponent::UCreatureCombatComponent()
 void UCreatureCombatComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	CurrentHP = MaxHP;
 }
 
 // ✨ GetLifetimeReplicatedProps 함수를 추가하여 CurrentHP를 복제 등록

@@ -33,6 +33,10 @@ public:
 	TSubclassOf<AEnemyBase> WalkerEnemyBPClass;
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<AEnemyBase> TankerEnemyBPClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AEnemyBase> RunnerEnemyBPClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AEnemyBase> SniperEnemyBPClass;
 
 	// "적 스폰을 요청"하는 서버 RPC 함수를 선언합니다.
 	UFUNCTION(Server, Reliable)
