@@ -1,5 +1,7 @@
 #include "EnemyPoolManager.h"
 
+#include "GenericPlatform/GenericPlatformCrashContext.h"
+
 AEnemyPoolManager::AEnemyPoolManager()
 {
     PrimaryActorTick.bCanEverTick = false;
@@ -14,7 +16,7 @@ void AEnemyPoolManager::BeginPlay()
     if (HasAuthority())
     {
         // WalkerClass를 미리 생성해서 풀에 넣어둠
-        if (WalkerClass && TankerClass)
+        if (WalkerClass && TankerClass && RunnerClass && SniperClass)
         {
             for (int32 i = 0; i < PoolSize; ++i)
             {
@@ -24,12 +26,18 @@ void AEnemyPoolManager::BeginPlay()
                 FRotator SpawnRot = FRotator::ZeroRotator;
                 AEnemyBase* NewEnemy = GetWorld()->SpawnActor<AEnemyBase>(WalkerClass, SpawnLoc, SpawnRot, Params);
                 AEnemyBase* NewEnemy_T = GetWorld()->SpawnActor<AEnemyBase>(TankerClass, SpawnLoc, SpawnRot, Params);
+                AEnemyBase* NewEnemy_R = GetWorld()->SpawnActor<AEnemyBase>(RunnerClass, SpawnLoc, SpawnRot, Params);
+                AEnemyBase* NewEnemy_S = GetWorld()->SpawnActor<AEnemyBase>(SniperClass, SpawnLoc, SpawnRot, Params);
                 if (NewEnemy && NewEnemy_T)
                 {
                     EnemyPools.FindOrAdd(WalkerClass).PooledEnemies.Add(NewEnemy);
                     EnemyPools.FindOrAdd(TankerClass).PooledEnemies.Add(NewEnemy_T);
+                    EnemyPools.FindOrAdd(RunnerClass).PooledEnemies.Add(NewEnemy_R);
+                    EnemyPools.FindOrAdd(SniperClass).PooledEnemies.Add(NewEnemy_S);
                     NewEnemy->Deactivate(); // 생성 직후 바로 비활성화
                     NewEnemy_T->Deactivate();
+                    NewEnemy_R->Deactivate();
+                    NewEnemy_S->Deactivate();
                 }
             }
         }
