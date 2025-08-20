@@ -19,9 +19,36 @@ public:
 	// Sets default values for this actor's properties
 	ARoom();
 
+    // 문과 연결할 수 있도록 변수 노출
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Door")
+    ADoor* EntryDoor;   // 입구 쪽 문 (다음 방 입장 후 닫히게 될 문)
+
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Door")
+    ADoor* ExitDoor;    // 방이 클리어되면 열릴 문
+
+    // 어떤 종류의 문을 생성할지 결정하는 클래스 변수
+    UPROPERTY(EditAnywhere, Category = "Door")
+    TSubclassOf<ADoor> DoorClass;
+
+    // 문 생성 위치
+    UPROPERTY(EditAnywhere, Category = "Door")
+    float EntryDoorLoc = -1000.f;
+
+    UPROPERTY(EditAnywhere, Category = "Door")
+    float ExitDoorLoc = 1000.f;
+
+    // 방 입장 체크용 트리거
+    UPROPERTY(VisibleAnywhere, Category = "Room")
+    UBoxComponent* EntryTrigger;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+    TSet<AActor*> EnteredPlayers;  // 중복 방지를 위한 집합
+
+    // 자동 클리어 처리
+    void AutoClear();
 
 public:
     // 방 시작 (5초 후 자동 클리어)
@@ -29,15 +56,14 @@ public:
 
     // RoomManager에서 호출
     void SetManager(ARoomManager* InManager);
+
     void SetRoomIndex(int32 Index);
 
-    // 문과 연결할 수 있도록 변수 노출
-    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Room")
-    ADoor* EntryDoor; // 방이 클리어되면 열릴 문
-
-protected:
-    // 자동 클리어 처리
-    void AutoClear();
+    // 트리거 오버랩 처리
+    UFUNCTION()
+    virtual void OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
+        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
+        const FHitResult& SweepResult);
 
 private:
     UPROPERTY()
@@ -47,28 +73,4 @@ private:
     bool bIsCleared = false;
 
     FTimerHandle AutoClearTimer;
-
-public:
-    // 방 입장 체크용 트리거
-    UPROPERTY(VisibleAnywhere, Category = "Room")
-    UBoxComponent* EntryTrigger;
-
-    // 입구 쪽 문 (다음 방 입장 후 닫히게 될 문)
-
-    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Room")
-    ADoor* ExitDoor;
-
-    // 트리거 오버랩 처리
-    UFUNCTION()
-    void OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
-        UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
-        const FHitResult& SweepResult);
-
-private:
-    TSet<AActor*> EnteredPlayers;  // 중복 방지를 위한 집합
-
-public:
-    // 어떤 종류의 문을 생성할지 결정하는 클래스 변수
-    UPROPERTY(EditAnywhere, Category = "Room")
-    TSubclassOf<ADoor> DoorClass;
 };

@@ -6,7 +6,8 @@
 #include "GameFramework/Actor.h"
 #include "RoomManager.generated.h"
 
-class ARoom; // Room Å¬·¡½º Æ÷¿öµå ¼±¾ğ
+class ARoom;
+class AElevator;
 
 UCLASS()
 class LUDENS_P_API ARoomManager : public AActor
@@ -17,39 +18,50 @@ public:
 	// Sets default values for this actor's properties
 	ARoomManager();
 
+    // ì´ ëª‡ ê°œì˜ ë°©ì„ ë§Œë“¤ ê²ƒì¸ì§€
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room")
+    int32 NumRoomsToSpawn = 5;
+
+    // ìƒì„± ê°€ëŠ¥í•œ ë°© ì¢…ë¥˜ë“¤ (BP_Room1, BP_Room2 ë“±)
+    UPROPERTY(EditAnywhere, Category = "Room")
+    TArray<TSubclassOf<ARoom>> RoomTypes;
+
+    // ë°© ê°„ ê±°ë¦¬ (Xì¶• ê¸°ì¤€)
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room")
+    float RoomSpacing = 2000.f;
+
+    // ë ˆë²¨ì— ë°°ì¹˜í•œ ì—˜ë¦¬ë² ì´í„° ì°¸ì¡°(ì¸ìŠ¤í„´ìŠ¤ ì§€ì •)
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Elevator")
+    class AElevator* StartElevator;
+
+    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Elevator")
+    class AElevator* EndElevator;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:
-    // ´ÙÀ½ ¹æÀ» ½ÃÀÛ½ÃÅ°´Â °ø°³ ÇÔ¼ö (ARoomÀÌ È£Ãâ)
+    // ì²« ë°©ì˜ EntryDoorë¥¼ ì—´ì–´ì£¼ëŠ” í•¨ìˆ˜
+    UFUNCTION()
+    void OpenFirstRoomEntryDoor();
+
+    // ë‹¤ìŒ ë°©ì„ ì‹œì‘ì‹œí‚¤ëŠ” ê³µê°œ í•¨ìˆ˜ (ARoomì´ í˜¸ì¶œ)
     UFUNCTION()
     void StartNextRoom();
 
-    // ÇöÀç ¹æÀ» Å¬¸®¾î Ã³¸®ÇÔ (ARoom¿¡¼­ ¾Ë¸² ¹ŞÀ½)
+    // í˜„ì¬ ë°©ì„ í´ë¦¬ì–´ ì²˜ë¦¬í•¨ (ARoomì—ì„œ ì•Œë¦¼ ë°›ìŒ)
     UFUNCTION()
     void NotifyRoomCleared(int32 RoomIndex);
 
-    // ÃÑ ¸î °³ÀÇ ¹æÀ» ¸¸µé °ÍÀÎÁö
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room Generation")
-    int32 NumRoomsToSpawn = 5;
-
-    // »ı¼º °¡´ÉÇÑ ¹æ Á¾·ùµé (BP_Room1, BP_Room2 µî)
-    UPROPERTY(EditAnywhere, Category = "Room Generation")
-    TArray<TSubclassOf<ARoom>> RoomTypes;
-
-    // ¹æ °£ °Å¸® (XÃà ±âÁØ)
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room Generation")
-    float RoomSpacing = 2000.f;
-
 private:
-    // »ı¼ºµÈ ¹æ ÀÎ½ºÅÏ½º ÀúÀå
+    // ìƒì„±ëœ ë°© ì¸ìŠ¤í„´ìŠ¤ ì €ì¥
     UPROPERTY()
     TArray<ARoom*> SpawnedRooms;
 
-    // ÇöÀç ÇÃ·¹ÀÌ¾î°¡ À§Ä¡ÇÑ ¹æÀÇ ÀÎµ¦½º
+    // í˜„ì¬ í”Œë ˆì´ì–´ê°€ ìœ„ì¹˜í•œ ë°©ì˜ ì¸ë±ìŠ¤
     int32 CurrentRoomIndex = 0;
 
-    // ¹æÀ» »ı¼ºÇÏ´Â ÇÔ¼ö
+    // ë°©ì„ ìƒì„±í•˜ëŠ” í•¨ìˆ˜
     void GenerateRooms();
 };

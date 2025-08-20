@@ -3,6 +3,7 @@
 
 #include "RoomManager.h"
 #include "Room.h"
+#include "Elevator.h"
 #include "Door.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Engine/World.h"
@@ -21,18 +22,32 @@ void ARoomManager::BeginPlay()
 
     if (HasAuthority())
     {
-        GenerateRooms(); // ¹æ »ý¼º
-        StartNextRoom(); // Ã¹ ¹æ
+        GenerateRooms();
+
+        if (StartElevator)
+        {
+            // Elevatorê°€ â€œ3ì¸ ì§‘ê²°â€ ì‹œ ë¸Œë¡œë“œìºìŠ¤íŠ¸í•  ë¸ë¦¬ê²Œì´íŠ¸ì— ë°”ì¸ë”© (ì•„ëž˜ 2) ì°¸ê³ )
+            StartElevator->OnAllPlayersReady.AddDynamic(this, &ARoomManager::OpenFirstRoomEntryDoor);
+        }
+        else
+        {
+            if (GEngine)
+            {
+                FString Msg = FString::Printf(TEXT("There is no StartElevator!"));
+                GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, Msg);
+            }
+        }
     }
 }
 
 void ARoomManager::GenerateRooms()
 {
     FVector StartLocation = GetActorLocation();
+    float z = 200.f;
 
     for (int32 i = 0; i < NumRoomsToSpawn; ++i)
     {
-        // ¹æ Á¾·ù ¹«ÀÛÀ§ ¼±ÅÃ
+        // ë°© ì¢…ë¥˜ ë¬´ìž‘ìœ„ ì„ íƒ
         int32 RandIndex = FMath::RandRange(0, RoomTypes.Num() - 1);
         TSubclassOf<ARoom> SelectedRoom = RoomTypes[RandIndex];
 
@@ -43,8 +58,8 @@ void ARoomManager::GenerateRooms()
         ARoom* NewRoom = GetWorld()->SpawnActor<ARoom>(SelectedRoom, SpawnLocation, FRotator::ZeroRotator, SpawnParams);
         if (NewRoom)
         {
-            NewRoom->SetRoomIndex(i);     // ¹æÀÇ ÀÎµ¦½º ¼³Á¤
-            NewRoom->SetManager(this);    // Room ¡æ Manager ¿ªÂüÁ¶
+            NewRoom->SetRoomIndex(i);     // ë°©ì˜ ì¸ë±ìŠ¤ ì„¤ì •
+            NewRoom->SetManager(this);    // Room â†’ Manager ì—­ì°¸ì¡°
             SpawnedRooms.Add(NewRoom);
 
             if (GEngine)
@@ -56,8 +71,26 @@ void ARoomManager::GenerateRooms()
     }
 }
 
+void ARoomManager::OpenFirstRoomEntryDoor()
+{
+    // ì²« ë°© ì¸ë±ìŠ¤ëŠ” 0
+    if (StartElevator->ExitDoor)
+    {
+        StartElevator->EntryDoor->Open();
+        StartElevator->ExitDoor->Open();
+    }
+
+    if (SpawnedRooms.IsValidIndex(0) && SpawnedRooms[0]->EntryDoor)
+    {
+        SpawnedRooms[0]->EntryDoor->Open();
+    }
+    // ì‹¤ì œ "ì²« ë°© ì‹œìž‘"ì€ ì²« ë°© EntryTriggerì—ì„œ 3ì¸ ê°ì§€ë˜ë©´ ìžë™ ì§„í–‰ë¨(ê¸°ì¡´ ë¡œì§ ìœ ì§€)
+}
+
 void ARoomManager::StartNextRoom()
 {
+    if (!HasAuthority()) return;
+
     if (SpawnedRooms.IsValidIndex(CurrentRoomIndex))
     {
         ARoom* RoomToStart = SpawnedRooms[CurrentRoomIndex];
@@ -68,8 +101,8 @@ void ARoomManager::StartNextRoom()
     }
     else
     {
-        // °ÔÀÓ Á¾·á Ã³¸®
-        if (GEngine && HasAuthority())
+        // ê²Œìž„ ì¢…ë£Œ ì²˜ë¦¬
+        if (GEngine)
         {
             GEngine->AddOnScreenDebugMessage(-1, 8.f, FColor::Red, TEXT("All Room Cleared!"));
         }
@@ -85,23 +118,27 @@ void ARoomManager::NotifyRoomCleared(int32 RoomIndex)
             ARoom* CurrentRoom = SpawnedRooms[RoomIndex];
             ARoom* NextRoom = SpawnedRooms.IsValidIndex(RoomIndex + 1) ? SpawnedRooms[RoomIndex + 1] : nullptr;
 
-            // ÇöÀç ¹æÀÇ Ãâ±¸ ¹® ¿­±â
+            // í˜„ìž¬ ë°©ì˜ ì¶œêµ¬ ë¬¸ ì—´ê¸°
             if (CurrentRoom && CurrentRoom->ExitDoor)
             {
                 CurrentRoom->ExitDoor->Open();
             }
 
-            // ´ÙÀ½ ¹æÀÇ ÀÔ±¸ ¹® ¿­±â
+            // ë‹¤ìŒ ë°©ì˜ ìž…êµ¬ ë¬¸ ì—´ê¸°
             if (NextRoom && NextRoom->EntryDoor)
             {
                 NextRoom->EntryDoor->Open();
             }
         }
 
-<<<<<<< Updated upstream
-        CurrentRoomIndex++;
-=======
-        // ÀÌÀü ¹æ ºñÈ°¼ºÈ­
+        // ë§ˆì§€ë§‰ ë°©ì´ë©´ EndElevator ìž…ìž¥ í—ˆìš©(ì„ íƒ)
+        const bool bIsLastRoom = (RoomIndex == NumRoomsToSpawn - 1);
+        if (bIsLastRoom && EndElevator && EndElevator->EntryDoor)
+        {
+            EndElevator->EntryDoor->Open();
+        }
+
+        // ì´ì „ ë°© ë¹„í™œì„±í™”
         SpawnedRooms[CurrentRoomIndex]->EntryTrigger->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 
         CurrentRoomIndex++;
@@ -110,6 +147,5 @@ void ARoomManager::NotifyRoomCleared(int32 RoomIndex)
         {
             SpawnedRooms[CurrentRoomIndex]->EntryTrigger->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
         }
->>>>>>> Stashed changes
     }
 }

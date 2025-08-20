@@ -15,53 +15,30 @@ public:
 	// Sets default values for this actor's properties
 	ADoor();
 
+    UPROPERTY(VisibleAnywhere)
+    UStaticMeshComponent* DoorMesh;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-<<<<<<< Updated upstream
-public:
-	UFUNCTION(BlueprintCallable)
-	void Open();
-
-	UFUNCTION(BlueprintCallable)
-	void Close();
-
-private:
-	// ¹® ¿ÜÇü
-	UPROPERTY(VisibleAnywhere)
-	UStaticMeshComponent* DoorMesh;
-
-	// ÇöÀç ¿­¸° »óÅÂÀÎÁö ¿©ºÎ
-	bool bIsOpen = false;
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastOpen();
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastClose();
-=======
-    //¹® ¿­¸² »óÅÂ¸¦ º¹Á¦ + º¯°æ ½Ã ÇÔ¼ö È£Ãâ
+    //ë¬¸ ì—´ë¦¼ ìƒíƒœë¥¼ ë³µì œ + ë³€ê²½ ì‹œ í•¨ìˆ˜ í˜¸ì¶œ
     UPROPERTY(ReplicatedUsing = OnRep_DoorStateChanged)
     bool bIsOpen;
 
     UFUNCTION()
-    void OnRep_DoorStateChanged();  // Å¬¶óÀÌ¾ðÆ®¿¡¼­¸¸ È£ÃâµÊ
+    void OnRep_DoorStateChanged();  // í´ë¼ì´ì–¸íŠ¸ì—ì„œë§Œ í˜¸ì¶œë¨
 
-    // ¹® ½Ã°¢ + Ãæµ¹ Ã³¸®
+    // ë¬¸ ì‹œê° + ì¶©ëŒ ì²˜ë¦¬
     void ApplyDoorState();
 
 public:
-    UPROPERTY(VisibleAnywhere)
-    UStaticMeshComponent* DoorMesh;
+    UFUNCTION(BlueprintCallable)
+    void Open();    // ë¬¸ ì—´ê¸°
 
     UFUNCTION(BlueprintCallable)
-    void Open();  // ¹® ¿­±â
+    void Close();   // ë¬¸ ë‹«ê¸°
 
-    UFUNCTION(BlueprintCallable)
-    void Close(); // ¹® ´Ý±â
-
-    // º¹Á¦ ¼³Á¤ ÇÔ¼ö
+    // ë³µì œ ì„¤ì • í•¨ìˆ˜
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
->>>>>>> Stashed changes
 };

@@ -7,11 +7,8 @@
 #include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
-#include "GameFramework/Character.h" // ÇÃ·¹ÀÌ¾î ÆÇº°¿ë
-<<<<<<< Updated upstream
-=======
+#include "GameFramework/Character.h"    // í”Œë ˆì´ì–´ íŒë³„ìš©
 #include "RewardSystemComponent.h"
->>>>>>> Stashed changes
 
 // Sets default values
 ARoom::ARoom()
@@ -31,36 +28,35 @@ ARoom::ARoom()
 void ARoom::BeginPlay()
 {
     Super::BeginPlay();
-    // StartRoom()Àº Manager¿¡¼­ Á÷Á¢ È£Ãâ
+    // StartRoom()ì€ Managerì—ì„œ ì§ì ‘ í˜¸ì¶œ
 
-    if (EntryTrigger)
+    if (HasAuthority())
     {
-        EntryTrigger->OnComponentBeginOverlap.AddDynamic(this, &ARoom::OnEntryTriggerBegin);
-    }
+        if (EntryTrigger)
+        {
+            EntryTrigger->OnComponentBeginOverlap.AddDynamic(this, &ARoom::OnEntryTriggerBegin);
+        }
 
-<<<<<<< Updated upstream
-    if (DoorClass)
-=======
-    if (HasAuthority() && DoorClass)
->>>>>>> Stashed changes
-    {
-        // ¹® À§Ä¡ ¼³Á¤ (¿øÇÏ´Â À§Ä¡·Î Á¶Á¤)
-        FVector EntryLocation = GetActorLocation() + FVector(-1000.f, 0.f, 0.f);
-        FVector ExitLocation = GetActorLocation() + FVector(1000.f, 0.f, 0.f);
-        FRotator DoorRotation = FRotator::ZeroRotator;
+        if (DoorClass)
+        {
+            // ë¬¸ ìœ„ì¹˜ ì„¤ì • (ì›í•˜ëŠ” ìœ„ì¹˜ë¡œ ì¡°ì •)
+            if (EntryDoorLoc && ExitDoorLoc)
+            {
+                FVector EntryLocation = GetActorLocation() + FVector(EntryDoorLoc, 0.f, 0.f);
+                FVector ExitLocation = GetActorLocation() + FVector(ExitDoorLoc, 0.f, 0.f);
 
-        FActorSpawnParameters SpawnParams;
-<<<<<<< Updated upstream
-        SpawnParams.Owner = this;
-=======
-        SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
->>>>>>> Stashed changes
+                FRotator DoorRotation = FRotator::ZeroRotator;
 
-        // EntryDoor »ı¼º
-        EntryDoor = GetWorld()->SpawnActor<ADoor>(DoorClass, EntryLocation, DoorRotation, SpawnParams);
+                FActorSpawnParameters SpawnParams;
+                SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-        // ExitDoor »ı¼º
-        ExitDoor = GetWorld()->SpawnActor<ADoor>(DoorClass, ExitLocation, DoorRotation, SpawnParams);
+                // EntryDoor ìƒì„±
+                EntryDoor = GetWorld()->SpawnActor<ADoor>(DoorClass, EntryLocation, DoorRotation, SpawnParams);
+
+                // ExitDoor ìƒì„±
+                ExitDoor = GetWorld()->SpawnActor<ADoor>(DoorClass, ExitLocation, DoorRotation, SpawnParams);
+            }
+        }
     }
 }
 
@@ -78,13 +74,13 @@ void ARoom::StartRoom()
 {
     bIsCleared = false;
 
-    if (GEngine && HasAuthority())
+    if (GEngine)
     {
         FString Msg = FString::Printf(TEXT("Room %d Start"), RoomIndex);
         GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, Msg);
     }
 
-    // 5ÃÊ ÈÄ ÀÚµ¿ Å¬¸®¾î
+    // 5ì´ˆ í›„ ìë™ í´ë¦¬ì–´
     GetWorld()->GetTimerManager().SetTimer(
         AutoClearTimer,
         this,
@@ -109,10 +105,8 @@ void ARoom::AutoClear()
     {
         Manager->NotifyRoomCleared(RoomIndex);
     }
-<<<<<<< Updated upstream
-=======
 
-    // ¸ğµç ÇÃ·¹ÀÌ¾î¿¡°Ô º¸»ó UI ¶ç¿ì±â
+    // ëª¨ë“  í”Œë ˆì´ì–´ì—ê²Œ ë³´ìƒ UI ë„ìš°ê¸°
     for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
     {
         if (APlayerController* PC = Cast<APlayerController>(*It))
@@ -128,7 +122,6 @@ void ARoom::AutoClear()
             }
         }
     }
->>>>>>> Stashed changes
 }
 
 void ARoom::OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
@@ -138,20 +131,23 @@ void ARoom::OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* Oth
     if (!OtherActor) return;
 
     ACharacter* OverlappingCharacter = Cast<ACharacter>(OtherActor);
-    if (OverlappingCharacter)
-    {
-        EnteredPlayers.Add(OverlappingCharacter);
+    if (!OverlappingCharacter) return;
 
-        FString Msg = FString::Printf(TEXT("Waiting: %d / 3"), EnteredPlayers.Num());
-        if (HasAuthority()) GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::White, Msg);
+    // ë¶€ëª¨ì—ì„œ ìŠ¹ê²©í•œ EnteredPlayers ì‚¬ìš©
+    EnteredPlayers.Add(OverlappingCharacter);
+
+    if (HasAuthority())
+    {
+        if (GEngine)
+        {
+            FString Msg = FString::Printf(TEXT("[Room] Waiting: %d / 3"), EnteredPlayers.Num());
+            GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::White, Msg);
+        }
 
         if (EnteredPlayers.Num() == 3)
         {
-            if (EntryDoor)
-                EntryDoor->Close();  // ¹® ´İ°í
-
-            if (Manager)
-                Manager->StartNextRoom();  // ´ÙÀ½ ¹æ ½ÃÀÛ
+            if (EntryDoor) EntryDoor->Close();      // ë¬¸ ë‹«ê³ 
+            if (Manager) Manager->StartNextRoom();  // ë‹¤ìŒ ë°© ì‹œì‘
         }
     }
 }

@@ -4,100 +4,55 @@
 #include "Door.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/Engine.h"
-<<<<<<< Updated upstream
-=======
 #include "Net/UnrealNetwork.h"
->>>>>>> Stashed changes
 
 ADoor::ADoor()
 {
     bReplicates = true;
-    SetReplicateMovement(true); // ¹®ÀÌ ¿òÁ÷ÀÌ´Â °æ¿ì
+    SetReplicateMovement(true); // ë¬¸ì´ ì›€ì§ì´ëŠ” ê²½ìš°
 
     RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
 
     DoorMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("DoorMesh"));
     DoorMesh->SetupAttachment(RootComponent);
-<<<<<<< Updated upstream
-
-    // ÃÊ±â Ãæµ¹ ¼³Á¤
-    DoorMesh->SetCollisionProfileName(TEXT("BlockAll"));
-=======
-    DoorMesh->SetCollisionProfileName(TEXT("BlockAll")); // ÃÊ±â Ãæµ¹ ¼³Á¤
+    DoorMesh->SetCollisionProfileName(TEXT("BlockAll"));    // ì´ˆê¸° ì¶©ëŒ ì„¤ì •
 
     bIsOpen = false;
->>>>>>> Stashed changes
 }
 
 void ADoor::BeginPlay()
 {
     Super::BeginPlay();
-<<<<<<< Updated upstream
-=======
-    ApplyDoorState(); // ÃÊ±â »óÅÂ ¹İ¿µ
->>>>>>> Stashed changes
+
+    ApplyDoorState();   // ì´ˆê¸° ìƒíƒœ ë°˜ì˜
 }
 
 void ADoor::Open()
 {
-<<<<<<< Updated upstream
-    if (!bIsOpen && HasAuthority())
-    {
-        bIsOpen = true;
-
-        MulticastOpen();  // ¸ğµç Å¬¶óÀÌ¾ğÆ®¿¡ ¹® ¼û±â±â ÀüÆÄ
-
-        if (GEngine)
-        {
-            GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("Door Opened"));
-        }
-=======
     if (HasAuthority() && !bIsOpen)
     {
-        bIsOpen = true; // ¼­¹ö¿¡¼­ °ª¸¸ ¹Ù²Ù¸é Å¬¶ó¿¡¼­ OnRep È£ÃâµÊ
+        UE_LOG(LogTemp, Warning, TEXT("[Server] %s Open()"), *GetName());
+        bIsOpen = true;     // ì„œë²„ì—ì„œ ê°’ë§Œ ë°”ê¾¸ë©´ í´ë¼ì—ì„œ OnRep í˜¸ì¶œë¨
         ApplyDoorState();
-
-        UE_LOG(LogTemp, Log, TEXT("Door opened (Server)"));
->>>>>>> Stashed changes
+    }
+    else
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[%s] %s Open() IGNORED (Auth=%d, bIsOpen=%d)"),
+            HasAuthority() ? TEXT("Server") : TEXT("Client"), *GetName(), HasAuthority(), bIsOpen);
     }
 }
 
 void ADoor::Close()
 {
-<<<<<<< Updated upstream
-    if (bIsOpen)
-    {
-        bIsOpen = false;
-
-        if (HasAuthority())
-        {
-            MulticastClose();  // ¸ğµç Å¬¶óÀÌ¾ğÆ®¿¡ ¹® »ı¼º ÀüÆÄ
-
-            if (GEngine)
-            {
-                GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, TEXT("Door Closed"));
-            }
-        }
-    }
-}
-
-void ADoor::MulticastOpen_Implementation()
-{
-    SetActorHiddenInGame(true);     // ¾È º¸ÀÌ°Ô
-    SetActorEnableCollision(false); // Ãæµ¹ ²¨Áü
-}
-
-void ADoor::MulticastClose_Implementation()
-{
-    SetActorHiddenInGame(false);    // º¸ÀÌ°Ô
-    SetActorEnableCollision(true);  // Ãæµ¹ ÄÑÁü
-=======
     if (HasAuthority() && bIsOpen)
     {
         bIsOpen = false;
         ApplyDoorState();
 
-        UE_LOG(LogTemp, Log, TEXT("Door closed (Server)"));
+        if (GEngine)
+        {
+            GEngine->AddOnScreenDebugMessage(-1, 8.f, FColor::Orange, TEXT("Door Closed"));
+        }
     }
 }
 
@@ -105,21 +60,20 @@ void ADoor::ApplyDoorState()
 {
     if (!DoorMesh) return;
 
+    // ê°€ì‹œì„±
     DoorMesh->SetVisibility(!bIsOpen);
     DoorMesh->SetHiddenInGame(bIsOpen);
+    
+    // ì¶©ëŒ: ì•¡í„° + ë©”ì‹œ ë‘˜ ë‹¤ í™•ì‹¤íˆ ë„ê³ /ì¼œê¸°
     SetActorEnableCollision(!bIsOpen);
-
-    FString Who = HasAuthority() ? TEXT("Server") : TEXT("Client");
-    FString State = bIsOpen ? TEXT("Opened") : TEXT("Closed");
-
-    UE_LOG(LogTemp, Log, TEXT("[%s] Door %s via ApplyDoorState()"), *Who, *State);
+    DoorMesh->SetCollisionEnabled(bIsOpen ? ECollisionEnabled::NoCollision : ECollisionEnabled::QueryAndPhysics);
 }
 
 void ADoor::OnRep_DoorStateChanged()
 {
+    UE_LOG(LogTemp, Warning, TEXT("[Client] %s OnRep_DoorStateChanged -> %s"),
+        *GetName(), bIsOpen ? TEXT("OPEN") : TEXT("CLOSED"));
     ApplyDoorState();
-
-    UE_LOG(LogTemp, Log, TEXT("OnRep_DoorStateChanged() called on Client"));
 }
 
 void ADoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -127,5 +81,4 @@ void ADoor::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimePro
     Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
     DOREPLIFETIME(ADoor, bIsOpen);
->>>>>>> Stashed changes
 }
