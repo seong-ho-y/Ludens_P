@@ -11,7 +11,7 @@ UBTS_FindNearestPlayer::UBTS_FindNearestPlayer()
 	NodeName = TEXT("FNP_S");
 	bNotifyTick = true;
 	Interval = 0.5f;
-	RandomDeviation = 0.1f;
+	RandomDeviation = 0.0f;
 
 	TargetActorKey.AddObjectFilter(this, GET_MEMBER_NAME_CHECKED(UBTS_FindNearestPlayer, TargetActorKey), AActor::StaticClass());
 }
