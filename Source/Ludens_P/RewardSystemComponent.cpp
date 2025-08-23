@@ -87,10 +87,12 @@ void URewardSystemComponent::Client_ShowRewardUI_Implementation(const TArray<FRe
 
 void URewardSystemComponent::ShowRewardOptions()
 {
+	UE_LOG(LogTemp, Error, TEXT("SERVER: ShowRewardOptions has been called. AllRewards Array Count = %d"), AllRewards.Num());
 	CurrentChoices.Empty();
 
 	while (CurrentChoices.Num() < 3 && AllRewards.Num() > 0)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("ShowOptions are making"));
 		int32 Index = FMath::RandRange(0, AllRewards.Num() - 1);
 		CurrentChoices.Add(AllRewards[Index]);
 	}
