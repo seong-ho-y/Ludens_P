@@ -39,7 +39,7 @@ protected:
     void ApplyReward(const FRewardData& Data);
 
     UFUNCTION(NetMulticast, Reliable)
-    void Multicast_ShowRewardUI(); // UI 积己 傈侩
+    void Multicast_ShowRewardUI(const TArray<FRewardData>& InChoices); // UI 积己 傈侩
 
     UFUNCTION(Client, Reliable)
     void Client_EnableInputAfterReward();

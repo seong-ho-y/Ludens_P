@@ -76,20 +76,24 @@ void AElevator::TravelToNextStage()
         return;
     }
 
-    // 소프트경로 -> 텍스트 URL (예: "/Game/Maps/Stage2")
-    const FString MapPath = NextStage.ToSoftObjectPath().ToString();
+    // 소프트 경로 -> 패키지 경로("/Game/Maps/Stage2") 추출
+    const FString ObjPath = NextStage.ToSoftObjectPath().ToString(); // "/Game/Maps/Stage2.Stage2"
+    FString PackagePath, ObjectName;
+    if (!ObjPath.Split(TEXT("."), &PackagePath, &ObjectName))
+    {
+        UE_LOG(LogTemp, Error, TEXT("AElevator::TravelToNextStage: Invalid map path: %s"), *ObjPath);
+        return;
+    }
 
-    // 중복 호출 방지(타이머 2번 등 대비)
-    static bool bTraveling = false;
-    if (bTraveling) return;
-    bTraveling = true;
+    // 리슨 서버라면 계속 리슨 유지
+    const bool bIsListenServer = (GetNetMode() != NM_DedicatedServer);
+    const FString URL = bIsListenServer ? (PackagePath + TEXT("?listen")) : PackagePath;
 
-    // 리슨 서버라면 "?listen" 유지가 필요할 수 있음
-    const bool bIsListenServer = GetNetMode() != NM_DedicatedServer;
-    const FString Url = bIsListenServer ? (MapPath + TEXT("?listen")) : MapPath;
+    UE_LOG(LogTemp, Log, TEXT("ServerTravel to: %s"), *URL);
 
-    UE_LOG(LogTemp, Log, TEXT("ServerTravel to: %s"), *Url);
-    GetWorld()->ServerTravel(Url, /*bAbsolute*/ false);
+    // 멀티플레이 이동은 ServerTravel이 정석
+    // (참고) Seamless Travel은 GameMode에서 bUseSeamlessTravel=true로 설정
+    GetWorld()->ServerTravel(URL, /*bAbsolute*/ false);
 
-    // 주의: ServerTravel 이후 현재 월드는 곧 파괴됩니다. 여기서 추가 로직 실행 금지!
+    // 주의: 여기서부터 현재 월드는 곧 파괴되므로 추가 로직 금지
 }

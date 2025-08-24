@@ -42,7 +42,7 @@ void URewardSystemComponent::ShowRewardOptions()
 	}
 
 	// UI 생성은 Multicast로 클라이언트에게 요청
-	Multicast_ShowRewardUI();
+	Multicast_ShowRewardUI(CurrentChoices);
 }
 
 void URewardSystemComponent::Server_SelectReward_Implementation(int32 Index)
@@ -73,7 +73,7 @@ void URewardSystemComponent::ApplyReward(const FRewardData& Data)
 	if (Effect) { Effect->ApplyReward(OwnerCharacter); }
 }
 
-void URewardSystemComponent::Multicast_ShowRewardUI_Implementation()
+void URewardSystemComponent::Multicast_ShowRewardUI_Implementation(const TArray<FRewardData>& InChoices)
 {
 	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
 	if (!OwnerChar) return;
@@ -91,7 +91,7 @@ void URewardSystemComponent::Multicast_ShowRewardUI_Implementation()
 	if (Widget)
 	{
 		Widget->AddToViewport();
-		Widget->SetRewardList(CurrentChoices);
+		Widget->SetRewardList(InChoices);
 		Widget->SetOwnerPlayer(OwnerChar);
 
 		PC->bShowMouseCursor = true;

@@ -31,14 +31,8 @@ void ADoor::Open()
 {
     if (HasAuthority() && !bIsOpen)
     {
-        UE_LOG(LogTemp, Warning, TEXT("[Server] %s Open()"), *GetName());
         bIsOpen = true;     // 서버에서 값만 바꾸면 클라에서 OnRep 호출됨
         ApplyDoorState();
-    }
-    else
-    {
-        UE_LOG(LogTemp, Warning, TEXT("[%s] %s Open() IGNORED (Auth=%d, bIsOpen=%d)"),
-            HasAuthority() ? TEXT("Server") : TEXT("Client"), *GetName(), HasAuthority(), bIsOpen);
     }
 }
 
@@ -48,11 +42,6 @@ void ADoor::Close()
     {
         bIsOpen = false;
         ApplyDoorState();
-
-        if (GEngine)
-        {
-            GEngine->AddOnScreenDebugMessage(-1, 8.f, FColor::Orange, TEXT("Door Closed"));
-        }
     }
 }
 
@@ -71,8 +60,6 @@ void ADoor::ApplyDoorState()
 
 void ADoor::OnRep_DoorStateChanged()
 {
-    UE_LOG(LogTemp, Warning, TEXT("[Client] %s OnRep_DoorStateChanged -> %s"),
-        *GetName(), bIsOpen ? TEXT("OPEN") : TEXT("CLOSED"));
     ApplyDoorState();
 }
 

@@ -12,6 +12,8 @@
  */
 
 class UButton;
+class UTextBlock;
+class UImage;
 class ACharacter;
 
 UCLASS()
@@ -25,29 +27,36 @@ public:
     void SetRewardList(const TArray<FRewardData>& Rewards);
     void SetOwnerPlayer(ACharacter* OwnerChar);
 
+    UFUNCTION(BlueprintCallable)
+    void RemoveSelf();  // 외부에서 제거 호출
+
 protected:
-    UPROPERTY(meta = (BindWidget))
-    UButton* Button_Reward0;
+    // 버튼
+    UPROPERTY(meta = (BindWidget)) UButton* Button_Reward0;
+    UPROPERTY(meta = (BindWidget)) UButton* Button_Reward1;
+    UPROPERTY(meta = (BindWidget)) UButton* Button_Reward2;
 
-    UPROPERTY(meta = (BindWidget))
-    UButton* Button_Reward1;
+    // === 버튼 내부의 카드 요소 ===
+    UPROPERTY(meta = (BindWidget)) UImage* Image_Icon0;
+    UPROPERTY(meta = (BindWidget)) UTextBlock* Text_Title0;
+    UPROPERTY(meta = (BindWidget)) UTextBlock* Text_Body0;
 
-    UPROPERTY(meta = (BindWidget))
-    UButton* Button_Reward2;
+    UPROPERTY(meta = (BindWidget)) UImage* Image_Icon1;
+    UPROPERTY(meta = (BindWidget)) UTextBlock* Text_Title1;
+    UPROPERTY(meta = (BindWidget)) UTextBlock* Text_Body1;
 
-private:
-    UFUNCTION()
-    void OnReward0Clicked();
-
-    UFUNCTION()
-    void OnReward1Clicked();
-
-    UFUNCTION()
-    void OnReward2Clicked();
+    UPROPERTY(meta = (BindWidget)) UImage* Image_Icon2;
+    UPROPERTY(meta = (BindWidget)) UTextBlock* Text_Title2;
+    UPROPERTY(meta = (BindWidget)) UTextBlock* Text_Body2;
 
     ACharacter* OwningPlayer;
 
-public:
-    UFUNCTION(BlueprintCallable)
-    void RemoveSelf();  // 외부에서 제거 호출
+private:
+    UFUNCTION() void OnReward0Clicked();
+    UFUNCTION() void OnReward1Clicked();
+    UFUNCTION() void OnReward2Clicked();
+
+    void FillSlot(int32 Index, UImage* IconW, UTextBlock* TitleW, UTextBlock* BodyW);
+
+    TArray<FRewardData> CurrentRewards;
 };

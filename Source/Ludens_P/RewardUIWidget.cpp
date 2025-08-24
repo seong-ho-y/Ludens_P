@@ -3,8 +3,11 @@
 
 #include "RewardUIWidget.h"
 #include "Components/Button.h"
+#include "Components/TextBlock.h"
+#include "Components/Image.h"
 #include "RewardSystemComponent.h"
 #include "GameFramework/Character.h"
+#include "Engine/Engine.h"
 
 void URewardUIWidget::NativeConstruct()
 {
@@ -17,7 +20,11 @@ void URewardUIWidget::NativeConstruct()
 
 void URewardUIWidget::SetRewardList(const TArray<FRewardData>& Rewards)
 {
-    // (아직 아무것도 안 해도 됨)
+    CurrentRewards = Rewards; // 선택 검증이나 리렌더시 사용 가능
+
+    if (Rewards.IsValidIndex(0)) FillSlot(0, Image_Icon0, Text_Title0, Text_Body0);
+    if (Rewards.IsValidIndex(1)) FillSlot(1, Image_Icon1, Text_Title1, Text_Body1);
+    if (Rewards.IsValidIndex(2)) FillSlot(2, Image_Icon2, Text_Title2, Text_Body2);
 }
 
 void URewardUIWidget::SetOwnerPlayer(ACharacter* OwnerChar)
@@ -70,6 +77,19 @@ void URewardUIWidget::OnReward2Clicked()
     {
         FString Msg = FString::Printf(TEXT("Selet Reward 2"));
         GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, Msg);
+    }
+}
+
+void URewardUIWidget::FillSlot(int32 Index, UImage* IconW, UTextBlock* TitleW, UTextBlock* BodyW)
+{
+    const FRewardData& Data = CurrentRewards[Index];
+
+    if (TitleW) TitleW->SetText(Data.RewardName); // FText 그대로 사용
+    if (BodyW)  BodyW->SetText(FText::FromString(Data.Description));
+    if (IconW)
+    {
+        if (Data.Icon) { IconW->SetBrushFromTexture(Data.Icon); IconW->SetVisibility(ESlateVisibility::Visible); }
+        else { IconW->SetVisibility(ESlateVisibility::Collapsed); }
     }
 }
 
