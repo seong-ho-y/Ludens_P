@@ -29,7 +29,7 @@ void UCreatureCombatComponent::TakeDamage(float Amount)
 {
 	if (!GetOwner()->HasAuthority() || bIsDead) return;
 	CurrentHP -= Amount;
-	UE_LOG(LogTemp,Warning,TEXT("Enemy Attackted : %f, Max HP : %f"),CurrentHP, MaxHP);
+	//UE_LOG(LogTemp,Warning,TEXT("Enemy Attackted : %f, Max HP : %f"),CurrentHP, MaxHP);
 	OnRep_CurrentHP();
 	if (CurrentHP <= 0.f)
 	{

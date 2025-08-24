@@ -8,25 +8,33 @@
 #include "GameFramework/PlayerController.h"
 #include "Blueprint/UserWidget.h"
 #include "Engine/Engine.h"
+
+TArray<FRewardData> URewardSystemComponent::MasterRewardList;
+bool URewardSystemComponent::bIsMasterListLoaded = false;
+
 void URewardSystemComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
-	if (RewardDataTable)
+	if (GetOwner()->HasAuthority()) return;
+	if (!bIsMasterListLoaded)
 	{
-		TArray<FName> RowNames = RewardDataTable->GetRowNames();
-		for (const FName& RowName : RowNames)
+		if (RewardDataTable)
 		{
-			// 각 행 이름으로 실제 데이터(FRewardData)를 찾아옵니다.
-			FRewardData* RowData = RewardDataTable->FindRow<FRewardData>(RowName, TEXT(""));
-			if (RowData)
+			TArray<FName> RowNames = RewardDataTable->GetRowNames();
+			for (const FName& RowName : RowNames)
 			{
-				// 찾아온 데이터를 AllRewards 배열에 추가합니다.
-				AllRewards.Add(*RowData);
+				// 각 행 이름으로 실제 데이터(FRewardData)를 찾아옵니다.
+				FRewardData* RowData = RewardDataTable->FindRow<FRewardData>(RowName, TEXT(""));
+				UE_LOG(LogTemp, Warning, TEXT("RowName : %p"),RowData);
+				if (RowData)
+				{
+					MasterRewardList.Add(*RowData);
+				}
 			}
 		}
+		UE_LOG(LogTemp, Warning, TEXT("=== MASTER REWARD LIST HAS BEEN LOADED ONCE. Count: %d ==="), MasterRewardList.Num());
 	}
-	UE_LOG(LogTemp, Log, TEXT("%d rewards loaded from data table."), AllRewards.Num());
+	AllRewards = MasterRewardList;
 }
 
 // Sets default values
@@ -42,12 +50,13 @@ void URewardSystemComponent::GenerateAndShowRewardsForOwner()
 
 	TArray<FRewardData> ChoicesForThisPlayer;
 	ChoicesForThisPlayer.Empty();
-
+	UE_LOG(LogTemp, Warning, TEXT("AllRewards (GenerateAndShowRewardsForOwner) : %d"),AllRewards.Num());
 	// 이 플레이어만을 위한 보상 목록 생성 (중복 허용 로직은 그대로 사용)
 	while (ChoicesForThisPlayer.Num() < 3 && AllRewards.Num() > 0)
 	{
 		int32 Index = FMath::RandRange(0, AllRewards.Num() - 1);
 		ChoicesForThisPlayer.Add(AllRewards[Index]);
+		UE_LOG(LogTemp, Warning, TEXT("ChoicesForThisPlayer is forming..."));
 	}
 
 	// 생성된 목록을 오직 이 컴포넌트의 주인인 클라이언트에게만 전송

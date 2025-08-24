@@ -26,8 +26,8 @@ void UShieldComponent::TakeShieldDamage(float DamageAmount, EEnemyColor DamageCo
 			float AbsorbedDamage = FMath::Min(Shield.CurrentHealth, DamageAmount);
 			Shield.CurrentHealth -= AbsorbedDamage;
 
-			UE_LOG(LogTemp, Log, TEXT("%s Shield took %.1f damage. Current Health: %.1f"), 
-				*UEnum::GetValueAsString(DamageColor), AbsorbedDamage, Shield.CurrentHealth);
+			//UE_LOG(LogTemp, Log, TEXT("%s Shield took %.1f damage. Current Health: %.1f"), 
+			//	*UEnum::GetValueAsString(DamageColor), AbsorbedDamage, Shield.CurrentHealth);
 			OnRep_ActiveShields();
 		}
 	}
@@ -49,7 +49,7 @@ void UShieldComponent::InitializeShields(EEnemyColor EnemyColorType)
 {
 	//역시 서버에서만 해야된다
 	if (!GetOwner()->HasAuthority()) return;
-	UE_LOG(LogTemp, Log, TEXT("Shield activated"));
+	//UE_LOG(LogTemp, Log, TEXT("Shield activated"));
 	ActiveShields.Empty(); //기존 쉴드 목록 초기화 Array 클래스의 Empty 메서드
 
 	//쉴드를 추가해주기

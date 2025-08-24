@@ -56,7 +56,7 @@ AActor* ALudens_PGameMode::ChoosePlayerStart_Implementation(AController* Player)
 		if (!UsedStartSpots.Contains(Start)) //같은 위치에서 스폰되지 않게 해주는 로직
 		{
 			UsedStartSpots.Add(Start);
-			UE_LOG(LogTemp, Warning, TEXT("Player assigned to Start: %s"), *Start->GetName());
+			//UE_LOG(LogTemp, Warning, TEXT("Player assigned to Start: %s"), *Start->GetName());
 			return Start;
 		}
 	}
@@ -67,10 +67,10 @@ AActor* ALudens_PGameMode::ChoosePlayerStart_Implementation(AController* Player)
 
 void ALudens_PGameMode::OnRoomCleared()
 {
+	UE_LOG(LogTemp, Warning, TEXT("OnRoomCleared Called:GameMode"));
 	// 현재 게임에 있는 모든 플레이어 컨트롤러를 순회
 	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("OnRoomCleared Called:GameMode"));
 		APlayerController* PC = It->Get();
 		if (PC && PC->GetPawn())
 		{
@@ -103,7 +103,7 @@ void ALudens_PGameMode::HandleStartingNewPlayer_Implementation(APlayerController
 void ALudens_PGameMode::AssignColorToPlayer(AController* NewPlayer)
 {
 	// --- 진단 로그 시작 ---
-	UE_LOG(LogTemp, Error, TEXT("--- AssignColorToPlayer CALLED for %s ---"), *NewPlayer->GetName());
+	//UE_LOG(LogTemp, Error, TEXT("--- AssignColorToPlayer CALLED for %s ---"), *NewPlayer->GetName());
 
 	AGameStateBase* CurrentGameState = GetGameState<AGameStateBase>();
 	if (!CurrentGameState)
@@ -113,10 +113,10 @@ void ALudens_PGameMode::AssignColorToPlayer(AController* NewPlayer)
 	}
     
 	int32 PlayerCount = CurrentGameState->PlayerArray.Num();
-	UE_LOG(LogTemp, Warning, TEXT("Current Player Count from GameState->PlayerArray.Num(): %d"), PlayerCount);
+	//UE_LOG(LogTemp, Warning, TEXT("Current Player Count from GameState->PlayerArray.Num(): %d"), PlayerCount);
 
 	int32 PlayerIndex = PlayerCount - 1;
-	UE_LOG(LogTemp, Warning, TEXT("Calculated Player Index: %d"), PlayerIndex);
+	//UE_LOG(LogTemp, Warning, TEXT("Calculated Player Index: %d"), PlayerIndex);
 	// --- 진단 로그 끝 ---
 
 	if (!ColorRotation.IsValidIndex(PlayerIndex))
@@ -134,7 +134,7 @@ void ALudens_PGameMode::AssignColorToPlayer(AController* NewPlayer)
 			EEnemyColor NewColor = ColorRotation[PlayerIndex];
 			StateComp->PlayerColor = NewColor;
 
-			UE_LOG(LogTemp, Warning, TEXT("SUCCESS: Assigned Color %s to Player with Index %d."), *UEnum::GetValueAsString(NewColor), PlayerIndex);
+			//UE_LOG(LogTemp, Warning, TEXT("SUCCESS: Assigned Color %s to Player with Index %d."), *UEnum::GetValueAsString(NewColor), PlayerIndex);
 		}
 	}
 }
