@@ -51,4 +51,10 @@ protected:
 
 private:
 	URewardUIWidget* ActiveRewardWidget;
+
+	// 모든 RewardSystemComponent 인스턴스가 공유할 마스터 보상 목록
+	static TArray<FRewardData> MasterRewardList;
+
+	// 마스터 목록이 로드되었는지 확인하는 플래그
+	static bool bIsMasterListLoaded;
 };

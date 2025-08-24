@@ -1,6 +1,7 @@
 #include "RewardEffect_ModifyStat.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "PlayerStateComponent.h"
 // #include "YourCharacterStatComponent.h" // 캐릭터 능력치 컴포넌트가 있다면 포함
 
 void URewardEffect_ModifyStat::ApplyReward_Implementation(ACharacter* TargetCharacter)
@@ -11,26 +12,25 @@ void URewardEffect_ModifyStat::ApplyReward_Implementation(ACharacter* TargetChar
 	// UYourCharacterStatComponent* StatComp = TargetCharacter->FindComponentByClass<UYourCharacterStatComponent>();
 	// if (!StatComp) return;
 
+	UPlayerStateComponent* StatComp = TargetCharacter->FindComponentByClass<UPlayerStateComponent>();
+	if (!StatComp)
+	{
+		UE_LOG(LogTemp, Error, TEXT("Required Component not found"));
+		return;
+	}
 	// StatToModify 값에 따라 다른 능력치를 변경
 	switch (StatToModify)
 	{
 	case EPlayerStat::MaxHealth:
-		// 예시: StatComp->MaxHealth += Value;
-			UE_LOG(LogTemp, Log, TEXT("MaxHealth changed by %f"), Value);
+		if (ModificationType==EStatModificationType::Add) StatComp->MaxHP += Value;
+		else StatComp->MaxHP *= Value;
+		UE_LOG(LogTemp, Display, TEXT("MaxHP = %f"), StatComp->MaxHP);
 		break;
 
 	case EPlayerStat::MoveSpeed:
-		if (UCharacterMovementComponent* MoveComp = TargetCharacter->GetCharacterMovement())
-		{
-			if (ModificationType == EStatModificationType::Add)
-			{
-				MoveComp->MaxWalkSpeed += Value;
-			}
-			else // Multiply
-			{
-				MoveComp->MaxWalkSpeed *= Value;
-			}
-		}
+		if (ModificationType==EStatModificationType::Add) StatComp->MoveSpeed += Value;
+		else StatComp->MoveSpeed *= Value;
+		UE_LOG(LogTemp, Display, TEXT("Max Speed = %f"), StatComp->MoveSpeed);
 		break;
 
 	case EPlayerStat::AttackDamage:

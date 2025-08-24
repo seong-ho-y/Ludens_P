@@ -388,17 +388,17 @@ void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	// 이 액터가 파괴될 때, 그 이유를 로그로 출력합니다.
 	// 이 로그는 문제 해결의 결정적인 단서가 될 것입니다.
-	UE_LOG(LogTemp, Error, TEXT("ENEMY %s IS BEING DESTROYED! Reason: %s"), 
+	/*UE_LOG(LogTemp, Error, TEXT("ENEMY %s IS BEING DESTROYED! Reason: %s"), 
 		*GetName(), 
 		*UEnum::GetValueAsString(EndPlayReason));
-
+*/
 	Super::EndPlay(EndPlayReason);
 }
 
 void AEnemyBase::Destroyed()
 {
 	// 누가 Destroy()를 호출했는지 정확히 알기 위해 로그를 남깁니다.
-	UE_LOG(LogTemp, Error, TEXT("!!! %s's Destroyed() function was called !!!"), *GetName());
+	//UE_LOG(LogTemp, Error, TEXT("!!! %s's Destroyed() function was called !!!"), *GetName());
     
 	// 로그를 남긴 후, 반드시 부모 클래스의 원래 함수를 호출해줘야 합니다.
 	Super::Destroyed();

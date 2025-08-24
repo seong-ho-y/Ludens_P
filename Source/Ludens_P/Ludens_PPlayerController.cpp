@@ -35,7 +35,7 @@ void ALudens_PPlayerController::SetupInputComponent()
 void ALudens_PPlayerController::Server_RequestSpawnEnemy_Implementation()
 {
 	// 이제 이 코드는 100% 서버에서 실행됩니다.
-    UE_LOG(LogTemp,Log,TEXT("Server_Request 호출"));
+    UE_LOG(LogTemp,Log,TEXT("Server_Request 호출 : PlayerController"));
 	// 1. 서버 월드에 있는 PoolManager를 찾습니다.
 	AEnemyPoolManager* PoolManager = Cast<AEnemyPoolManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AEnemyPoolManager::StaticClass()));
 	if (PoolManager)
