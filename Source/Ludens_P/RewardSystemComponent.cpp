@@ -15,7 +15,7 @@ bool URewardSystemComponent::bIsMasterListLoaded = false;
 void URewardSystemComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	if (GetOwner()->HasAuthority()) return;
+	if (!GetOwner()->HasAuthority()) return;
 	if (!bIsMasterListLoaded)
 	{
 		if (RewardDataTable)
