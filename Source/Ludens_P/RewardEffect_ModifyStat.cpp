@@ -6,6 +6,7 @@
 
 void URewardEffect_ModifyStat::ApplyReward_Implementation(ACharacter* TargetCharacter)
 {
+	UE_LOG(LogTemp, Display, TEXT("Apply Reward Stat"));
 	if (!TargetCharacter) return;
 
 	// 캐릭터의 능력치 관리 컴포넌트를 가져오는 것을 추천합니다.

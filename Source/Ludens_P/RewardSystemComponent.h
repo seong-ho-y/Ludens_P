@@ -19,9 +19,7 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Reward System")
 	UDataTable* RewardDataTable;
-
-	UFUNCTION(BlueprintCallable)
-	void ShowRewardOptions();
+	
 
 
 	UFUNCTION(Server, Reliable)
