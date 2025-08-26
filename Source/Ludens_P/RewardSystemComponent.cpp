@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerController.h"
 #include "Blueprint/UserWidget.h"
+#include "MyGameInstance.h"
 #include "Engine/Engine.h"
 
 TArray<FRewardData> URewardSystemComponent::MasterRewardList;
@@ -15,7 +16,7 @@ bool URewardSystemComponent::bIsMasterListLoaded = false;
 void URewardSystemComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	if (GetOwner()->HasAuthority()) return;
+	if (!GetOwner()->HasAuthority()) return;
 	if (!bIsMasterListLoaded)
 	{
 		if (RewardDataTable)
@@ -45,22 +46,30 @@ URewardSystemComponent::URewardSystemComponent()
 // 새로운 함수: 서버에서만 호출되어, 자신(컴포넌트의 오너)에게 보상을 보냄
 void URewardSystemComponent::GenerateAndShowRewardsForOwner()
 {
-	// 서버가 아니면 아무것도 하지 않음
-	if (!GetOwner()->HasAuthority()) return;
+	CurrentChoices.Empty(); 
 
-	TArray<FRewardData> ChoicesForThisPlayer;
-	ChoicesForThisPlayer.Empty();
-	UE_LOG(LogTemp, Warning, TEXT("AllRewards (GenerateAndShowRewardsForOwner) : %d"),AllRewards.Num());
-	// 이 플레이어만을 위한 보상 목록 생성 (중복 허용 로직은 그대로 사용)
-	while (ChoicesForThisPlayer.Num() < 3 && AllRewards.Num() > 0)
+	while (CurrentChoices.Num() < 3 && AllRewards.Num() > 0)
 	{
 		int32 Index = FMath::RandRange(0, AllRewards.Num() - 1);
-		ChoicesForThisPlayer.Add(AllRewards[Index]);
-		UE_LOG(LogTemp, Warning, TEXT("ChoicesForThisPlayer is forming..."));
+		CurrentChoices.Add(AllRewards[Index]); // 지역 변수가 아닌 멤버 변수에 직접 추가
+	}
+    
+	// ShowRewardOptions에 있던 화면 디버그 로그를 여기에 추가!
+	for (int32 i = 0; i < CurrentChoices.Num(); ++i)
+	{
+		if (GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(
+			   -1,
+			   5.f,
+			   FColor::Green,
+			   FString::Printf(TEXT("Reward %d: %s"), i, *CurrentChoices[i].RewardName.ToString())
+			);
+		}
 	}
 
-	// 생성된 목록을 오직 이 컴포넌트의 주인인 클라이언트에게만 전송
-	Client_ShowRewardUI(ChoicesForThisPlayer);
+	UE_LOG(LogTemp, Error, TEXT("SERVER: Attempting to send Client_ShowRewardUI to player. Choices Count: %d"), CurrentChoices.Num());
+	Client_ShowRewardUI(CurrentChoices);
 }
 
 // 기존 Multicast 함수를 Client RPC로 변경하고, 파라미터를 받도록 수정
@@ -94,34 +103,6 @@ void URewardSystemComponent::Client_ShowRewardUI_Implementation(const TArray<FRe
 	ActiveRewardWidget = Widget;
 }
 
-void URewardSystemComponent::ShowRewardOptions()
-{
-	UE_LOG(LogTemp, Error, TEXT("SERVER: ShowRewardOptions has been called. AllRewards Array Count = %d"), AllRewards.Num());
-	CurrentChoices.Empty();
-
-	while (CurrentChoices.Num() < 3 && AllRewards.Num() > 0)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("ShowOptions are making"));
-		int32 Index = FMath::RandRange(0, AllRewards.Num() - 1);
-		CurrentChoices.Add(AllRewards[Index]);
-	}
-	
-	for (int32 i = 0; i < CurrentChoices.Num(); ++i)
-	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(
-				-1,
-				5.f,
-				FColor::Green,
-				FString::Printf(TEXT("Reward %d: %s"), i, *CurrentChoices[i].RewardName.ToString())
-			);
-		}
-	}
-
-
-	Multicast_ShowRewardUI();
-}
 
 void URewardSystemComponent::Server_SelectReward_Implementation(int32 Index)
 {
