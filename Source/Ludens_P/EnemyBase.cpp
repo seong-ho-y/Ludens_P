@@ -24,6 +24,10 @@ AEnemyBase::AEnemyBase()
 	ShieldComponent = CreateDefaultSubobject<UShieldComponent>(TEXT("Shield"));
 	bReplicates = true;
 
+
+	bUseControllerRotationYaw = true;
+	GetCharacterMovement()->bOrientRotationToMovement = false;
+
 	HealthBarWidget = CreateDefaultSubobject<UWidgetComponent>(TEXT("HealthBarWidget"));
 	HealthBarWidget->SetupAttachment(RootComponent);
 	HealthBarWidget->SetWidgetSpace(EWidgetSpace::World);
