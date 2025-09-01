@@ -8,6 +8,7 @@
 #include "NiagaraComponent.h"
 #include "LaserComponent.generated.h"
 
+class UNiagaraComponent;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LUDENS_P_API ULaserComponent : public USceneComponent
@@ -26,12 +27,16 @@ protected:
 	UNiagaraComponent* LaserComp;
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_SetLaserActive(bool bLaserActive);
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_UpdateLaserTarget(const FVector& TargetLocation);
 	
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void TurnOn();
+	void TurnOn(const FVector& TargetLocation);
 	void TurnOff();
+
+	void UpdateLaserTarget(const FVector& TargetLocation);
 		
 };

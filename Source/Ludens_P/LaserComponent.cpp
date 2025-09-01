@@ -2,6 +2,9 @@
 
 
 #include "LaserComponent.h"
+#include "NiagaraComponent.h"
+#include "GameFramework/Actor.h"
+
 
 // Sets default values for this component's properties
 ULaserComponent::ULaserComponent()
@@ -29,8 +32,12 @@ void ULaserComponent::BeginPlay()
 	// ...
 	
 }
-void ULaserComponent::TurnOn()
+void ULaserComponent::TurnOn(const FVector& TargetLocation)
 {
+	if (LaserComp)
+	{
+		LaserComp->SetVectorParameter(TEXT("BeamEnd"), TargetLocation);
+	}
 	if (!GetOwner()->HasAuthority()) return;
 	Multicast_SetLaserActive(true);
 }
@@ -41,6 +48,25 @@ void ULaserComponent::TurnOff()
 	Multicast_SetLaserActive(false);
 }
 
+void ULaserComponent::UpdateLaserTarget(const FVector& TargetLocation)
+{
+	if (!LaserComp) return;
+	if (GetOwner() && GetOwner()->HasAuthority())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("UpdateLaserTarget Called"));
+		Multicast_UpdateLaserTarget(TargetLocation);
+	}
+}
+
+void ULaserComponent::Multicast_UpdateLaserTarget_Implementation(const FVector& TargetLocation)
+{
+	if (!LaserComp) return;
+	UE_LOG(LogTemp, Warning, TEXT("UpdateLaserTarget_Mul Called"));
+	const FVector StartPoint = LaserComp->GetComponentLocation();
+
+	LaserComp->SetVectorParameter(TEXT("BeamStart"), StartPoint);
+	LaserComp->SetVectorParameter(TEXT("BeamEnd"), TargetLocation);
+}
 void ULaserComponent::Multicast_SetLaserActive_Implementation(bool bLaserActive)
 {
 	if (!LaserComp) return;
