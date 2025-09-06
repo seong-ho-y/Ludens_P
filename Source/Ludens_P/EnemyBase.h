@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "CreatureCombatComponent.h"
 #include "EEnemyColor.h"
+#include "HitFeedbackComponent.h"
 #include "GameFramework/Character.h"
 #include "EnemyBase.generated.h"
 
@@ -37,6 +38,8 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Color")
 	void ChangeColorType(EEnemyColor Color);
 
+	UFUNCTION()
+	void HandleDied();
 protected:
 	virtual void BeginPlay() override;
 
@@ -58,8 +61,7 @@ protected:
 	// 실제로 활성/비활성 처리를 하는 함수
 	void UpdateActiveState(bool bNewIsActive);
 	
-	UFUNCTION()
-	void HandleDied();
+	
 	void EndPlay(EEndPlayReason::Type EndPlayReason);
 	
 
@@ -73,8 +75,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Shield")
 	UShieldComponent* ShieldComponent;
 
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "VFX")
+	UHitFeedbackComponent* HitFeedbackComponent;
+
 	UPROPERTY()
 	UMaterialInstanceDynamic* BodyMID;
+
+
 
 	//색상을 설정하는 함수
 	void SetBodyColor(EEnemyColor NewColor);
