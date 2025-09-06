@@ -53,7 +53,6 @@ void ULaserComponent::UpdateLaserTarget(const FVector& TargetLocation)
 	if (!LaserComp) return;
 	if (GetOwner() && GetOwner()->HasAuthority())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("UpdateLaserTarget Called"));
 		Multicast_UpdateLaserTarget(TargetLocation);
 	}
 }
@@ -61,7 +60,6 @@ void ULaserComponent::UpdateLaserTarget(const FVector& TargetLocation)
 void ULaserComponent::Multicast_UpdateLaserTarget_Implementation(const FVector& TargetLocation)
 {
 	if (!LaserComp) return;
-	UE_LOG(LogTemp, Warning, TEXT("UpdateLaserTarget_Mul Called"));
 	const FVector StartPoint = LaserComp->GetComponentLocation();
 
 	LaserComp->SetVectorParameter(TEXT("BeamStart"), StartPoint);

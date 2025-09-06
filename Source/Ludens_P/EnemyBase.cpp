@@ -14,6 +14,7 @@
 #include "Components/WidgetComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
+#include "HitFeedbackComponent.h"
 #include "Blueprint/UserWidget.h"
 
 AEnemyBase::AEnemyBase()
@@ -32,6 +33,8 @@ AEnemyBase::AEnemyBase()
 	HealthBarWidget->SetupAttachment(RootComponent);
 	HealthBarWidget->SetWidgetSpace(EWidgetSpace::World);
 	HealthBarWidget->SetVisibility(false); // 처음에는 숨겨둡니다.
+
+	HitFeedbackComponent = CreateDefaultSubobject<UHitFeedbackComponent>(TEXT("HitFeedbackComponent"));
 
 	static ConstructorHelpers::FClassFinder<UUserWidget> HealthBarClassFinder(TEXT("/Game/Enemy/UI/WBP_EnemyHealthBar.WBP_EnemyHealthBar_C"));
 
@@ -61,6 +64,34 @@ void AEnemyBase::Tick(float DeltaTime)
 void AEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
+
+	// 서버에서만 이 테스트를 실행합니다.
+	if (HasAuthority())
+	{
+		// HitFeedbackComponent 클래스의 '설계도 원본(CDO)'을 직접 가져옵니다.
+		UHitFeedbackComponent* DefaultComponent = UHitFeedbackComponent::StaticClass()->GetDefaultObject<UHitFeedbackComponent>();
+        
+		if (DefaultComponent && DefaultComponent->HitVFX)
+		{
+			// CDO에는 HitVFX가 유효하게 할당되어 있을 경우
+			UE_LOG(LogTemp, Warning, TEXT("CDO CHECK: HitVFX is VALID on the Class Default Object."));
+		}
+		else
+		{
+			// CDO에서조차 HitVFX가 nullptr일 경우
+			UE_LOG(LogTemp, Error, TEXT("CDO CHECK: HitVFX is NULL on the Class Default Object!"));
+		}
+
+		// 현재 이 액터 인스턴스가 가진 컴포넌트의 값도 확인합니다.
+		if (HitFeedbackComponent && HitFeedbackComponent->HitVFX)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("INSTANCE CHECK: HitVFX is VALID on this spawned actor instance."));
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("INSTANCE CHECK: HitVFX is NULL on this spawned actor instance!"));
+		}
+	}
 	USkeletalMeshComponent* BodyMesh = GetMesh();
 	if (BodyMesh)
 	{
@@ -124,10 +155,9 @@ void AEnemyBase::OnShieldsUpdated()
 }
 void AEnemyBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
-	// 부모 클래스의 함수를 호출할 때 반드시 인자를 전달해야 합니다.
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 
-	// 이제 이 클래스에서 복제할 변수를 등록합니다.
+	// 이제 이 클래스에서 복제할 변수를 등록
 	DOREPLIFETIME(AEnemyBase, bIsActiveInPool);
 	DOREPLIFETIME(AEnemyBase, ColorType);
 	DOREPLIFETIME(AEnemyBase, bShouldShowUI);
@@ -270,14 +300,9 @@ void AEnemyBase::OnRep_ShouldShowUI()
 void AEnemyBase::OnRep_ColorType()
 {
 
-	// SetBodyColor 함수를 호출하여 MID의 색상을 실제로 변경합니다.
+	// SetBodyColor 함수를 호출하여 MID의 색상을 실제로 변경
 	SetBodyColor(ColorType);
 
-	// 필요하다면 ShieldComponent의 쉴드 구성도 여기서 다시 초기화할 수 있습니다.
-	// if (ShieldComponent)
-	// {
-	//     ShieldComponent->InitializeShields(ColorType);
-	// }
 }
 
 bool AEnemyBase::IsActive() const
@@ -324,15 +349,17 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 	{
 		bShouldShowUI = true;
 	}
-	// 위젯 컴포넌트를 보이게 합니다.
+	// 위젯 컴포넌트가 안보일시 보이게
 	if (HealthBarWidget && !HealthBarWidget->IsVisible())
 	{
 		HealthBarWidget->SetVisibility(true);
 		if (ShieldComponent) OnShieldsUpdated();
 		
 	}
+	// 로직을 이런식으로 짜면 원래 안됨
+	// 원래는 HasAuthority로 서버에서만 해야되지만 버그 해결 실패로 임시방편임 
 	if (!HasAuthority()) return 0.f;
-	// ... (쉴드 체크 로직) ...
+	// ----------------------------쉴드 체크 로직-----------------------------------
 	if (ShieldComponent && !ShieldComponent->AreAllShieldsBroken())
 	{
 		EEnemyColor DamageColor = EEnemyColor::Black;
@@ -345,10 +372,11 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 			if (InstigatorPawn)
 			{
 				// 3. 폰에 PlayerStateComponent가 있는지 확인
+				// 이거를 확인하는 이유는 플레이어의 색상에 접근하기 위해
 				UPlayerStateComponent* InstigatorStateComp = InstigatorPawn->FindComponentByClass<UPlayerStateComponent>();
 				if (InstigatorStateComp)
 				{
-					// ✨ 4. 모든 것이 유효할 때만 PlayerColor에 접근합니다.
+					// 모든 것이 유효할 때만 PlayerColor에 접근
 					DamageColor = InstigatorStateComp->PlayerColor;
 				}
 			}
@@ -356,11 +384,15 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
         
 		ShieldComponent->TakeShieldDamage(DamageAmount, DamageColor);
 	}
+	//활성화된 쉴드 없으면 직접 데미지 주기
 	else
 	{
 		if (CCC)
 			CCC->TakeDamage(DamageAmount);
 	}
+	FVector Loc = GetActorLocation();
+	//HitFeedbackComponent->PlayHitEffects(Loc);
+	
 	return DamageAmount;
 }
 
@@ -373,37 +405,27 @@ void AEnemyBase::HandleDied()
 		return;
 	}
     
-	// 1. 레벨에 있는 PoolManager를 찾습니다.
+	// 1. 레벨에 있는 PoolManager를 찾기
 	AEnemyPoolManager* PoolManager = Cast<AEnemyPoolManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AEnemyPoolManager::StaticClass()));
 
 	if (PoolManager)
 	{
-		// 2. 자기 자신(this)을 풀로 반납해달라고 요청합니다.
+		// 2. 자기 자신을 풀로 반환을 요청
 		PoolManager->ReturnEnemy(this);
 	}
 	else
 	{
 		UE_LOG(LogTemp, Warning, TEXT("No PoolManager Found!!"));
-		// 풀 매니저가 없는 예외적인 상황에서는 그냥 액터를 파괴합니다.
+		// 풀 매니저가 없는 예외 케이스 경우 그냥 액터를 파괴
 		Destroy();
 	}
 }
 void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-	// 이 액터가 파괴될 때, 그 이유를 로그로 출력합니다.
-	// 이 로그는 문제 해결의 결정적인 단서가 될 것입니다.
-	/*UE_LOG(LogTemp, Error, TEXT("ENEMY %s IS BEING DESTROYED! Reason: %s"), 
-		*GetName(), 
-		*UEnum::GetValueAsString(EndPlayReason));
-*/
 	Super::EndPlay(EndPlayReason);
 }
 
 void AEnemyBase::Destroyed()
 {
-	// 누가 Destroy()를 호출했는지 정확히 알기 위해 로그를 남깁니다.
-	//UE_LOG(LogTemp, Error, TEXT("!!! %s's Destroyed() function was called !!!"), *GetName());
-    
-	// 로그를 남긴 후, 반드시 부모 클래스의 원래 함수를 호출해줘야 합니다.
 	Super::Destroyed();
 }
