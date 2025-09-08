@@ -22,14 +22,19 @@ class LUDENS_P_API UCreatureCombatComponent : public UActorComponent
 
 public:	
 	UCreatureCombatComponent();
-
+	
 	virtual void BeginPlay() override;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item")
+	TSubclassOf<AActor> DropItemClass; // 드랍되는 아이템은 액터로 고정.
+	
 	//Attack은 적의 타입, 플레이어에 따라 로직이 다양하므로 분리
 
 	void TakeDamage(float DamageAmount); //공격받는 메서드
 	void Die(); //죽을 때
-
+	UFUNCTION(Server, Reliable)
+	void Server_Die();
+	
 	bool IsDead() const { return bIsDead; } //죽었는지 확인 (IsDead의 캡슐화를 위해 사용하는 Getter함수임)
 
 	float GetHealthPercent() const;
@@ -42,21 +47,24 @@ public:
 	UPROPERTY(BlueprintAssignable, Category="Events")
 	FOnHealthChangedSignature OnHealthChanged;
 
+	// Getter 함수 만들어주기
+	float GetCurrentHP() const { return CurrentHP; }
+	float GetMaxHP() const { return MaxHP; }
+	void InitStats(float InMaxHP);
 
-
+	UPROPERTY(BlueprintAssignable, Category="Events")
+	FOnHealthChangedSignature OnHealthChanged;
 
 	// Getter 함수 만들어주기
 	float GetCurrentHP() const { return CurrentHP; }
 	float GetMaxHP() const { return MaxHP; }
-
+	
 protected:
-		
-	UPROPERTY(VisibleAnywhere, Replicated, Category="Combat")
+	UPROPERTY(EditAnywhere, Replicated, Category="Combat")
 	float MaxHP = 100.f;
 
 	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_CurrentHP, Category="Combat")
 	float CurrentHP;
-	
 	UFUNCTION()
 	void OnRep_CurrentHP();
 
