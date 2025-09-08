@@ -117,7 +117,7 @@ void ARoom::AutoClear()
                 URewardSystemComponent* RewardComp = PlayerChar->FindComponentByClass<URewardSystemComponent>();
                 if (RewardComp)
                 {
-                    RewardComp->ShowRewardOptions();
+                    RewardComp->Server_ShowRewardOptions();
                 }
             }
         }
