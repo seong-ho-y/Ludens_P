@@ -50,7 +50,7 @@ void UExplosionComponent::Explode()
 }
 
 
-// Called when the game starts
+// Called when the game starts 
 void UExplosionComponent::BeginPlay()
 {
 	Super::BeginPlay();
