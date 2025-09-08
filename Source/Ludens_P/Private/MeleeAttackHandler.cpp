@@ -3,7 +3,7 @@
 
 #include "MeleeAttackHandler.h"
 #include "Camera/CameraComponent.h"
-#include "CreatureCombatComponent.h"
+#include "Ludens_P/CreatureCombatComponent.h"
 #include "JellooComponent.h"
 #include "GameFramework/Character.h"
 #include "Ludens_P/Ludens_PCharacter.h"

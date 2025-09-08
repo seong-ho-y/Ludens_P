@@ -42,7 +42,7 @@ public:
 	UPROPERTY(BlueprintAssignable, Category="Combat")
 	FOnDiedSignature OnDied;
 	
-	void InitStats(float InMaxHP);
+
 
 	UPROPERTY(BlueprintAssignable, Category="Events")
 	FOnHealthChangedSignature OnHealthChanged;
@@ -52,13 +52,7 @@ public:
 	float GetMaxHP() const { return MaxHP; }
 	void InitStats(float InMaxHP);
 
-	UPROPERTY(BlueprintAssignable, Category="Events")
-	FOnHealthChangedSignature OnHealthChanged;
 
-	// Getter 함수 만들어주기
-	float GetCurrentHP() const { return CurrentHP; }
-	float GetMaxHP() const { return MaxHP; }
-	
 protected:
 	UPROPERTY(EditAnywhere, Replicated, Category="Combat")
 	float MaxHP = 100.f;

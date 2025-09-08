@@ -3,7 +3,7 @@
 
 #include "WeaponAttackHandler.h"
 
-#include "CreatureCombatComponent.h"
+#include "Ludens_P/CreatureCombatComponent.h"
 #include "GameFramework/Character.h"
 #include "../TP_WeaponComponent.h"
 #include "Ludens_P/Ludens_PCharacter.h"

@@ -40,10 +40,6 @@ void UCreatureCombatComponent::TakeDamage(float Amount)
 		Die();
 	}
 }
-void UCreatureCombatComponent::OnRep_CurrentHP()
-{
-	OnHealthChanged.Broadcast(CurrentHP, MaxHP);
-}
 
 void UCreatureCombatComponent::OnRep_CurrentHP()
 {

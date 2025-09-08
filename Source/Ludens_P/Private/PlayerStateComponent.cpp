@@ -39,6 +39,11 @@ void UPlayerStateComponent::BeginPlay()
 	}
 }
 
+void UPlayerStateComponent::OnRep_PlayerColor()
+{
+	//
+}
+
 void UPlayerStateComponent::TakeDamage(float Amount)
 {
 	if (IsDead || IsKnocked) return;

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Ludens_P/EEnemyColor.h"
 #include "Net/UnrealNetwork.h"
 
 #include "PlayerStateComponent.generated.h"
@@ -23,6 +24,10 @@ public:
 	// Sets default values for this component's properties
 	UPlayerStateComponent();
 
+	//플레이어 색
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, ReplicatedUsing = OnRep_PlayerColor, Category = "Player")
+	EEnemyColor PlayerColor;
+	
 	// 플레이어 체력
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,  Category = "Player", Replicated)
 	float MaxHP = 100.0f;
@@ -84,6 +89,9 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+	
+	UFUNCTION()
+	void OnRep_PlayerColor();
 public:
 	FTimerHandle KnockedTimer; // 기절 한 뒤 죽을 때까지 작동하는 타이머
 };
