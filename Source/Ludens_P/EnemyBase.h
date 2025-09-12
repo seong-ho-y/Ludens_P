@@ -5,6 +5,7 @@
 #include "EEnemyColor.h"
 #include "HitFeedbackComponent.h"
 #include "GameFramework/Character.h"
+#include "DeathHandlerInterface.h"
 #include "EnemyBase.generated.h"
 
 class UEnemyDescriptor;
@@ -13,7 +14,7 @@ class UWidgetComponent;
 class UEnemyHealthBarBase;
 
 UCLASS(Abstract)
-class LUDENS_P_API AEnemyBase : public ACharacter
+class LUDENS_P_API AEnemyBase : public ACharacter, public IDeathHandlerInterface
 {
 	GENERATED_BODY()
 public:
@@ -37,6 +38,8 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Color")
 	void ChangeColorType(EEnemyColor Color);
+
+	virtual void HandleDeath_Implementation() override;
 
 	UFUNCTION()
 	void HandleDied();

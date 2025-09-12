@@ -53,20 +53,6 @@ void URewardSystemComponent::GenerateAndShowRewardsForOwner()
 		int32 Index = FMath::RandRange(0, AllRewards.Num() - 1);
 		CurrentChoices.Add(AllRewards[Index]); // 지역 변수가 아닌 멤버 변수에 직접 추가
 	}
-    
-	// ShowRewardOptions에 있던 화면 디버그 로그를 여기에 추가!
-	for (int32 i = 0; i < CurrentChoices.Num(); ++i)
-	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(
-			   -1,
-			   5.f,
-			   FColor::Green,
-			   FString::Printf(TEXT("Reward %d: %s"), i, *CurrentChoices[i].RewardName.ToString())
-			);
-		}
-	}
 
 	UE_LOG(LogTemp, Error, TEXT("SERVER: Attempting to send Client_ShowRewardUI to player. Choices Count: %d"), CurrentChoices.Num());
 	Client_ShowRewardUI(CurrentChoices);

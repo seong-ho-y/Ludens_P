@@ -2,7 +2,7 @@
 
 
 #include "ExplosionComponent.h"
-
+#include "DeathHandlerInterface.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 
@@ -29,7 +29,15 @@ void UExplosionComponent::Explode()
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, ExplosionSound, MyOwner->GetActorLocation());
 	}
-
+	if (MyOwner->Implements<UDeathHandlerInterface>())
+	{
+		IDeathHandlerInterface::Execute_HandleDeath(MyOwner);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("No DeathHandlerInterface Implemented!!"));
+		MyOwner->Destroy();
+	}
 	TArray<AActor*> IgnoredActors;
 	IgnoredActors.Add(MyOwner);
 

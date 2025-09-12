@@ -273,6 +273,12 @@ void AEnemyBase::ChangeColorType(EEnemyColor NewColor)
 		ShieldComponent->InitializeShields(NewColor);
 	}
 }
+
+void AEnemyBase::HandleDeath_Implementation()
+{
+	HandleDied();
+}
+
 void AEnemyBase::OnRep_ShouldShowUI()
 {
 	if (HealthBarWidget)
