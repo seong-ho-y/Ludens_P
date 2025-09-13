@@ -40,15 +40,25 @@ protected:
 
 public:
 	// 미리 생성해둘 Enemy 클래스들
+	UPROPERTY(EditAnywhere, Category = "Pool Config")
+	TSubclassOf<AEnemyBase> ShooterClass;
 	UPROPERTY(EditAnywhere, Category="Pool Config")
 	TSubclassOf<AEnemyBase> WalkerClass;
 	UPROPERTY(EditAnywhere, Category="Pool Config")
 	TSubclassOf<AEnemyBase> TankerClass;
 	UPROPERTY(EditAnywhere, Category="Pool Config")
+	TSubclassOf<AEnemyBase> ChargerClass;
+	UPROPERTY(EditAnywhere, Category="Pool Config")
 	TSubclassOf<AEnemyBase> RunnerClass;
 	UPROPERTY(EditAnywhere, Category="Pool Config")
 	TSubclassOf<AEnemyBase> SniperClass;
-    
+	UPROPERTY(EditAnywhere, Category="Pool Config")
+    TSubclassOf<AEnemyBase> ExploClass;
+	UPROPERTY(EditAnywhere, Category="Pool Config")
+	TSubclassOf<AEnemyBase> SupportClass;
+	UPROPERTY(EditAnywhere, Category="Pool Config")
+	TSubclassOf<AEnemyBase> MagicClass;
+	
 	UPROPERTY(EditAnywhere, Category="Pool Config")
 	int32 PoolSize = 10;
 	
