@@ -15,6 +15,7 @@ EBTNodeResult::Type UBTT_FindNearestPlayer::ExecuteTask(UBehaviorTreeComponent& 
 
     // 멀티플레이에서는 서버에서만 로직 수행
     if (!MyPawn->HasAuthority()) return EBTNodeResult::Succeeded; // 서버에서만 타겟 설정
+    //이거 왜 Succeeded로 되어있지
 
     // 플레이어 Pawn 검색
     APawn* NearestPawn = nullptr;
@@ -39,8 +40,7 @@ EBTNodeResult::Type UBTT_FindNearestPlayer::ExecuteTask(UBehaviorTreeComponent& 
     // 찾은 플레이어를 블랙보드에 저장
     if (NearestPawn)
     {
-        UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent();
-        if (BlackboardComp)
+        if (UBlackboardComponent* BlackboardComp = OwnerComp.GetBlackboardComponent())
         {
             BlackboardComp->SetValueAsObject(TargetActorKey.SelectedKeyName, NearestPawn);
             return EBTNodeResult::Succeeded;

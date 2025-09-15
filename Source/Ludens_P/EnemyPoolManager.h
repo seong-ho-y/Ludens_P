@@ -32,7 +32,7 @@ public:
 	void ReturnEnemy(AEnemyBase* Enemy);
 
 protected:
-	virtual void BeginPlay() override;
+	virtual void BeginPlay() override;	
 
 	// 각 Enemy 클래스별로 풀을 관리 (서버에만 존재, 복제 불필요)
 	UPROPERTY()
