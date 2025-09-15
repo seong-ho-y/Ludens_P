@@ -318,8 +318,11 @@ bool AEnemyBase::IsActive() const
 
 void AEnemyBase::SetBodyColor(EEnemyColor NewColor)
 {
-	if (!BodyMID) return;
-	
+	if (!BodyMID)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("BodyMID is not valid"));
+		return;
+	}
 	FLinearColor TargetColor;
 	switch (NewColor)
 	{
