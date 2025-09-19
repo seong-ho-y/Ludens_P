@@ -15,6 +15,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
 #include "HitFeedbackComponent.h"
+#include "StealthComponent.h"
 #include "Blueprint/UserWidget.h"
 
 AEnemyBase::AEnemyBase()
@@ -59,6 +60,26 @@ void AEnemyBase::Tick(float DeltaTime)
 		}
 	}
 	*/
+}
+
+void AEnemyBase::EngageStealth_Implementation()
+{
+	IStealthInterface::EngageStealth_Implementation();
+	UStealthComponent* StealthComponent = FindComponentByClass<UStealthComponent>();
+	if (StealthComponent)
+	{
+		StealthComponent->EnterStealth();
+	}
+}
+
+void AEnemyBase::DisengageStealth_Implementation()
+{
+	IStealthInterface::DisengageStealth_Implementation();
+	UStealthComponent* StealthComponent = FindComponentByClass<UStealthComponent>();
+	if (StealthComponent)
+	{
+		StealthComponent->ExitStealth();
+	}
 }
 
 void AEnemyBase::BeginPlay()
