@@ -16,6 +16,16 @@ class UTextBlock;
 class UImage;
 class ACharacter;
 
+USTRUCT(BlueprintType)
+struct FRewardUIData
+{
+    GENERATED_BODY()
+    UPROPERTY(BlueprintReadOnly) FName RowName;
+    UPROPERTY(BlueprintReadOnly) FText Title;
+    UPROPERTY(BlueprintReadOnly) FText Body;
+    UPROPERTY(BlueprintReadOnly) UTexture2D* Icon = nullptr;
+};
+
 UCLASS()
 class LUDENS_P_API URewardUIWidget : public UUserWidget
 {
@@ -23,12 +33,9 @@ class LUDENS_P_API URewardUIWidget : public UUserWidget
 	
 public:
     virtual void NativeConstruct() override;
+    void InitWithRows(ACharacter* OwnerChar, const TArray<FRewardUIData>& InList);
 
-    void SetRewardList(const TArray<FRewardData>& Rewards);
-    void SetOwnerPlayer(ACharacter* OwnerChar);
-
-    UFUNCTION(BlueprintCallable)
-    void RemoveSelf();  // 외부에서 제거 호출
+    UFUNCTION(BlueprintCallable) void RemoveSelf();  // 외부에서 제거 호출
 
 protected:
     // 버튼
@@ -49,8 +56,6 @@ protected:
     UPROPERTY(meta = (BindWidget)) UTextBlock* Text_Title2;
     UPROPERTY(meta = (BindWidget)) UTextBlock* Text_Body2;
 
-    ACharacter* OwningPlayer;
-
 private:
     UFUNCTION() void OnReward0Clicked();
     UFUNCTION() void OnReward1Clicked();
@@ -58,5 +63,6 @@ private:
 
     void FillSlot(int32 Index, UImage* IconW, UTextBlock* TitleW, UTextBlock* BodyW);
 
-    TArray<FRewardData> CurrentRewards;
+    ACharacter* OwningPlayer = nullptr;
+    TArray<FRewardUIData> Slots;
 };

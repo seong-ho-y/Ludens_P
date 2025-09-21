@@ -10,12 +10,14 @@
  보상 효과를 표현할 추상 클래스
  */
 
-UCLASS(Blueprintable, Abstract)
+struct FRewardRow;
+
+UCLASS(Blueprintable)
 class LUDENS_P_API URewardEffect : public UObject
 {
 	GENERATED_BODY()
 
 public:
 	UFUNCTION(BlueprintNativeEvent, Category = "Reward")
-	void ApplyReward(ACharacter* Player);
+	void ApplyReward(ACharacter* Player, const FRewardRow& Row);
 };

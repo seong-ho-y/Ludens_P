@@ -2,8 +2,9 @@
 
 
 #include "RewardEffect.h"
+#include "RewardData.h"
 
-void URewardEffect::ApplyReward_Implementation(ACharacter* Player)
+void URewardEffect::ApplyReward_Implementation(ACharacter* Player, const FRewardRow& Row)
 {
 
 }
