@@ -3,7 +3,13 @@
 *.sln.iml
 
 # Unreal Engine Content 폴더 무시 (주의: 에셋 공유 안 됨)
-Content/*
+Content/StarterContent
+Content/FirstPersonArms
+Content/FBX
+Content/Enemy
+Content/Collections
+Content/Developers
+Content/MonsterForSurvivalGame
 
 # Visual Studio 2015 user specific files
 .vs/
