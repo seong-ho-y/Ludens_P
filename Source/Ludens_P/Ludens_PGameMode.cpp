@@ -36,6 +36,7 @@ ALudens_PGameMode::ALudens_PGameMode()
 	//PlayerController 할당을 위해서 c++ 클래스를 할당해놓음
 	PlayerControllerClass = ALudens_PPlayerController::StaticClass();
 
+	bUseSeamlessTravel = true;
 }
 void ALudens_PGameMode::BeginPlay()
 {

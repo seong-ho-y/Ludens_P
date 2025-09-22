@@ -11,6 +11,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "InputActionValue.h"
+#include "RewardSystemComponent.h"
 #include "PlayerAttackComponent.h"
 #include "PlayerStateComponent.h"
 #include "TP_WeaponComponent.h"
@@ -48,6 +49,8 @@ ALudens_PCharacter::ALudens_PCharacter()
 	//Mesh1P->SetRelativeRotation(FRotator(0.9f, -19.19f, 5.2f));
 	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
 
+	RewardSystem = CreateDefaultSubobject<URewardSystemComponent>(TEXT("RewardSystem"));
+	
 	JumpCount = 0; // Default 점프 수 설정
 	GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->GravityScale = 2.0f;

@@ -3,26 +3,52 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "RewardEffect.h"
 #include "Engine/DataTable.h"
 #include "RewardData.generated.h"
 
-/**
+class URewardEffect;
+class UTexture2D;
 
+/**
+ ���� �����͸� �����ϴ� ����ü
  */
 
-USTRUCT(BlueprintType)
-struct FRewardData : public FTableRowBase //FTableRowBase를 상속받아서 쓰기
+UENUM(BlueprintType)
+enum class ERewardOpType : uint8
 {
-	GENERATED_BODY()
+    Add,        // �տ���
+    Multiply    // ������
+};
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName RewardName;
+USTRUCT(BlueprintType)
+struct FRewardRow : public FTableRowBase
+{
+    GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FText Description;
-	
+    // 1) �̸�
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) FText RewardName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TSubclassOf<URewardEffect> EffectClass;
+    // 2) ����
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) FText Description;
+
+    // 3) ������(����Ʈ)
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) TSoftObjectPtr<UTexture2D> Icon;
+
+    // 5) ������ ��ġ (��: 30 Ȥ�� 120)
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) float Value = 0.f;
+
+    // 6) ��/�� ���� Ÿ��
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) ERewardOpType Op = ERewardOpType::Add;
+    
+    // �� ���� ������� (��: ���� ����, �ߺ� �Ұ�)
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) bool bUniquePerRun = false;
+
+    // ���� �׷쳢���� �ߺ� �Ұ� (��: 'HP_Regeneration' �׷� �� �ϳ���)
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) FName ExclusiveGroup;
+
+    // �� ������ ��� ���� �ʿ��� �±�(���� ����/Ŭ���� ���� ��)
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<FName> RequiresTags;
+
+    // �� ������� ���ÿ� ���� �� ���� �±�(����/OP ���� ����)
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<FName> ExcludesTags;
 };

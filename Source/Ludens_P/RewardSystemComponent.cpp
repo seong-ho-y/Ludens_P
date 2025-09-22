@@ -7,166 +7,124 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/PlayerController.h"
 #include "Blueprint/UserWidget.h"
-#include "MyGameInstance.h"
 #include "Engine/Engine.h"
-
-TArray<FRewardData> URewardSystemComponent::MasterRewardList;
-bool URewardSystemComponent::bIsMasterListLoaded = false;
-
-void URewardSystemComponent::BeginPlay()
-{
-	Super::BeginPlay();
-	if (!GetOwner()->HasAuthority()) return;
-	if (!bIsMasterListLoaded)
-	{
-		if (RewardDataTable)
-		{
-			TArray<FName> RowNames = RewardDataTable->GetRowNames();
-			for (const FName& RowName : RowNames)
-			{
-				// 각 행 이름으로 실제 데이터(FRewardData)를 찾아옵니다.
-				FRewardData* RowData = RewardDataTable->FindRow<FRewardData>(RowName, TEXT(""));
-				UE_LOG(LogTemp, Warning, TEXT("RowName : %p"),RowData);
-				if (RowData)
-				{
-					MasterRewardList.Add(*RowData);
-				}
-			}
-		}
-		UE_LOG(LogTemp, Warning, TEXT("=== MASTER REWARD LIST HAS BEEN LOADED ONCE. Count: %d ==="), MasterRewardList.Num());
-	}
-	AllRewards = MasterRewardList;
-}
+#include "Engine/World.h"
 
 // Sets default values
 URewardSystemComponent::URewardSystemComponent()
 {
 	SetIsReplicatedByDefault(true);
 }
-// 새로운 함수: 서버에서만 호출되어, 자신(컴포넌트의 오너)에게 보상을 보냄
-void URewardSystemComponent::GenerateAndShowRewardsForOwner()
+
+bool URewardSystemComponent::GetRowData(FName RowName, FRewardRow& Out) const
 {
-	CurrentChoices.Empty(); 
-
-	while (CurrentChoices.Num() < 3 && AllRewards.Num() > 0)
+	UDataTable* DT = RewardTable.IsValid() ? RewardTable.Get() : RewardTable.LoadSynchronous();
+	if (!DT) return false;
+	if (const FRewardRow* Found = DT->FindRow<FRewardRow>(RowName, TEXT("RewardLookup")))
 	{
-		int32 Index = FMath::RandRange(0, AllRewards.Num() - 1);
-		CurrentChoices.Add(AllRewards[Index]); // 지역 변수가 아닌 멤버 변수에 직접 추가
+		Out = *Found; return true;
 	}
-
-	UE_LOG(LogTemp, Error, TEXT("SERVER: Attempting to send Client_ShowRewardUI to player. Choices Count: %d"), CurrentChoices.Num());
-	Client_ShowRewardUI(CurrentChoices);
+	return false;
 }
 
-// 기존 Multicast 함수를 Client RPC로 변경하고, 파라미터를 받도록 수정
-void URewardSystemComponent::Client_ShowRewardUI_Implementation(const TArray<FRewardData>& RewardChoices)
-{
-	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
-	if (!OwnerChar) return;
-
-	APlayerController* PC = Cast<APlayerController>(OwnerChar->GetController());
-	// 로컬 컨트롤러인지 확인하는 것은 Client RPC에서 필수
-	if (!PC || !PC->IsLocalController()) return;
-
-	if (!RewardUIClass)
-	{
-		UE_LOG(LogTemp, Error, TEXT("RewardUIClass is null!"));
-		return;
-	}
-
-	URewardUIWidget* Widget = CreateWidget<URewardUIWidget>(PC, RewardUIClass);
-	if (Widget)
-	{
-		Widget->AddToViewport();
-		// 서버로부터 받은 이 플레이어만의 보상 목록을 UI에 설정
-		Widget->SetRewardList(RewardChoices);
-		Widget->SetOwnerPlayer(OwnerChar);
-
-		PC->bShowMouseCursor = true;
-		PC->SetInputMode(FInputModeUIOnly());
-	}
-
-	ActiveRewardWidget = Widget;
-}
-
-
-void URewardSystemComponent::Server_SelectReward_Implementation(int32 Index)
-{
-	if (!CurrentChoices.IsValidIndex(Index)) return;
-
-	const FRewardData& SelectedReward = CurrentChoices[Index];
-	ApplyReward(SelectedReward);
-
-	if (GEngine)
-	{
-		FString Msg = FString::Printf(TEXT("Reward Choosed: %s"), *SelectedReward.RewardName.ToString());
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, Msg);
-	}
-
-
-	CurrentChoices.Empty();
-
-	Client_EnableInputAfterReward();
-}
-
-void URewardSystemComponent::ApplyReward(const FRewardData& Data)
+void URewardSystemComponent::ApplyReward(const FRewardRow& Row)
 {
 	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
-	if (!OwnerCharacter || !Data.EffectClass) return;
 
-	URewardEffect* Effect = NewObject<URewardEffect>(this, Data.EffectClass);
-	if (Effect) { Effect->ApplyReward(OwnerCharacter); }
+	URewardEffect* Effect = NewObject<URewardEffect>(this, URewardEffect::StaticClass());
+	if (Effect) Effect->ApplyReward(OwnerCharacter, Row);
 }
 
-void URewardSystemComponent::Multicast_ShowRewardUI_Implementation()
+/* ����: ���� 3��(���� 0~2) �̱� �� �ش� �÷��̾� Ŭ�󿡸� ���� */
+void URewardSystemComponent::Server_ShowRewardOptions_Implementation()
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
+
+	UDataTable* DT = RewardTable.IsValid() ? RewardTable.Get() : RewardTable.LoadSynchronous();
+	if (!DT) return;
+
+	// �ĺ� ������ ������ 3��(�ߺ� ����)
+	TArray<FName> All = DT->GetRowNames();
+	if (All.Num() == 0) return;
+	
+	LastOfferedRowNames.Reset();
+	for (int32 i = 0; i < 3 && All.Num() > 0; ++i)
+	{
+		int32 Idx = FMath::RandRange(0, All.Num() - 1);
+		LastOfferedRowNames.Add(All[Idx]);
+		All.RemoveAtSwap(Idx);
+	}
+
+	Client_ShowRewardUI(LastOfferedRowNames);
+}
+
+/* Ŭ��: ���� �ε����� ���� AllRewards���� �����͸� ���� �� UI ���� */
+void URewardSystemComponent::Client_ShowRewardUI_Implementation(const TArray<FName>& OptionRowNames)
 {
 	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
-	if (!OwnerChar) return;
-
 	APlayerController* PC = Cast<APlayerController>(OwnerChar->GetController());
-	if (!PC || !PC->IsLocalController()) return;
+	if (!OwnerChar || !PC) return;
+	
+	if (!RewardUIClass) return;
 
-	if (!RewardUIClass)
+	TArray<FRewardUIData> UIList;
+	for (FName RowName : OptionRowNames)
 	{
-		UE_LOG(LogTemp, Error, TEXT("RewardUIClass is null!"));
-		return;
+		FRewardRow Row;
+		if (GetRowData(RowName, Row))
+		{
+			FRewardUIData D;
+			D.RowName = RowName;
+			D.Title = Row.RewardName;
+			D.Body = Row.Description;
+			D.Icon = Row.Icon.IsNull() ? nullptr : Row.Icon.LoadSynchronous();
+			UIList.Add(D);
+		}
 	}
 
-	URewardUIWidget* Widget = CreateWidget<URewardUIWidget>(PC, RewardUIClass);
-	if (Widget)
-	{
-		Widget->AddToViewport();
-		Widget->SetRewardList(CurrentChoices);
-		Widget->SetOwnerPlayer(OwnerChar);
+	if (UIList.Num() == 0) return;
 
-		PC->bShowMouseCursor = true;
-		PC->SetInputMode(FInputModeUIOnly());
+	if (ActiveRewardWidget)
+	{
+		ActiveRewardWidget->RemoveFromParent();
+		ActiveRewardWidget = nullptr;
 	}
 
-	ActiveRewardWidget = Widget;
+	ActiveRewardWidget = CreateWidget<URewardUIWidget>(PC, RewardUIClass);
+	if (!ActiveRewardWidget) return;
+
+	ActiveRewardWidget->AddToViewport();					// ������ Server_SelectReward ȣ���� ��ü
+	ActiveRewardWidget->InitWithRows(OwnerChar, UIList);	// ����/����/������ ä���       
+
+	// �Է� ���(Ŭ��)
+	PC->SetIgnoreMoveInput(true);
+	PC->SetIgnoreLookInput(true);
+}
+
+/* ����: �÷��̾ ���� ����(0/1/2)�� ���� �� ���� ���� ���� */
+void URewardSystemComponent::Server_SelectReward_Implementation(FName PickedRowName)
+{
+	AActor* Owner = GetOwner();
+	if (!Owner) return;
+
+	if (!LastOfferedRowNames.Contains(PickedRowName)) return;
+
+	FRewardRow Row;
+	if (!GetRowData(PickedRowName, Row)) return;
+	ApplyReward(Row);					// ���� ���� ���� (�̹� �����Ƿ� �״�� ���)
+
+	LastOfferedRowNames.Reset();		// �� �� ��������� ���
+	Client_EnableInputAfterReward();	// UI �ݱ� & �Է� ������ �ش� �÷��̾� Ŭ�󿡼� ó��
 }
 
 void URewardSystemComponent::Client_EnableInputAfterReward_Implementation()
 {
 	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
-	if (!OwnerChar)
-	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Still freezed..."));
-		}
-		return;
-	}
+	if (!OwnerChar) return;
 
 	APlayerController* PC = Cast<APlayerController>(OwnerChar->GetController());
-	if (!PC)
-	{
-		if (GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Still freezed..."));
-		}
-		return;
-	}
+	if (!PC) return;
 
 	PC->SetIgnoreMoveInput(false);
 	PC->SetIgnoreLookInput(false);
@@ -179,8 +137,6 @@ void URewardSystemComponent::Client_EnableInputAfterReward_Implementation()
 		ActiveRewardWidget = nullptr;
 	}
 
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Game Unfreeze!"));
-	}
+	PC->SetIgnoreMoveInput(false);
+	PC->SetIgnoreLookInput(false);
 }

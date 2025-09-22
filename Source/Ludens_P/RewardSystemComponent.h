@@ -5,7 +5,6 @@
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "RewardData.h"
-#include "Engine/DataTable.h"
 #include "RewardSystemComponent.generated.h"
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
@@ -15,44 +14,40 @@ class LUDENS_P_API URewardSystemComponent : public UActorComponent
 	
 public:
 	URewardSystemComponent();
-	void GenerateAndShowRewardsForOwner();
 
-	UPROPERTY(EditAnywhere, Category = "Reward System")
-	UDataTable* RewardDataTable;
-	
+    /** ���� ��ü ��� */
+    UPROPERTY(EditDefaultsOnly, Category = "Reward")
+    TSoftObjectPtr<UDataTable> RewardTable;
 
+    UPROPERTY()
+    TArray<FName> LastOfferedRowNames;
 
-	UFUNCTION(Server, Reliable)
-	void Server_SelectReward(int32 Index);
+    /** UI Ŭ���� (���� ����) */
+    UPROPERTY(EditDefaultsOnly, Category = "Reward")
+    TSubclassOf<class URewardUIWidget> RewardUIClass;
 
-protected:
-	virtual void BeginPlay() override;
-	
-	UPROPERTY()
-	TArray<FRewardData> AllRewards;
+public:
+    /** ���� ���� �Լ� */
+    void ApplyReward(const FRewardRow& Row);
 
-	UFUNCTION(Client, Reliable)
-	void Client_ShowRewardUI(const TArray<FRewardData>& RewardChoices);
-	
-	TArray<FRewardData> CurrentChoices;
-	
-	UPROPERTY(EditDefaultsOnly, Category = "Reward")
-	TSubclassOf<class URewardUIWidget> RewardUIClass;
-	
-	void ApplyReward(const FRewardData& Data);
+    bool GetRowData(FName RowName, FRewardRow& Out) const;
 
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_ShowRewardUI();
+public:
+    /* ������ ���� 3���� �̾� �ش� �÷��̾� Ŭ�󿡸� UI ���� */
+    UFUNCTION(Server, Reliable)
+    void Server_ShowRewardOptions();
 
-	UFUNCTION(Client, Reliable)
-	void Client_EnableInputAfterReward();
+    /* �������ش� �÷��̾�Ը� �����ϴ� Client RPC(�ε����� ����) */
+    UFUNCTION(Client, Reliable)
+    void Client_ShowRewardUI(const TArray<FName>& OptionRowNames);
+
+    /* (���� ����) �÷��̾ ���� ���� �ε���(0~2)�� ������ */
+    UFUNCTION(Server, Reliable)
+    void Server_SelectReward(FName PickedRowName);
+
+    UFUNCTION(Client, Reliable)
+    void Client_EnableInputAfterReward();
 
 private:
-	URewardUIWidget* ActiveRewardWidget;
-
-	// 모든 RewardSystemComponent 인스턴스가 공유할 마스터 보상 목록
-	static TArray<FRewardData> MasterRewardList;
-
-	// 마스터 목록이 로드되었는지 확인하는 플래그
-	static bool bIsMasterListLoaded;
+    URewardUIWidget* ActiveRewardWidget = nullptr;  // ���� ����� ���� ���� ����
 };
