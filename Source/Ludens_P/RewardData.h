@@ -10,14 +10,14 @@ class URewardEffect;
 class UTexture2D;
 
 /**
- º¸»ó µ¥ÀÌÅÍ¸¦ Á¤ÀÇÇÏ´Â ±¸Á¶Ã¼
+ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ ï¿½ï¿½ï¿½ï¿½Ã¼
  */
 
 UENUM(BlueprintType)
 enum class ERewardOpType : uint8
 {
-    Add,        // ÇÕ¿¬»ê
-    Multiply    // °ö¿¬»ê
+    Add,        // ï¿½Õ¿ï¿½ï¿½ï¿½
+    Multiply    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½
 };
 
 USTRUCT(BlueprintType)
@@ -25,30 +25,30 @@ struct FRewardRow : public FTableRowBase
 {
     GENERATED_BODY()
 
-    // 1) ÀÌ¸§
+    // 1) ï¿½Ì¸ï¿½
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FText RewardName;
 
-    // 2) ¼³¸í
+    // 2) ï¿½ï¿½ï¿½ï¿½
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FText Description;
 
-    // 3) ¾ÆÀÌÄÜ(¼ÒÇÁÆ®)
+    // 3) ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½Æ®)
     UPROPERTY(EditAnywhere, BlueprintReadOnly) TSoftObjectPtr<UTexture2D> Icon;
 
-    // 5) Áõ°¡ÇÒ ¼öÄ¡ (¿¹: 30 È¤Àº 120)
+    // 5) ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡ (ï¿½ï¿½: 30 È¤ï¿½ï¿½ 120)
     UPROPERTY(EditAnywhere, BlueprintReadOnly) float Value = 0.f;
 
-    // 6) ÇÕ/°ö ¿¬»ê Å¸ÀÔ
+    // 6) ï¿½ï¿½/ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Å¸ï¿½ï¿½
     UPROPERTY(EditAnywhere, BlueprintReadOnly) ERewardOpType Op = ERewardOpType::Add;
     
-    // ÇÑ ¹ø¸¸ Çã¿ëÇÒÁö (¿¹: °íÀ¯ À¯¹°, Áßº¹ ºÒ°¡)
+    // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½, ï¿½ßºï¿½ ï¿½Ò°ï¿½)
     UPROPERTY(EditAnywhere, BlueprintReadOnly) bool bUniquePerRun = false;
 
-    // °°Àº ±×·ì³¢¸®´Â Áßº¹ ºÒ°¡ (¿¹: 'HP_Regeneration' ±×·ì Áß ÇÏ³ª¸¸)
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½×·ì³¢ï¿½ï¿½ï¿½ï¿½ ï¿½ßºï¿½ ï¿½Ò°ï¿½ (ï¿½ï¿½: 'HP_Regeneration' ï¿½×·ï¿½ ï¿½ï¿½ ï¿½Ï³ï¿½ï¿½ï¿½)
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FName ExclusiveGroup;
 
-    // ÀÌ º¸»óÀ» ¾ò±â À§ÇØ ÇÊ¿äÇÑ ÅÂ±×(¼±Çà º¸»ó/Å¬·¡½º »óÅÂ µî)
+    // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ê¿ï¿½ï¿½ï¿½ ï¿½Â±ï¿½(ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½/Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½)
     UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<FName> RequiresTags;
 
-    // ÀÌ º¸»ó°ú´Â µ¿½Ã¿¡ °¡Áú ¼ö ¾ø´Â ÅÂ±×(»óÃæ/OP Á¶ÇÕ ¹æÁö)
+    // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½Ã¿ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Â±ï¿½(ï¿½ï¿½ï¿½ï¿½/OP ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
     UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<FName> ExcludesTags;
 };

@@ -8,7 +8,7 @@
 #include "RewardUIWidget.generated.h"
 
 /**
- º¸»ó UI À§Á¬
+ ï¿½ï¿½ï¿½ï¿½ UI ï¿½ï¿½ï¿½ï¿½
  */
 
 class UButton;
@@ -35,15 +35,15 @@ public:
     virtual void NativeConstruct() override;
     void InitWithRows(ACharacter* OwnerChar, const TArray<FRewardUIData>& InList);
 
-    UFUNCTION(BlueprintCallable) void RemoveSelf();  // ¿ÜºÎ¿¡¼­ Á¦°Å È£Ãâ
+    UFUNCTION(BlueprintCallable) void RemoveSelf();  // ï¿½ÜºÎ¿ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½
 
 protected:
-    // ¹öÆ°
+    // ï¿½ï¿½Æ°
     UPROPERTY(meta = (BindWidget)) UButton* Button_Reward0;
     UPROPERTY(meta = (BindWidget)) UButton* Button_Reward1;
     UPROPERTY(meta = (BindWidget)) UButton* Button_Reward2;
 
-    // === ¹öÆ° ³»ºÎÀÇ Ä«µå ¿ä¼Ò ===
+    // === ï¿½ï¿½Æ° ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ä«ï¿½ï¿½ ï¿½ï¿½ï¿½ ===
     UPROPERTY(meta = (BindWidget)) UImage* Image_Icon0;
     UPROPERTY(meta = (BindWidget)) UTextBlock* Text_Title0;
     UPROPERTY(meta = (BindWidget)) UTextBlock* Text_Body0;

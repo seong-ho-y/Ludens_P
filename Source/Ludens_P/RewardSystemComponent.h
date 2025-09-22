@@ -15,33 +15,33 @@ class LUDENS_P_API URewardSystemComponent : public UActorComponent
 public:
 	URewardSystemComponent();
 
-    /** º¸»ó ÀüÃ¼ ¸ñ·Ï */
+    /** ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ */
     UPROPERTY(EditDefaultsOnly, Category = "Reward")
     TSoftObjectPtr<UDataTable> RewardTable;
 
     UPROPERTY()
     TArray<FName> LastOfferedRowNames;
 
-    /** UI Å¬·¡½º (º¸»ó À§Á¬) */
+    /** UI Å¬ï¿½ï¿½ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½) */
     UPROPERTY(EditDefaultsOnly, Category = "Reward")
     TSubclassOf<class URewardUIWidget> RewardUIClass;
 
 public:
-    /** º¸»ó Àû¿ë ÇÔ¼ö */
+    /** ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ô¼ï¿½ */
     void ApplyReward(const FRewardRow& Row);
 
     bool GetRowData(FName RowName, FRewardRow& Out) const;
 
 public:
-    /* ¼­¹ö°¡ º¸»ó 3°³¸¦ »Ì¾Æ ÇØ´ç ÇÃ·¹ÀÌ¾î Å¬¶ó¿¡¸¸ UI Àü¼Û */
+    /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ 3ï¿½ï¿½ï¿½ï¿½ ï¿½Ì¾ï¿½ ï¿½Ø´ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ Å¬ï¿½ó¿¡¸ï¿½ UI ï¿½ï¿½ï¿½ï¿½ */
     UFUNCTION(Server, Reliable)
     void Server_ShowRewardOptions();
 
-    /* ¼­¹ö¡æÇØ´ç ÇÃ·¹ÀÌ¾î¿¡°Ô¸¸ Àü¼ÛÇÏ´Â Client RPC(ÀÎµ¦½º¸¸ Àü¼Û) */
+    /* ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Ø´ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾î¿¡ï¿½Ô¸ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ Client RPC(ï¿½Îµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½) */
     UFUNCTION(Client, Reliable)
     void Client_ShowRewardUI(const TArray<FName>& OptionRowNames);
 
-    /* (¼­¹ö ±ÇÀ§) ÇÃ·¹ÀÌ¾î°¡ °í¸¥ ½½·Ô ÀÎµ¦½º(0~2)¸¦ ¼­¹ö·Î */
+    /* (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½) ï¿½Ã·ï¿½ï¿½Ì¾î°¡ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Îµï¿½ï¿½ï¿½(0~2)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ */
     UFUNCTION(Server, Reliable)
     void Server_SelectReward(FName PickedRowName);
 
@@ -49,5 +49,5 @@ public:
     void Client_EnableInputAfterReward();
 
 private:
-    URewardUIWidget* ActiveRewardWidget = nullptr;  // ÇöÀç ¶ç¿öÁø À§Á¬ ÂüÁ¶ ÀúÀå
+    URewardUIWidget* ActiveRewardWidget = nullptr;  // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 };

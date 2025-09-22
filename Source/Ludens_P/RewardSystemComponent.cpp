@@ -35,7 +35,7 @@ void URewardSystemComponent::ApplyReward(const FRewardRow& Row)
 	if (Effect) Effect->ApplyReward(OwnerCharacter, Row);
 }
 
-/* ¼­¹ö: º¸»ó 3°³(½½·Ô 0~2) »Ì±â ¡æ ÇØ´ç ÇÃ·¹ÀÌ¾î Å¬¶ó¿¡¸¸ Àü¼Û */
+/* ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ 3ï¿½ï¿½(ï¿½ï¿½ï¿½ï¿½ 0~2) ï¿½Ì±ï¿½ ï¿½ï¿½ ï¿½Ø´ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ Å¬ï¿½ó¿¡¸ï¿½ ï¿½ï¿½ï¿½ï¿½ */
 void URewardSystemComponent::Server_ShowRewardOptions_Implementation()
 {
 	AActor* Owner = GetOwner();
@@ -44,7 +44,7 @@ void URewardSystemComponent::Server_ShowRewardOptions_Implementation()
 	UDataTable* DT = RewardTable.IsValid() ? RewardTable.Get() : RewardTable.LoadSynchronous();
 	if (!DT) return;
 
-	// ÈÄº¸ °¡Á®¿Í ¹«ÀÛÀ§ 3°³(Áßº¹ ¾øÀ½)
+	// ï¿½Äºï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ 3ï¿½ï¿½(ï¿½ßºï¿½ ï¿½ï¿½ï¿½ï¿½)
 	TArray<FName> All = DT->GetRowNames();
 	if (All.Num() == 0) return;
 	
@@ -59,7 +59,7 @@ void URewardSystemComponent::Server_ShowRewardOptions_Implementation()
 	Client_ShowRewardUI(LastOfferedRowNames);
 }
 
-/* Å¬¶ó: ¹ÞÀº ÀÎµ¦½º·Î ·ÎÄÃ AllRewards¿¡¼­ µ¥ÀÌÅÍ¸¦ º¹±¸ ¡æ UI »ý¼º */
+/* Å¬ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ ï¿½Îµï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ AllRewardsï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Í¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ UI ï¿½ï¿½ï¿½ï¿½ */
 void URewardSystemComponent::Client_ShowRewardUI_Implementation(const TArray<FName>& OptionRowNames)
 {
 	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
@@ -94,15 +94,15 @@ void URewardSystemComponent::Client_ShowRewardUI_Implementation(const TArray<FNa
 	ActiveRewardWidget = CreateWidget<URewardUIWidget>(PC, RewardUIClass);
 	if (!ActiveRewardWidget) return;
 
-	ActiveRewardWidget->AddToViewport();					// À§Á¬ÀÌ Server_SelectReward È£ÃâÇÒ ÁÖÃ¼
-	ActiveRewardWidget->InitWithRows(OwnerChar, UIList);	// Á¦¸ñ/¼³¸í/¾ÆÀÌÄÜ Ã¤¿ì±â       
+	ActiveRewardWidget->AddToViewport();					// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Server_SelectReward È£ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ã¼
+	ActiveRewardWidget->InitWithRows(OwnerChar, UIList);	// ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã¤ï¿½ï¿½ï¿½       
 
-	// ÀÔ·Â Àá±Ý(Å¬¶ó)
+	// ï¿½Ô·ï¿½ ï¿½ï¿½ï¿½(Å¬ï¿½ï¿½)
 	PC->SetIgnoreMoveInput(true);
 	PC->SetIgnoreLookInput(true);
 }
 
-/* ¼­¹ö: ÇÃ·¹ÀÌ¾î°¡ °í¸¥ ½½·Ô(0/1/2)À» °ËÁõ ¡æ ½ÇÁ¦ º¸»ó Àû¿ë */
+/* ï¿½ï¿½ï¿½ï¿½: ï¿½Ã·ï¿½ï¿½Ì¾î°¡ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½(0/1/2)ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ */
 void URewardSystemComponent::Server_SelectReward_Implementation(FName PickedRowName)
 {
 	AActor* Owner = GetOwner();
@@ -112,10 +112,10 @@ void URewardSystemComponent::Server_SelectReward_Implementation(FName PickedRowN
 
 	FRewardRow Row;
 	if (!GetRowData(PickedRowName, Row)) return;
-	ApplyReward(Row);					// ½ÇÁ¦ º¸»ó ·ÎÁ÷ (ÀÌ¹Ì ÀÖÀ¸¹Ç·Î ±×´ë·Î »ç¿ë)
+	ApplyReward(Row);					// ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (ï¿½Ì¹ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ç·ï¿½ ï¿½×´ï¿½ï¿½ ï¿½ï¿½ï¿½)
 
-	LastOfferedRowNames.Reset();		// ÇÑ ¹ø »ç¿ëÇßÀ¸´Ï ºñ¿ò
-	Client_EnableInputAfterReward();	// UI ´Ý±â & ÀÔ·Â º¹¿øÀº ÇØ´ç ÇÃ·¹ÀÌ¾î Å¬¶ó¿¡¼­ Ã³¸®
+	LastOfferedRowNames.Reset();		// ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
+	Client_EnableInputAfterReward();	// UI ï¿½Ý±ï¿½ & ï¿½Ô·ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Ø´ï¿½ ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ Å¬ï¿½ó¿¡¼ï¿½ Ã³ï¿½ï¿½
 }
 
 void URewardSystemComponent::Client_EnableInputAfterReward_Implementation()
