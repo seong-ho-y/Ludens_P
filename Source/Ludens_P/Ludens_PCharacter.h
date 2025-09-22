@@ -5,6 +5,11 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Logging/LogMacros.h"
+<<<<<<< Updated upstream
+=======
+#include "LobbyTypes.h"   
+#include "LudensAppearanceData.h"
+>>>>>>> Stashed changes
 #include "Ludens_PCharacter.generated.h"
 
 class UInputComponent;
@@ -13,8 +18,12 @@ class UCameraComponent;
 class UInputAction;
 class UInputMappingContext;
 struct FInputActionValue;
+class ALobbyPlayerState;
+
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
+
+
 
 UCLASS(config=Game)
 class ALudens_PCharacter : public ACharacter
@@ -36,12 +45,35 @@ class ALudens_PCharacter : public ACharacter
 	/** Move Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	UInputAction* MoveAction;
+<<<<<<< Updated upstream
+=======
+
+	UPROPERTY(EditDefaultsOnly, Category = "Cosmetics|DB")
+	ULudensAppearanceData* AppearanceDB = nullptr;
+>>>>>>> Stashed changes
 	
 public:
 	ALudens_PCharacter();
 
 protected:
-	virtual void BeginPlay();
+
+	// ★ 3P 본체 캐시(= GetMesh())
+	UPROPERTY(Transient)
+	USkeletalMeshComponent* Mesh3P = nullptr;
+
+	// ★ PlayerState 델리게이트 중복 바인딩 방지
+	bool bPSBound = false;
+
+	// ★ 라이프사이클 훅
+	virtual void BeginPlay() override;
+	virtual void PossessedBy(AController* NewController) override;
+	virtual void OnRep_PlayerState() override;
+
+	// ★ 코스메틱 적용 파이프라인
+	void CacheMesh3P();
+	void BindToLobbyPS();
+	UFUNCTION() void OnLobbyPSChanged();
+	void ApplyCosmeticsFromPS();
 
 public:
 		

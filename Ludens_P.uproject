@@ -10,7 +10,11 @@
 			"LoadingPhase": "Default",
 			"AdditionalDependencies": [
 				"Engine",
+<<<<<<< Updated upstream
 				"AIModule"
+=======
+				"UMG"
+>>>>>>> Stashed changes
 			]
 		}
 	],
