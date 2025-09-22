@@ -6,10 +6,11 @@
 Content/StarterContent
 Content/FirstPersonArms
 Content/FBX
-Content/Enemy
 Content/Collections
 Content/Developers
 Content/MonsterForSurvivalGame
+Content/DownloadAsset
+Content/Enemy
 
 # Visual Studio 2015 user specific files
 .vs/
