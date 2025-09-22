@@ -20,4 +20,6 @@ class LUDENS_P_API URewardEffect : public UObject
 public:
 	UFUNCTION(BlueprintNativeEvent, Category = "Reward")
 	void ApplyReward(ACharacter* Player, const FRewardRow& Row);
+
+	
 };

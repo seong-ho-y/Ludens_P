@@ -47,10 +47,4 @@ public:
 	UFUNCTION(Server, Reliable)
 	void Server_RequestSpawnEnemy();
 protected:
-	// "RewardSystem" 키가 눌렸을 때 클라이언트에서 호출될 함수
-	void RewardSystem();
-
-	// 서버에 방 클리어를 요청하는 RPC 함수
-	UFUNCTION(Server, Reliable)
-	void Server_RequestRoomClear();
 };

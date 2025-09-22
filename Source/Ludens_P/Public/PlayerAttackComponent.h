@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "Components/ActorComponent.h"
+#include "MeleeAttackHandler.h"
 #include "PlayerAttackComponent.generated.h"
 
 
