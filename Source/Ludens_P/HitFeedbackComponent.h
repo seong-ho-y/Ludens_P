@@ -33,7 +33,7 @@ protected:
 	void EndHitFlash();
 	FTimerHandle HitFlashTimer;
 
-	UPROPERTY(EditDefaultsOnly, Category = "VFX")
+	UPROPERTY(EditAnyWhere, Category = "VFX")
 	UMaterialInstanceDynamic* BodyMID;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Hit Feedback|Flash")
