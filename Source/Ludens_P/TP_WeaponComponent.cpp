@@ -109,7 +109,7 @@ void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotato
 
 	if (WeaponAttackMontage)
 	{
-		PlayMontage(WeaponAttackMontage, 1.5f);
+		PlayMontage(WeaponAttackMontage, 1.0f);
 	}
 }
 

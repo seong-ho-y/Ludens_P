@@ -422,6 +422,7 @@ void ALudens_PCharacter::Fire(const FInputActionValue& Value)
 	if (CurrentAmmo > 0)
 	{
 		// 서버: 실제 발사 처리
+		UE_LOG(LogTemp, Warning, TEXT("<Fire>"));
 		WeaponComponent->Fire();
 		CurrentAmmo --;
 	}
