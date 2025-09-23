@@ -34,6 +34,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "VFX")
 	class USoundCue* ExplosionSound;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayExplodeVFX(FVector_NetQuantize VFXLocation);
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
