@@ -30,7 +30,7 @@ protected:
 	float ExplosionDamage = 20.0f;
 
 	UPROPERTY(EditAnywhere, Category = "VFX")
-	class UParticleSystem* ExplosionEffect;
+	class UNiagaraSystem* ExplosionEffect;
 
 	UPROPERTY(EditAnywhere, Category = "VFX")
 	class USoundCue* ExplosionSound;

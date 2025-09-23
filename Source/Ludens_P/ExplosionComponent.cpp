@@ -3,6 +3,7 @@
 
 #include "ExplosionComponent.h"
 #include "DeathHandlerInterface.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 
@@ -23,7 +24,17 @@ void UExplosionComponent::Explode()
 
 	if (ExplosionEffect != nullptr)
 	{
-		UGameplayStatics::SpawnEmitterAtLocation(this, ExplosionEffect, MyOwner->GetActorLocation());
+		UE_LOG(LogTemp, Warning, TEXT("Explode Effect Spawn"));
+		FVector Location = MyOwner->GetActorLocation();
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+			GetWorld(),
+			ExplosionEffect,
+			Location,
+			FRotator(0, 0, 0),
+			FVector(1.0f),
+			true,
+			true
+			);
 	}
 	if (ExplosionSound != nullptr)
 	{
