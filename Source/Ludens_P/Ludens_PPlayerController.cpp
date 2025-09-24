@@ -8,6 +8,7 @@
 #include "EngineUtils.h"
 #include "AI/NavigationSystemBase.h"
 #include "Engine/LocalPlayer.h"
+#include "EntitySystem/MovieSceneEntitySystemRunner.h"
 #include "Kismet/GameplayStatics.h"
 
 void ALudens_PPlayerController::BeginPlay()
@@ -27,7 +28,6 @@ void ALudens_PPlayerController::SetupInputComponent()
 	Super::SetupInputComponent();
 	
 	InputComponent->BindAction("SpawnEnemy", IE_Pressed, this, &ALudens_PPlayerController::Server_RequestSpawnEnemy);
-	InputComponent->BindAction("RewardSystem", IE_Pressed, this, &ALudens_PPlayerController::RewardSystem);
 }
 
 
@@ -47,25 +47,8 @@ void ALudens_PPlayerController::Server_RequestSpawnEnemy_Implementation()
 		PoolManager->SpawnEnemy(WalkerEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Magenta);
 		PoolManager->SpawnEnemy(TankerEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Cyan);
 		PoolManager->SpawnEnemy(RunnerEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Red);
-		PoolManager->SpawnEnemy(SniperEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Green );
-	}
-}
-
-void ALudens_PPlayerController::RewardSystem()
-{
-	// 아무 로직도 처리하지 않고, 즉시 서버에 요청을 보냅니다.
-	Server_RequestRoomClear(); 
-}
-
-// 클라이언트의 요청을 받아 "서버에서" 실행될 실제 로직입니다.
-void ALudens_PPlayerController::Server_RequestRoomClear_Implementation()
-{
-	// 이 코드는 100% 서버에서만 실행됩니다.
-	// GetWorld()->GetAuthGameMode()를 통해 서버의 GameMode를 안전하게 가져올 수 있습니다.
-	ALudens_PGameMode* GM = GetWorld()->GetAuthGameMode<ALudens_PGameMode>();
-	if (GM)
-	{
-		// GameMode에 있는 함수를 호출합니다.
-		GM->OnRoomCleared(); // GameMode에 OnRoomCleared() 함수가 구현되어 있어야 합니다.
+		PoolManager->SpawnEnemy(SniperEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Green);
+		PoolManager->SpawnEnemy(ExploEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Blue);
+		PoolManager->SpawnEnemy(StealthEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Yellow);
 	}
 }

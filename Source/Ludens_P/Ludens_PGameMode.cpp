@@ -36,6 +36,7 @@ ALudens_PGameMode::ALudens_PGameMode()
 	//PlayerController 할당을 위해서 c++ 클래스를 할당해놓음
 	PlayerControllerClass = ALudens_PPlayerController::StaticClass();
 
+	bUseSeamlessTravel = true;
 }
 void ALudens_PGameMode::BeginPlay()
 {
@@ -65,25 +66,6 @@ AActor* ALudens_PGameMode::ChoosePlayerStart_Implementation(AController* Player)
 	return Super::ChoosePlayerStart_Implementation(Player);
 }
 
-void ALudens_PGameMode::OnRoomCleared()
-{
-	UE_LOG(LogTemp, Warning, TEXT("OnRoomCleared Called:GameMode"));
-	// 현재 게임에 있는 모든 플레이어 컨트롤러를 순회
-	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-	{
-		APlayerController* PC = It->Get();
-		if (PC && PC->GetPawn())
-		{
-			// 각 플레이어의 캐릭터에서 RewardSystemComponent를 가져옴
-			URewardSystemComponent* RewardComp = PC->GetPawn()->FindComponentByClass<URewardSystemComponent>();
-			if (RewardComp)
-			{
-				// 컴포넌트에게 "이 플레이어를 위한 보상을 생성하고 보여줘라" 라고 명령
-				RewardComp->GenerateAndShowRewardsForOwner();
-			}
-		}
-	}
-}
 
 // GameMode의 OnPostLogin 함수 등에서 실행
 void ALudens_PGameMode::OnPostLogin(AController* NewPlayer)

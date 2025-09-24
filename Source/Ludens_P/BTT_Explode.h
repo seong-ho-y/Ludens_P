@@ -16,5 +16,6 @@ class LUDENS_P_API UBTT_Explode : public UBTTaskNode
 	GENERATED_BODY()
 
 public:
+	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	
 };

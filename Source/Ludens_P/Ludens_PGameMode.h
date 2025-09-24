@@ -23,7 +23,6 @@ class ALudens_PGameMode : public AGameMode
 public:
 	ALudens_PGameMode();
 	virtual AActor* ChoosePlayerStart_Implementation(AController* Player) override; //ChoosePlayerStart
-	void OnRoomCleared();
 	virtual void OnPostLogin(AController* NewPlayer) override;
 
 	//Pawn이 준비된 후에 호출되는 함수

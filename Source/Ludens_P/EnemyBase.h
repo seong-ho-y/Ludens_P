@@ -6,6 +6,7 @@
 #include "HitFeedbackComponent.h"
 #include "GameFramework/Character.h"
 #include "DeathHandlerInterface.h"
+#include "StealthInterface.h"
 #include "EnemyBase.generated.h"
 
 class UEnemyDescriptor;
@@ -14,11 +15,14 @@ class UWidgetComponent;
 class UEnemyHealthBarBase;
 
 UCLASS(Abstract)
-class LUDENS_P_API AEnemyBase : public ACharacter, public IDeathHandlerInterface
+class LUDENS_P_API AEnemyBase : public ACharacter, public IDeathHandlerInterface, public IStealthInterface
 {
 	GENERATED_BODY()
 public:
 	virtual void Tick(float DeltaTime) override;
+
+	virtual void EngageStealth_Implementation() override;
+	virtual void DisengageStealth_Implementation() override;
 	
 	AEnemyBase();
 

@@ -22,6 +22,7 @@ protected:
 	/** Input Mapping Context to be used for player input */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputMappingContext* InputMappingContext;
+	
 
 	// Begin Actor interface
 
@@ -37,15 +38,13 @@ public:
 	TSubclassOf<AEnemyBase> RunnerEnemyBPClass;
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<AEnemyBase> SniperEnemyBPClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AEnemyBase> ExploEnemyBPClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AEnemyBase> StealthEnemyBPClass;
 
 	// "적 스폰을 요청"하는 서버 RPC 함수를 선언합니다.
 	UFUNCTION(Server, Reliable)
 	void Server_RequestSpawnEnemy();
 protected:
-	// "RewardSystem" 키가 눌렸을 때 클라이언트에서 호출될 함수
-	void RewardSystem();
-
-	// 서버에 방 클리어를 요청하는 RPC 함수
-	UFUNCTION(Server, Reliable)
-	void Server_RequestRoomClear();
 };

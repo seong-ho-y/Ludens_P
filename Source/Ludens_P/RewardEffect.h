@@ -3,23 +3,23 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UObject/NoExportTypes.h"
 #include "RewardEffect.generated.h"
 
 /**
-
+ ���� ȿ���� ǥ���� �߻� Ŭ����
  */
 
-UCLASS(Blueprintable, Abstract)
+struct FRewardRow;
+
+UCLASS(Blueprintable)
 class LUDENS_P_API URewardEffect : public UObject
 {
 	GENERATED_BODY()
 
 public:
-	// 1. 호출용 함수: 다른 곳에서 이 함수를 호출합니다. 여기에는 virtual을 쓰지 않습니다.
 	UFUNCTION(BlueprintNativeEvent, Category = "Reward")
-	void ApplyReward(ACharacter* TargetCharacter);
+	void ApplyReward(ACharacter* Player, const FRewardRow& Row);
 
-	// 2. C++ 구현용 함수: C++ 기본 로직을 여기에 작성하며, C++ 자식 클래스가 재정의(override)할 수 있도록 virtual을 붙입니다.
-	virtual void ApplyReward_Implementation(ACharacter* TargetCharacter);
-
+	
 };

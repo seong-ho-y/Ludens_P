@@ -29,10 +29,10 @@ public:
 	AEnemyBase* SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, const FVector& Location, const FRotator& Rotation,EEnemyColor EnemyColor);
 
 	// 적을 풀로 되돌리는 함수 (서버에서만 호출되어야 함)
-	void ReturnEnemy(AEnemyBase* Enemy);
+	void ReturnEnemy(AEnemyBase* Enemy) const;
 
 protected:
-	virtual void BeginPlay() override;
+	virtual void BeginPlay() override;	
 
 	// 각 Enemy 클래스별로 풀을 관리 (서버에만 존재, 복제 불필요)
 	UPROPERTY()
