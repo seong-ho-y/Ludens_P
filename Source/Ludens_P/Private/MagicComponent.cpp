@@ -3,6 +3,9 @@
 
 #include "MagicComponent.h"
 
+#include "NiagaraFunctionLibrary.h"
+#include "Kismet/GameplayStatics.h"
+
 // Sets default values for this component's properties
 UMagicComponent::UMagicComponent()
 {
@@ -21,6 +24,50 @@ void UMagicComponent::BeginPlay()
 
 	// ...
 	
+}
+
+void UMagicComponent::CastSpellAtLocation(const FVector TargetLocation)
+{
+	Multicast_SpawnWarningDecal(TargetLocation);
+
+	FTimerHandle SpellTimerHandle;
+	FTimerDelegate SpellDelegate = FTimerDelegate::CreateUObject(this, &UMagicComponent::ExecuteSpell, TargetLocation);
+	GetWorld()->GetTimerManager().SetTimer(SpellTimerHandle, SpellDelegate, CastingTime, false);
+}
+
+
+void UMagicComponent::Multicast_SpawnWarningDecal_Implementation(const FVector TargetLocation)
+{
+	if (WarningDecalMaterial)
+	{
+		FRotator DecalRotation = FRotator(90.f, FMath::RandRange(-100.f, 100.f),0.f);
+		UDecalComponent* Decal = UGameplayStatics::SpawnDecalAtLocation(GetWorld(), WarningDecalMaterial, FVector(SpellRadius), TargetLocation, DecalRotation, CastingTime);
+	}
+}
+
+
+
+void UMagicComponent::Multicast_PlaySpellEffect_Implementation(const FVector& Location)
+{
+	if (SpellEffect)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), SpellEffect, Location);
+	}
+}
+
+void UMagicComponent::ExecuteSpell(FVector Location)
+{
+	Multicast_PlaySpellEffect(Location);
+	UGameplayStatics::ApplyRadialDamage(
+		GetWorld(),
+		SpellDamage,
+		Location,
+		SpellRadius,
+		UDamageType::StaticClass(),
+		TArray<AActor*>(),
+		GetOwner(),
+		GetOwner()->GetInstigatorController()
+		);
 }
 
 
