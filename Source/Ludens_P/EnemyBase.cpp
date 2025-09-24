@@ -89,6 +89,7 @@ void AEnemyBase::BeginPlay()
 	// 서버에서만 이 테스트를 실행합니다.
 	if (HasAuthority())
 	{
+		/*
 		// HitFeedbackComponent 클래스의 '설계도 원본(CDO)'을 직접 가져옵니다.
 		UHitFeedbackComponent* DefaultComponent = UHitFeedbackComponent::StaticClass()->GetDefaultObject<UHitFeedbackComponent>();
         
@@ -112,16 +113,13 @@ void AEnemyBase::BeginPlay()
 		{
 			UE_LOG(LogTemp, Error, TEXT("INSTANCE CHECK: HitVFX is NULL on this spawned actor instance!"));
 		}
+		*/
 	}
-	USkeletalMeshComponent* BodyMesh = GetMesh();
-	if (BodyMesh)
-	{
-		BodyMID = BodyMesh->CreateAndSetMaterialInstanceDynamic(0); //BodyMID에 현재 BodyMesh MID 할당
-	}
+	
 	// 3. "핵심 보험 코드": 현재 ColorType 값으로 색상을 한번 더 설정합니다.
 	// OnRep이 먼저 실행되어 색 변경을 놓쳤더라도, BeginPlay가 끝나는 시점에
 	// 최종적으로 올바른 색상을 보장해주는 매우 중요한 코드입니다.
-	SetBodyColor(ColorType);
+	//SetBodyColor(ColorType);
 	if (CCC)
 	{
 		CCC->OnHealthChanged.AddDynamic(this, &AEnemyBase::OnHealthUpdated);
@@ -230,6 +228,19 @@ void AEnemyBase::OnRep_IsActive()
 // 4. 실제 활성/비활성 로직 (서버와 클라이언트 모두에서 실행됨)
 void AEnemyBase::UpdateActiveState(bool bNewIsActive)
 {
+	if (bNewIsActive)
+	{
+		// 활성화될 때, 만약 MID가 아직 없다면(최초 스폰 또는 풀에서 재사용) 생성합니다.
+		if (!BodyMID)
+		{
+			InitializeMID();
+		}
+	}
+	else
+	{
+		// 비활성화될 때, 다음 재사용을 위해 포인터를 깔끔하게 정리합니다.
+		BodyMID = nullptr;
+	}
 	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
 	if (MoveComp)
 	{
@@ -247,6 +258,7 @@ void AEnemyBase::UpdateActiveState(bool bNewIsActive)
 			MoveComp->SetMovementMode(MOVE_None);
 		}
 	}
+	
 	// 1. 보이기 / 숨기기 (가장 중요!)
 	// bNewIsActive가 true일 때, !true = false가 되어 숨김 상태가 해제됩니다.
 	SetActorHiddenInGame(!bNewIsActive);
@@ -450,6 +462,29 @@ void AEnemyBase::HandleDied()
 		Destroy();
 	}
 }
+
+void AEnemyBase::InitializeMID()
+{
+	if (GetMesh())
+	{
+		// 0번 슬롯에 대한 MID 생성
+		BodyMID = GetMesh()->CreateAndSetMaterialInstanceDynamic(0);
+
+		// 생성 성공 여부 로그로 확인
+		if (BodyMID)
+		{
+			// GetName()으로 어떤 적의 MID가 생성되었는지 명확히 확인
+			UE_LOG(LogTemp, Warning, TEXT("[%s] MID created successfully."), *GetName());
+
+			SetBodyColor(ColorType);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("[%s] FAILED to create MID. Check material slot 0 on the mesh assigned in the Blueprint."), *GetName());
+		}
+	}
+}
+
 void AEnemyBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	Super::EndPlay(EndPlayReason);
