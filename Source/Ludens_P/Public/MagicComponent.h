@@ -25,7 +25,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Magic")
 	float SpellDamage = 50.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Magic")
-	float SpellRadius = 200.f;
+	float SpellRadius = 100.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Magic")
 	UMaterialInterface* WarningDecalMaterial;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Magic")

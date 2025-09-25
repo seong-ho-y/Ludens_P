@@ -40,7 +40,7 @@ void UMagicComponent::Multicast_SpawnWarningDecal_Implementation(const FVector T
 {
 	if (WarningDecalMaterial)
 	{
-		FRotator DecalRotation = FRotator(90.f, FMath::RandRange(-100.f, 100.f),0.f);
+		FRotator DecalRotation = FRotator(90.f, FMath::RandRange(-50.f, 50.f),0.f);
 		UDecalComponent* Decal = UGameplayStatics::SpawnDecalAtLocation(GetWorld(), WarningDecalMaterial, FVector(SpellRadius), TargetLocation, DecalRotation, CastingTime);
 	}
 }
