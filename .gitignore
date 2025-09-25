@@ -11,9 +11,10 @@ Content/Developers
 Content/MonsterForSurvivalGame
 Content/DownloadAsset
 Content/Enemy
-Content/StylizedProjectileVFX_Pack
-Content/Basic_VFX
+
 Content/Vefects
+Content/Basic_VFX
+Content/StylizedProjectileVFX_Pack
 
 # Visual Studio 2015 user specific files
 .vs/
