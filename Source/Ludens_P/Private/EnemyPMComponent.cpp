@@ -11,7 +11,7 @@ FVector UEnemyPMComponent::ComputeAcceleration(const FVector& InVelocity, float 
 	// UpdatedComponent는 이 컴포넌트가 움직이는 대상을 가리킵니다 (보통 프로젝타일의 루트).
 	if (UpdatedComponent)
 	{
-		Acceleration += UpdatedComponent->GetForwardVector() * Acceleration;
+		Acceleration += UpdatedComponent->GetForwardVector() * ForwardAcceleration;
 	}
 
 	// 3. 최종 계산된 가속도를 반환합니다.
