@@ -3,6 +3,7 @@
 
 #include "EnemyProjectileWeaponComponent.h"
 
+#include "EnemyPMComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 
 // Sets default values for this component's properties
@@ -31,10 +32,10 @@ void UEnemyProjectileWeaponComponent::Server_FireAt_Implementation(AActor* Targe
 
 	if (AActor* Proj = GetWorld()->SpawnActor<AActor>(ProjectileClass, Loc, Rot, P))
 	{
-		if (auto* PMC = Proj->FindComponentByClass<UProjectileMovementComponent>())
+		if (auto* EPMC = Proj->FindComponentByClass<UEnemyPMComponent>())
 		{
-			PMC->Velocity = Rot.Vector() * MuzzleSpeed; // 속도 설정
-			PMC->InitialSpeed = PMC->MaxSpeed = MuzzleSpeed;
+			EPMC->Velocity = Rot.Vector() * MuzzleSpeed; // 속도 설정
+			EPMC->InitialSpeed = EPMC->MaxSpeed = MuzzleSpeed;
 		}
 		Proj->SetReplicates(true); //멀티 복제 설정
 		

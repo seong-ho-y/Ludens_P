@@ -15,7 +15,7 @@ class LUDENS_P_API UEnemyProjectileWeaponComponent : public UActorComponent
 public:	
 	UPROPERTY(EditAnywhere) TSubclassOf<AActor> ProjectileClass;
 	UPROPERTY(EditAnywhere) FName MuzzleSocket = "Muzzle";
-	UPROPERTY(EditAnywhere) float MuzzleSpeed = 3000.f;
+	UPROPERTY(EditAnywhere) float MuzzleSpeed = 300.f;
 
 	//BT에서 호출할 메서드
 	UFUNCTION(Server, Reliable) void Server_FireAt(AActor* Target);
