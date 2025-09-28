@@ -669,5 +669,6 @@ void UWBP_Lobby::SetPreviewRenderTargets(UTextureRenderTarget2D* SelfRT,
     SetImageRT(Img_Self, SelfRT);
     SetImageRT(Img_OtherL, LeftRT);
     SetImageRT(Img_OtherR, RightRT);
+
 }
 
