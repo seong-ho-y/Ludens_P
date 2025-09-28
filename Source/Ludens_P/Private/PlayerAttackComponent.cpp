@@ -46,8 +46,7 @@ void UPlayerAttackComponent::BeginPlay()
 
 void UPlayerAttackComponent::Server_TryWeaponAttack_Implementation()
 {
-	AttackDamage = 30;
-	WeaponAttackHandler->HandleWeaponAttack(AttackDamage);
+	TryWeaponAttack();
 }
 
 void UPlayerAttackComponent::TryWeaponAttack()
@@ -74,8 +73,7 @@ void UPlayerAttackComponent::TryWeaponAttack()
 
 void UPlayerAttackComponent::Server_TryMeleeAttack_Implementation()
 {
-	AttackDamage = 99999;
-	MeleeAttackHandler->HandleMeleeAttack(AttackDamage);
+	TryMeleeAttack();
 }
 
 void UPlayerAttackComponent::TryMeleeAttack()
@@ -93,8 +91,23 @@ void UPlayerAttackComponent::TryMeleeAttack()
 		Server_TryMeleeAttack();
 		return;
 	}
-	// 서버라면 실제 공격 처리
+	if (bIsMeleeAttacking) return; // 근접 공격 중이면 시행 X
+	bIsMeleeAttacking = true;
+	PlayMontage(MeleeAttackMontage, 2.0f); // AnimMontage 재생
+	
+	GetWorld()->GetTimerManager().SetTimer(MeleeAttackTimer, this, &UPlayerAttackComponent::EndMeleeAttack, MeleeAttackCoolTime, false); // 근접 공격 쿨타임 적용
+	UE_LOG(LogTemp, Warning, TEXT("MeleeAttacking is true"));
+}
+
+void UPlayerAttackComponent::MeleeAttack()
+{
+	// AnimMontage에서 펀치가 쭉 뻗을 때 Notify를 지정하여 이때 실제 데미지 적용 로직 실행
 	MeleeAttackHandler->HandleMeleeAttack(AttackDamage);
+}
+
+void UPlayerAttackComponent::EndMeleeAttack()
+{
+	bIsMeleeAttacking = false;
 }
 
 // Called every frame
@@ -105,3 +118,22 @@ void UPlayerAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 	// ...
 }
 
+void UPlayerAttackComponent::PlayMontage(UAnimMontage* Montage, float PlaySpeed) const
+{
+	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
+	if (!OwnerChar)
+	{
+		UE_LOG(LogTemp, Error, TEXT("OwnerChar is nullptr!"));
+		return;
+	};
+	UAnimInstance* AnimInstance = OwnerChar->GetMesh() ? OwnerChar->GetMesh()->GetAnimInstance() : nullptr;
+	if (!AnimInstance)
+	{
+		UE_LOG(LogTemp, Error, TEXT("AnimInstance is nullptr!"));
+		return;
+	}
+	if (AnimInstance && Montage)
+	{
+		AnimInstance->Montage_Play(Montage, PlaySpeed);
+	}
+}
