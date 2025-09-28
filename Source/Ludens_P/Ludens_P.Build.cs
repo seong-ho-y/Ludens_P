@@ -8,7 +8,11 @@ public class Ludens_P : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput" });
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "UMG", "Niagara" });
+		PublicDependencyModuleNames.AddRange(new string[]
+		{ "Core", "CoreUObject", "Engine", "InputCore",
+			"EnhancedInput", 
+			"AIModule", "GameplayTasks", 
+			"UMG", "Niagara" 
+		});
 	}
 }

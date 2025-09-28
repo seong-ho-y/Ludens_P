@@ -7,8 +7,8 @@
 #include "RewardEffect.generated.h"
 
 /**
- ���� ȿ���� ǥ���� �߻� Ŭ����
- */
+보상 적용 로직
+*/
 
 struct FRewardRow;
 
@@ -20,6 +20,4 @@ class LUDENS_P_API URewardEffect : public UObject
 public:
 	UFUNCTION(BlueprintNativeEvent, Category = "Reward")
 	void ApplyReward(ACharacter* Player, const FRewardRow& Row);
-
-	
 };

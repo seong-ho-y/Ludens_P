@@ -35,7 +35,6 @@ void URewardSystemComponent::ApplyReward(const FRewardRow& Row)
 	if (Effect) Effect->ApplyReward(OwnerCharacter, Row);
 }
 
-/* ����: ���� 3��(���� 0~2) �̱� �� �ش� �÷��̾� Ŭ�󿡸� ���� */
 void URewardSystemComponent::Server_ShowRewardOptions_Implementation()
 {
 	AActor* Owner = GetOwner();
@@ -44,7 +43,6 @@ void URewardSystemComponent::Server_ShowRewardOptions_Implementation()
 	UDataTable* DT = RewardTable.IsValid() ? RewardTable.Get() : RewardTable.LoadSynchronous();
 	if (!DT) return;
 
-	// �ĺ� ������ ������ 3��(�ߺ� ����)
 	TArray<FName> All = DT->GetRowNames();
 	if (All.Num() == 0) return;
 	
@@ -59,7 +57,6 @@ void URewardSystemComponent::Server_ShowRewardOptions_Implementation()
 	Client_ShowRewardUI(LastOfferedRowNames);
 }
 
-/* Ŭ��: ���� �ε����� ���� AllRewards���� �����͸� ���� �� UI ���� */
 void URewardSystemComponent::Client_ShowRewardUI_Implementation(const TArray<FName>& OptionRowNames)
 {
 	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
@@ -94,15 +91,13 @@ void URewardSystemComponent::Client_ShowRewardUI_Implementation(const TArray<FNa
 	ActiveRewardWidget = CreateWidget<URewardUIWidget>(PC, RewardUIClass);
 	if (!ActiveRewardWidget) return;
 
-	ActiveRewardWidget->AddToViewport();					// ������ Server_SelectReward ȣ���� ��ü
-	ActiveRewardWidget->InitWithRows(OwnerChar, UIList);	// ����/����/������ ä���       
+	ActiveRewardWidget->AddToViewport();
+	ActiveRewardWidget->InitWithRows(OwnerChar, UIList);
 
-	// �Է� ���(Ŭ��)
 	PC->SetIgnoreMoveInput(true);
 	PC->SetIgnoreLookInput(true);
 }
 
-/* ����: �÷��̾ ���� ����(0/1/2)�� ���� �� ���� ���� ���� */
 void URewardSystemComponent::Server_SelectReward_Implementation(FName PickedRowName)
 {
 	AActor* Owner = GetOwner();
@@ -112,10 +107,10 @@ void URewardSystemComponent::Server_SelectReward_Implementation(FName PickedRowN
 
 	FRewardRow Row;
 	if (!GetRowData(PickedRowName, Row)) return;
-	ApplyReward(Row);					// ���� ���� ���� (�̹� �����Ƿ� �״�� ���)
+	ApplyReward(Row);
 
-	LastOfferedRowNames.Reset();		// �� �� ��������� ���
-	Client_EnableInputAfterReward();	// UI �ݱ� & �Է� ������ �ش� �÷��̾� Ŭ�󿡼� ó��
+	LastOfferedRowNames.Reset();
+	Client_EnableInputAfterReward();
 }
 
 void URewardSystemComponent::Client_EnableInputAfterReward_Implementation()
