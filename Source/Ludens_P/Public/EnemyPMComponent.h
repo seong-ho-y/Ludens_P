@@ -11,7 +11,7 @@ class LUDENS_P_API UEnemyPMComponent : public UProjectileMovementComponent
 	GENERATED_BODY()
 
 public:
-	// 에디터에서 수정할 수 있는 전방 가속도 변수를 추가합니다.
+	// 에디터에서 수정할 수 있는 전방 가속도 변수를 추가합니다.     
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	float ForwardAcceleration = 100.0f;
 

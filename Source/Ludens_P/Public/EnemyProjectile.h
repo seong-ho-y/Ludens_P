@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "EnemyPMComponent.h"
 #include "GameFramework/Actor.h"
 #include "EnemyProjectile.generated.h"
 
@@ -19,8 +20,8 @@ class AEnemyProjectile : public AActor
 	USphereComponent* CollisionComp;
 
 	/** Projectile movement component */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Movement, meta = (AllowPrivateAccess = "true"))
-	UProjectileMovementComponent* ProjectileMovement;
+	UPROPERTY(VisibleAnywhere, Category = Movement, meta = (AllowPrivateAccess = "true"))
+	UEnemyPMComponent* ProjectileMovement;
 
 public:
 	AEnemyProjectile();
@@ -32,6 +33,6 @@ public:
 	/** Returns CollisionComp subobject **/
 	USphereComponent* GetCollisionComp() const { return CollisionComp; }
 	/** Returns ProjectileMovement subobject **/
-	UProjectileMovementComponent* GetProjectileMovement() const { return ProjectileMovement; }
+	UEnemyPMComponent* GetProjectileMovement() const { return ProjectileMovement; }
 };
 

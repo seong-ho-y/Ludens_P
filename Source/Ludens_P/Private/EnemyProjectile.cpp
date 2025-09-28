@@ -3,6 +3,7 @@
 
 #include "EnemyProjectile.h"
 
+#include "EnemyPMComponent.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -25,7 +26,7 @@ AEnemyProjectile::AEnemyProjectile()
 	RootComponent = CollisionComp;
 
 	// Use a ProjectileMovementComponent to govern this projectile's movement
-	ProjectileMovement = CreateDefaultSubobject<UProjectileMovementComponent>(TEXT("ProjectileComp"));
+	ProjectileMovement = CreateDefaultSubobject<UEnemyPMComponent>(TEXT("ProjectileComp"));
 	ProjectileMovement->UpdatedComponent = CollisionComp;
 	ProjectileMovement->InitialSpeed = 1.f;
 	ProjectileMovement->MaxSpeed = 1.f;
@@ -34,7 +35,7 @@ AEnemyProjectile::AEnemyProjectile()
 
 	ProjectileMovement->ProjectileGravityScale = 0.f;
 	// Die after 3 seconds by default
-	InitialLifeSpan = 3.0f;
+	InitialLifeSpan = 5.0f;
 }
 
 void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
