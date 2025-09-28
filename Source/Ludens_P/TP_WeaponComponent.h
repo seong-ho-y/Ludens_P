@@ -68,6 +68,9 @@ public:
 	void ServerFire(FVector_NetQuantize SpawnLocation, FRotator SpawnRotation); // 클라이언트가 서버에 발사 요청할 RPC
 	void HandleFire(const FVector& SpawnLocation, const FRotator& SpawnRotation); // 서버에서만 실행되는 진짜 발사 로직
 
+	UFUNCTION(BlueprintCallable, Category="Weapon")
+	FVector GetMuzzleLocation() const; // 총구 위치 계산
+	
 	UFUNCTION(Server, Reliable)
 	void ServerAbsorb(); // 클라이언트가 RPC 서버에 젤루 흡수 요청
 	void HandleAbsorb(); // 서버에서 실행되는 젤루 흡수 로직
