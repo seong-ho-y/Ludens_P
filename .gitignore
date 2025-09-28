@@ -6,10 +6,14 @@
 Content/StarterContent
 Content/FirstPersonArms
 Content/FBX
-Content/Enemy
 Content/Collections
 Content/Developers
 Content/MonsterForSurvivalGame
+Content/DownloadAsset
+Content/Enemy
+Content/Vefects
+Content/Basic_VFX
+Content/StylizedProjectileVFX_Pack
 
 # Visual Studio 2015 user specific files
 .vs/
