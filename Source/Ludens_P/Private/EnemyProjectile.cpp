@@ -27,9 +27,9 @@ AEnemyProjectile::AEnemyProjectile()
 
 	// Use a ProjectileMovementComponent to govern this projectile's movement
 	ProjectileMovement = CreateDefaultSubobject<UEnemyPMComponent>(TEXT("ProjectileComp"));
-	ProjectileMovement->UpdatedComponent = CollisionComp;
-	ProjectileMovement->InitialSpeed = 1.f;
-	ProjectileMovement->MaxSpeed = 1.f;
+	ProjectileMovement->SetUpdatedComponent(CollisionComp);
+	ProjectileMovement->InitialSpeed = 0.f;
+	ProjectileMovement->MaxSpeed = 0.f;
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = false;
 
@@ -37,6 +37,15 @@ AEnemyProjectile::AEnemyProjectile()
 	// Die after 3 seconds by default
 	InitialLifeSpan = 5.0f;
 }
+void AEnemyProjectile::BeginPlay()
+{
+	Super::BeginPlay();
+	if (ProjectileMovement)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[BeginPlay] Loaded ForwardAcceleration: %f"), ProjectileMovement->ForwardAcceleration);
+	}
+}
+
 
 void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
