@@ -63,7 +63,7 @@ void UTP_WeaponComponent::Fire()
 	constexpr float Distance = 30.0f;
 	FVector FireDirection = SpawnRotation.Vector();
 	FVector SpawnLocation = GetMuzzleLocation() + FireDirection * Distance;
-	
+	UE_LOG(LogTemp, Log, TEXT("FireFireFIre"));
 	if (Character->HasAuthority())
 	{
 		HandleFire(SpawnLocation, SpawnRotation);
@@ -80,6 +80,8 @@ void UTP_WeaponComponent::ServerFire_Implementation(FVector_NetQuantize SpawnLoc
 }
 void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotator& SpawnRotation) //서버에서 쓰는 Fire (얘가 진짜 Projectile을 쏘는거임)
 {
+	UE_LOG(LogTemp, Log, TEXT("HandleFire"));
+
 	if (!ProjectileClass) //프로젝타일 null값 방지
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ ProjectileClass is null"));

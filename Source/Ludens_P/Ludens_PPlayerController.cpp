@@ -50,6 +50,6 @@ void ALudens_PPlayerController::Server_RequestSpawnEnemy_Implementation()
 		PoolManager->SpawnEnemy(SniperEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Green);
 		PoolManager->SpawnEnemy(ExploEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Blue);
 		PoolManager->SpawnEnemy(StealthEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Yellow);
-		//PoolManager->SpawnEnemy(MagicEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Black);
+		PoolManager->SpawnEnemy(MagicEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Black);
 	}
 }

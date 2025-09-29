@@ -13,7 +13,7 @@ FVector UEnemyPMComponent::ComputeAcceleration(const FVector& InVelocity, float 
 	{
 		Acceleration += UpdatedComponent->GetForwardVector() * ForwardAcceleration;
 	}
-	UE_LOG(LogTemp, Warning, TEXT("[ComputeAccel] Final Acceleration Vector: %s"), *Acceleration.ToString());
+	//UE_LOG(LogTemp, Warning, TEXT("[ComputeAccel] Final Acceleration Vector: %s"), *Acceleration.ToString());
 	// 3. 최종 계산된 가속도를 반환합니다.
 	return Acceleration;
 }
