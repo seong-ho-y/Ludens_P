@@ -189,22 +189,30 @@ protected:
 	void Server_Fire(const FInputActionValue& Value);
 	void Fire(const FInputActionValue& Value);
 	
-	// 재장전 함수 선언
+	//** 재장전 함수 선언
 	UFUNCTION(Server, Reliable)
 	void Server_Reload();
 	void Reload(const FInputActionValue& Value);
 	void HandleReload();
-	// 재장전 시스템 변수
+	void EndReload();
+	
+	//** 재장전 쿨타임
+	FTimerHandle ReloadTimerHandle;
+	bool bIsReloading = false; // 재장전하는 중인지 확인
 	UPROPERTY(EditDefaultsOnly, Category = "Reload")
-	int16 MaxSavedAmmo = 500;
+	float ReloadTime = 2.f; // 재장전 시간
+	
+	//** 재장전 시스템 변수
+	UPROPERTY(EditDefaultsOnly, Category = "Reload")
+	int16 MaxSavedAmmo = 500; // 최대로 저장할 수 있는 탄알 수
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Reload", ReplicatedUsing = OnRep_SavedAmmo)
-	int16 SavedAmmo = 100;
+	int16 SavedAmmo = 100; // 저장되어 있는 탄알
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Reload")
-	int16 MaxAmmo = 10;
+	int16 MaxAmmo = 10; // 최대로 장전 할 수 있는 탄알 수
 	UPROPERTY(EditDefaultsOnly, Category = "Reload", ReplicatedUsing = OnRep_CurrentAmmo)
-	int16 CurrentAmmo = 10;
+	int16 CurrentAmmo = 10; // 장전 완료 된 탄알
 	
 	UFUNCTION()
 	void OnRep_SavedAmmo();

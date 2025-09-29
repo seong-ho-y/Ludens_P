@@ -80,6 +80,8 @@ void UTP_WeaponComponent::ServerFire_Implementation(FVector_NetQuantize SpawnLoc
 }
 void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotator& SpawnRotation) //서버에서 쓰는 Fire (얘가 진짜 Projectile을 쏘는거임)
 {
+	bIsWeaponAttacking = true; // 공격 했다는 걸 bool타입으로 표시
+	
 	if (!ProjectileClass) //프로젝타일 null값 방지
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ ProjectileClass is null"));
@@ -117,6 +119,13 @@ void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotato
 	{
 		PlayMontage(WeaponAttackMontage, 1.0f);
 	}
+
+	GetWorld()->GetTimerManager().SetTimer(WeaponAttackTimer, this, &UTP_WeaponComponent::EndWeaponAttack, WeaponAttackCoolTime, false); // 근접 공격 쿨타임 적용
+}
+
+void UTP_WeaponComponent::EndWeaponAttack()
+{
+	bIsWeaponAttacking = false;
 }
 
 FVector UTP_WeaponComponent::GetMuzzleLocation() const
@@ -143,6 +152,7 @@ void UTP_WeaponComponent::ServerAbsorb_Implementation()
 {
 	HandleAbsorb();
 }
+
 
 void UTP_WeaponComponent::HandleAbsorb()
 {

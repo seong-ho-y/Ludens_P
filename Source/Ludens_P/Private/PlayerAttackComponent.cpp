@@ -58,7 +58,8 @@ void UPlayerAttackComponent::TryWeaponAttack()
 	}
 	
 	if (Character->GetCurrentAmmo() <= 0) return; // 남은 탄알이 0이면 공격 처리를 하지 않고 리턴
-	
+	if (bIsWeaponAttacking) return;
+	bIsWeaponAttacking = true;
 	AttackDamage = 30;
 	// 무기 공격 함수 호출
 	if (!GetOwner()->HasAuthority())
@@ -69,6 +70,12 @@ void UPlayerAttackComponent::TryWeaponAttack()
 	}
 	// 서버라면 실제 공격 처리
 	WeaponAttackHandler->HandleWeaponAttack(AttackDamage);
+	GetWorld()->GetTimerManager().SetTimer(WeaponAttackTimer, this, &UPlayerAttackComponent::EndWeaponAttack, WeaponAttackCoolTime, false); // 근접 공격 쿨타임 적용
+}
+
+void UPlayerAttackComponent::EndWeaponAttack()
+{
+	bIsWeaponAttacking = false;
 }
 
 void UPlayerAttackComponent::Server_TryMeleeAttack_Implementation()

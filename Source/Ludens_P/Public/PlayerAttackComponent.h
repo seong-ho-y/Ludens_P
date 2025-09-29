@@ -33,11 +33,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
 	float AttackDamage; // 플레이어 공격력
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
-	float AttackCoolTime; // 플레이어 공격 쿨타임
+	float WeaponAttackCoolTime = 2.f; // 플레이어 공격 쿨타임
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
+	bool bIsWeaponAttacking = false; // 플레이어가 무기 공격을 하고 있는지 확인
+	FTimerHandle WeaponAttackTimer; // 무기 공격 타이머
+	UFUNCTION()
+	void EndWeaponAttack();
+	
 	float MeleeAttackCoolTime = 1.f; // 플레이어 근접 공격 쿨타임
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
 	bool bIsMeleeAttacking = false; // 플레이어가 근접 공격을 하고 있는지 확인
-	FTimerHandle MeleeAttackTimer;
+	FTimerHandle MeleeAttackTimer; // 근접 공격 타이머
 	UFUNCTION()
 	void EndMeleeAttack();
 

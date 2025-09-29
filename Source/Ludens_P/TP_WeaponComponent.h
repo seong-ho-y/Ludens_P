@@ -70,6 +70,14 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Weapon")
 	FVector GetMuzzleLocation() const; // 총구 위치 계산
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
+	float WeaponAttackCoolTime = 0.3f; // 플레이어 공격 쿨타임
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
+	bool bIsWeaponAttacking = false; // 플레이어가 무기 공격을 하고 있는지 확인
+	FTimerHandle WeaponAttackTimer; // 무기 공격 타이머
+	UFUNCTION()
+	void EndWeaponAttack();
 	
 	UFUNCTION(Server, Reliable)
 	void ServerAbsorb(); // 클라이언트가 RPC 서버에 젤루 흡수 요청

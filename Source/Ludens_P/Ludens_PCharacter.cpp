@@ -106,8 +106,6 @@ void ALudens_PCharacter::BeginPlay()
 	else if (!PlayerStateComponent) UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerStateComponent is null!"))
 	
 	else if (!ReviveComponent) UE_LOG(LogTemplateCharacter, Error, TEXT("ReviveComponent is null!"));
-	
-	
 }
 
 void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -415,7 +413,7 @@ void ALudens_PCharacter::Fire(const FInputActionValue& Value)
 		Server_Fire(Value);
 		return;
 	}
-	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked) return;
+	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked || WeaponComponent->bIsWeaponAttacking || bIsReloading) return;
 	if (CurrentAmmo > 0)
 	{
 		// 서버: 실제 발사 처리
@@ -437,7 +435,6 @@ void ALudens_PCharacter::Reload(const FInputActionValue& Value)
 	{
 		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
 	}
-	
 
 	if (GetLocalRole() < ROLE_Authority)
 	{
@@ -450,6 +447,9 @@ void ALudens_PCharacter::Reload(const FInputActionValue& Value)
 
 void ALudens_PCharacter::HandleReload()
 {
+	if (bIsReloading) return; // 이미 재장전 중이면 리턴
+	
+	bIsReloading = true;
 	if (CurrentAmmo != MaxAmmo)
 	{
 		if (SavedAmmo <= 0)
@@ -467,6 +467,13 @@ void ALudens_PCharacter::HandleReload()
 			CurrentAmmo = MaxAmmo;
 		}
 	}
+
+	GetWorld()->GetTimerManager().SetTimer(ReloadTimerHandle, this, &ALudens_PCharacter::EndReload, ReloadTime, false);
+}
+
+void ALudens_PCharacter::EndReload()
+{
+	bIsReloading = false;
 }
 
 void ALudens_PCharacter::OnRep_SavedAmmo()
