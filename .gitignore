@@ -11,6 +11,11 @@ Content/Developers
 Content/MonsterForSurvivalGame
 Content/DownloadAsset
 Content/Enemy
+
+Content/__ExternalActors__
+Content/__ExternalObjects__
+
+# 에셋
 Content/Vefects
 Content/Basic_VFX
 Content/StylizedProjectileVFX_Pack
@@ -90,3 +95,4 @@ Plugins/*/Intermediate/*
 
 # Cache files for the editor to use
 DerivedDataCache/*
+*.uasset
