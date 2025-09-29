@@ -42,13 +42,41 @@ void AEnemyProjectile::BeginPlay()
 	Super::BeginPlay();
 	if (ProjectileMovement)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[BeginPlay] Loaded ForwardAcceleration: %f"), ProjectileMovement->ForwardAcceleration);
+		//UE_LOG(LogTemp, Warning, TEXT("[BeginPlay] Loaded ForwardAcceleration: %f"), ProjectileMovement->ForwardAcceleration);
 	}
 }
 
 
 void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	if (HitComp && OtherComp && OtherActor)
+	{
+		// 충돌에 관련된 두 컴포넌트의 프로필 이름을 가져옵니다.
+		FName MyProfileName = HitComp->GetCollisionProfileName();
+		FName OtherProfileName = OtherComp->GetCollisionProfileName();
+
+		// 각 컴포넌트의 오브젝트 타입을 가져옵니다.
+		ECollisionChannel MyObjectType = HitComp->GetCollisionObjectType();
+		ECollisionChannel OtherObjectType = OtherComp->GetCollisionObjectType();
+
+		// 각 컴포넌트가 서로에게 어떻게 반응하도록 설정되어 있는지 가져옵니다.
+		ECollisionResponse MyResponseToOther = HitComp->GetCollisionResponseToChannel(OtherObjectType);
+		ECollisionResponse OtherResponseToMe = OtherComp->GetCollisionResponseToChannel(MyObjectType);
+
+		// 로그 출력을 위해 Enum 값을 문자열로 변환합니다.
+		FString MyResponseStr = UEnum::GetValueAsString(MyResponseToOther);
+		FString OtherResponseStr = UEnum::GetValueAsString(OtherResponseToMe);
+
+		// 빨간색 에러 로그로 출력하여 눈에 잘 띄게 합니다.
+		UE_LOG(LogTemp, Error, TEXT("================ HIT DEBUG START ================"));
+		UE_LOG(LogTemp, Error, TEXT("Projectile '%s' (My Profile: %s)"), *GetName(), *MyProfileName.ToString());
+		UE_LOG(LogTemp, Error, TEXT("Hit Actor '%s' (Their Profile: %s)"), *OtherActor->GetName(), *OtherProfileName.ToString());
+		UE_LOG(LogTemp, Error, TEXT("-------------------------------------------------"));
+		UE_LOG(LogTemp, Error, TEXT("My Response to Their Type is: [ %s ]"), *MyResponseStr);
+		UE_LOG(LogTemp, Error, TEXT("Their Response to My Type is: [ %s ]"), *OtherResponseStr);
+		UE_LOG(LogTemp, Error, TEXT("================ HIT DEBUG END ================"));
+	}
+	// --- 디버그 로그 끝 ---
 	// 나 자신이나 나를 쏜 소유자(Owner)와 부딪힌 경우는 무시합니다.
 	AActor* MyOwner = GetOwner();
 	if (OtherActor == nullptr || OtherActor == this || OtherActor == MyOwner)
