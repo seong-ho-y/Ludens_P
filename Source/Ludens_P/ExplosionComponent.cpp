@@ -3,6 +3,7 @@
 
 #include "ExplosionComponent.h"
 #include "DeathHandlerInterface.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "Sound/SoundCue.h"
 
@@ -21,9 +22,9 @@ void UExplosionComponent::Explode()
 	AActor* MyOwner = GetOwner();
 	if (MyOwner == nullptr) return;
 
-	if (ExplosionEffect != nullptr)
+	if (ExplosionEffect != nullptr && MyOwner->HasAuthority())
 	{
-		UGameplayStatics::SpawnEmitterAtLocation(this, ExplosionEffect, MyOwner->GetActorLocation());
+		Multicast_PlayExplodeVFX(MyOwner->GetActorLocation());
 	}
 	if (ExplosionSound != nullptr)
 	{
@@ -67,6 +68,20 @@ void UExplosionComponent::BeginPlay()
 	
 }
 
+
+void UExplosionComponent::Multicast_PlayExplodeVFX_Implementation(FVector_NetQuantize VFXLocation)
+{
+	UE_LOG(LogTemp, Warning, TEXT("PlayExplodeVFX"));
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+		GetWorld(),
+		ExplosionEffect,
+		VFXLocation,
+		FRotator(0, 0, 0),
+		FVector(2.0f),
+		true,
+		true
+		);
+}
 
 // Called every frame
 void UExplosionComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)

@@ -47,6 +47,9 @@ public:
 
 	UFUNCTION()
 	void HandleDied();
+
+	UFUNCTION(BlueprintCallable, Category="Material")
+	void InitializeMID();
 protected:
 	virtual void BeginPlay() override;
 
@@ -86,7 +89,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "VFX")
 	UHitFeedbackComponent* HitFeedbackComponent;
 
-	UPROPERTY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Material")
 	UMaterialInstanceDynamic* BodyMID;
 
 
