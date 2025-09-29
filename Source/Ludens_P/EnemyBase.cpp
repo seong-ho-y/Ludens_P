@@ -89,7 +89,7 @@ void AEnemyBase::BeginPlay()
 	// 서버에서만 이 테스트를 실행합니다.
 	if (HasAuthority())
 	{
-		/*
+		
 		// HitFeedbackComponent 클래스의 '설계도 원본(CDO)'을 직접 가져옵니다.
 		UHitFeedbackComponent* DefaultComponent = UHitFeedbackComponent::StaticClass()->GetDefaultObject<UHitFeedbackComponent>();
         
@@ -113,7 +113,6 @@ void AEnemyBase::BeginPlay()
 		{
 			UE_LOG(LogTemp, Error, TEXT("INSTANCE CHECK: HitVFX is NULL on this spawned actor instance!"));
 		}
-		*/
 	}
 	
 	// 3. "핵심 보험 코드": 현재 ColorType 값으로 색상을 한번 더 설정합니다.
@@ -433,7 +432,12 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 			CCC->TakeDamage(DamageAmount);
 	}
 	FVector Loc = GetActorLocation();
-	//HitFeedbackComponent->PlayHitEffects(Loc);
+
+	/*
+	 * HitFeedbackComp Nullptr 에러 해결하기
+	 */
+	
+	HitFeedbackComponent->PlayHitEffects(Loc);
 	
 	return DamageAmount;
 }
