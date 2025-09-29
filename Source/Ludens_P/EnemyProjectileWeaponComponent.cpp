@@ -32,11 +32,13 @@ void UEnemyProjectileWeaponComponent::Server_FireAt_Implementation(AActor* Targe
 
 	if (AActor* Proj = GetWorld()->SpawnActor<AActor>(ProjectileClass, Loc, Rot, P))
 	{
+		/*
 		if (auto* EPMC = Proj->FindComponentByClass<UEnemyPMComponent>())
 		{
 			EPMC->Velocity = Rot.Vector() * MuzzleSpeed; // 속도 설정
 			EPMC->InitialSpeed = EPMC->MaxSpeed = MuzzleSpeed;
 		}
+		*/
 		Proj->SetReplicates(true); //멀티 복제 설정
 		
 		//얘는 나중에 FX 함수 구현됐을 때
