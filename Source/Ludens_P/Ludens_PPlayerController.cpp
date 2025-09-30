@@ -41,15 +41,15 @@ void ALudens_PPlayerController::Server_RequestSpawnEnemy_Implementation()
 	if (PoolManager)
 	{
 		// 2. 서버의 가득 찬 창고에서 스폰을 호출합니다.
-		FVector SpawnLoc = FVector(300.f, 300.f, 300.f);
+		FVector SpawnLoc = FVector(300.f, 300.f, 158.f);
 		FRotator SpawnRot = FRotator::ZeroRotator;
         
-		PoolManager->SpawnEnemy(WalkerEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Magenta);
+		//PoolManager->SpawnEnemy(WalkerEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Magenta);
 		PoolManager->SpawnEnemy(TankerEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Cyan);
 		//PoolManager->SpawnEnemy(RunnerEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Red);
-		PoolManager->SpawnEnemy(SniperEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Green);
-		PoolManager->SpawnEnemy(ExploEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Blue);
-		PoolManager->SpawnEnemy(StealthEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Yellow);
-		PoolManager->SpawnEnemy(MagicEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Black);
+		//PoolManager->SpawnEnemy(SniperEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Green);
+		//PoolManager->SpawnEnemy(ExploEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Blue);
+		//PoolManager->SpawnEnemy(StealthEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Yellow);
+		//PoolManager->SpawnEnemy(MagicEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Black);
 	}
 }

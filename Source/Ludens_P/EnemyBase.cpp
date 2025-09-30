@@ -15,6 +15,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
 #include "HitFeedbackComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "StealthComponent.h"
 #include "Blueprint/UserWidget.h"
 
@@ -85,7 +86,7 @@ void AEnemyBase::DisengageStealth_Implementation()
 void AEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
-
+	/*
 	// 서버에서만 이 테스트를 실행합니다.
 	if (HasAuthority())
 	{
@@ -114,6 +115,7 @@ void AEnemyBase::BeginPlay()
 			UE_LOG(LogTemp, Error, TEXT("INSTANCE CHECK: HitVFX is NULL on this spawned actor instance!"));
 		}
 	}
+	*/
 	
 	// 3. "핵심 보험 코드": 현재 ColorType 값으로 색상을 한번 더 설정합니다.
 	// OnRep이 먼저 실행되어 색 변경을 놓쳤더라도, BeginPlay가 끝나는 시점에
@@ -186,9 +188,39 @@ void AEnemyBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 void AEnemyBase::Activate(const FVector& Location, const FRotator& Rotation)
 {
 	if (!HasAuthority()) return; // 서버에서만 실행
-
+	
 	SetActorLocation(Location);
 	SetActorRotation(Rotation);
+
+	// --- 디버깅 코드 추가 ---
+	if (USkeletalMeshComponent* MyMesh = GetMesh())
+	{
+		// 1. 액터의 최종 위치 (파란색 구)
+		DrawDebugSphere(GetWorld(), GetActorLocation(), 30.f, 12, FColor::Blue, false, 5.0f);
+
+		// 2. 소켓의 실제 월드 위치 (초록색 구)
+		FVector SocketLocation = MyMesh->GetSocketLocation(TEXT("VFX"));
+		DrawDebugSphere(GetWorld(), SocketLocation, 30.f, 12, FColor::Green, false, 5.0f);
+	}
+	// --- 디버깅 코드 끝 ---
+
+	
+	if (!SpawnVFX) return;
+	if (SpawnVFX && GetMesh()) // SpawnVFX와 메쉬가 유효한지 확인
+	{
+		// '위치'에 스폰하는 대신, '메쉬의 소켓'에 붙여서 스폰합니다.
+		UNiagaraFunctionLibrary::SpawnSystemAttached(
+			SpawnVFX,                       // 스폰할 나이아가라 시스템
+			GetMesh(),                      // 부착할 컴포넌트 (캐릭터의 메쉬)
+			TEXT("VFX"),             // 아까 만든 소켓 이름
+			FVector(0.0f),                  // 소켓 위치에서의 추가 오프셋 (보통 0)
+			FRotator(0.0f),                 // 소켓 회전에서의 추가 회전 (보통 0)
+			FVector(3.0f),                  // 스케일
+			EAttachLocation::SnapToTarget, // 부착 규칙
+			true,                           // 자동으로 활성화
+			ENCPoolMethod::None,
+			true);
+	}
 
 	bIsActiveInPool = true;
 	UpdateActiveState(true); // 서버에서도 직접 호출
@@ -241,56 +273,89 @@ void AEnemyBase::UpdateActiveState(bool bNewIsActive)
 		BodyMID = nullptr;
 	}
 	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
-	if (MoveComp)
+	AController* AIController = GetController();
+	if (bNewIsActive)
 	{
-		if (bNewIsActive)
+		// 1. 즉시 처리할 내용들
+		SetActorHiddenInGame(false);    // 보이기
+		SetActorEnableCollision(true);  // 충돌 켜기
+		SetActorTickEnabled(true);      // 틱 켜기
+        
+		if (HealthBarWidget)
 		{
-			// 활성화될 때: 컴포넌트를 활성화하고 기본 이동 모드(예: 걷기)로 설정합니다.
-			MoveComp->Activate();
-			MoveComp->SetMovementMode(MOVE_Walking); 
+			HealthBarWidget->SetVisibility(bShouldShowUI);
 		}
-		else
+
+		// 2. 움직임과 AI는 비활성화 상태로 시작
+		if (MoveComp)
 		{
-			// 비활성화될 때: 컴포넌트를 비활성화하고 이동 모드를 '없음'으로 설정하여
-			// 중력을 포함한 모든 움직임을 완전히 정지시킵니다.
+			MoveComp->Deactivate(); // 아직 움직이지 않도록 비활성화
+			MoveComp->SetMovementMode(MOVE_None);
+		}
+		if (AIController)
+		{
+			if (UBrainComponent* Brain = Cast<AEnemyAIController>(AIController)->BrainComponent)
+			{
+				Brain->StopLogic("Initial Spawn Delay");
+			}
+		}
+
+		// 3. ✨ 타이머를 설정하여 일정 시간 후에 ActivateMovementAndAI 함수를 호출
+		GetWorld()->GetTimerManager().SetTimer(
+			SpawnDelayTimerHandle, 
+			this, 
+			&AEnemyBase::ActivateMovementAndAI, 
+			SpawnMovementDelay, 
+			false);
+	}
+	else // 비활성화 될 때
+	{
+		// ✨ 만약 스폰 지연 타이머가 돌고 있었다면 즉시 중지시킵니다.
+		GetWorld()->GetTimerManager().ClearTimer(SpawnDelayTimerHandle);
+        
+		SetActorHiddenInGame(true);
+		SetActorEnableCollision(false);
+		SetActorTickEnabled(false);
+
+		if (MoveComp)
+		{
 			MoveComp->Deactivate();
 			MoveComp->SetMovementMode(MOVE_None);
 		}
-	}
-	
-	// 1. 보이기 / 숨기기 (가장 중요!)
-	// bNewIsActive가 true일 때, !true = false가 되어 숨김 상태가 해제됩니다.
-	SetActorHiddenInGame(!bNewIsActive);
-
-	// 2. 충돌 켜기 / 끄기
-	// 활성화될 때 충돌을 다시 켜서 바닥으로 떨어지지 않게 합니다.
-	SetActorEnableCollision(bNewIsActive);
-
-	// 3. 틱 켜기 / 끄기
-	// 활성화될 때 틱을 다시 켜서 움직이거나 로직을 수행하게 합니다.
-	SetActorTickEnabled(bNewIsActive);
-
-	// 4. AI 컨트롤러 켜기 / 끄기 (AI로 움직이는 적에게 필수)
-	AController* AIController = GetController();
-	if (AIController)
-	{
-		if (bNewIsActive)
+		if (AIController)
 		{
-			Cast<AEnemyAIController>(AIController)->BrainComponent->RestartLogic();
+			if (UBrainComponent* Brain = Cast<AEnemyAIController>(AIController)->BrainComponent)
+			{
+				Brain->StopLogic("Deactivated by pool");
+			}
 		}
-		else
+		if (HealthBarWidget)
 		{
-			Cast<AEnemyAIController>(AIController)->BrainComponent->StopLogic("Deactivated by pool");
+			HealthBarWidget->SetVisibility(false);
 		}
 	}
-	// ✨ UI 위젯 컴포넌트의 가시성을 여기서 최종적으로 제어합니다.
-	if (HealthBarWidget)
+}
+
+void AEnemyBase::ActivateMovementAndAI()
+{
+	// 서버인지 한번 더 확인 (안전장치)
+	if (!HasAuthority()) return;
+
+	// 캐릭터 무브먼트 컴포넌트를 활성화하고 걷기 모드로 설정
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
-		// bNewIsActive가 false이면(비활성화), bShouldShowUI가 뭐든 상관없이 무조건 UI를 숨깁니다.
-		// bNewIsActive가 true이면(활성화), bShouldShowUI의 상태에 따라 UI를 보여줄지 말지 결정합니다.
-		HealthBarWidget->SetVisibility(bNewIsActive && bShouldShowUI);
+		MoveComp->Activate();
+		MoveComp->SetMovementMode(MOVE_Walking);
 	}
-	// 기타 파티클, 사운드 등 필요한 컴포넌트들을 켜고 끄는 로직 추가...
+
+	// AI 로직을 다시 시작
+	if (AController* AIController = GetController())
+	{
+		if (UBrainComponent* Brain = Cast<AEnemyAIController>(AIController)->BrainComponent)
+		{
+			Brain->RestartLogic();
+		}
+	}
 }
 // 이 함수는 서버에서만 호출되어야 합니다.
 void AEnemyBase::ChangeColorType(EEnemyColor NewColor)
