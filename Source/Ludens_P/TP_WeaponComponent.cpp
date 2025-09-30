@@ -249,7 +249,7 @@ void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) //í•
 	}
 }
 
-void UTP_WeaponComponent::PlayMontage(UAnimMontage* Montage, float PlaySpeed) const
+void UTP_WeaponComponent::PlayMontage_Implementation(UAnimMontage* Montage, float PlaySpeed)
 {
 	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
 	if (!OwnerChar)

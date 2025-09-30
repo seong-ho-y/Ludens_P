@@ -98,6 +98,6 @@ protected:
 	UFUNCTION()
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 public:
-	UFUNCTION()
-	void PlayMontage(UAnimMontage* Montage, float PlaySpeed) const;
+	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
+	void PlayMontage(UAnimMontage* Montage, float PlaySpeed);
 };

@@ -13,7 +13,6 @@ UPlayerAttackComponent::UPlayerAttackComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
 	// ...
 }
 
@@ -122,10 +121,10 @@ void UPlayerAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
+
 }
 
-void UPlayerAttackComponent::PlayMontage(UAnimMontage* Montage, float PlaySpeed) const
+void UPlayerAttackComponent::PlayMontage_Implementation(UAnimMontage* Montage, float PlaySpeed)
 {
 	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
 	if (!OwnerChar)

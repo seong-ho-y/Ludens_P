@@ -23,8 +23,6 @@ private:
 	class ALudens_PCharacter* Character; // 캐릭터 클래스 선언
 	UPROPERTY(EditAnywhere, Category = Montage)
 	UAnimMontage* MeleeAttackMontage;
-	UPROPERTY(EditAnywhere, Category = Montage)
-	UAnimMontage* WeaponAttackMontage;
 public:	
 	// Sets default values for this component's properties
 	UPlayerAttackComponent();
@@ -68,7 +66,6 @@ protected:
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-	UFUNCTION()
-	void PlayMontage(UAnimMontage* Montage, float PlaySpeed) const;
-		
+	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
+	void PlayMontage(UAnimMontage* Montage, float PlaySpeed);
 };
