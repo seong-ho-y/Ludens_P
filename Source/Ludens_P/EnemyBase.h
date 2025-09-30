@@ -34,6 +34,8 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	UCreatureCombatComponent* CCC;
 
+	
+
 	// AActor로부터 상속받은 TakeDamage 함수를 정확한 시그니처로 오버라이드합니다.
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
 
@@ -88,10 +90,13 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "VFX")
 	UHitFeedbackComponent* HitFeedbackComponent;
-
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Material")
 	UMaterialInstanceDynamic* BodyMID;
 
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX")
+	UNiagaraSystem* SpawnVFX;
 
 
 	//색상을 설정하는 함수
@@ -116,4 +121,14 @@ protected:
 public:
 	// 액터가 파괴될 때 호출되는 가상 함수를 오버라이드합니다.
 	virtual void Destroyed() override;
+protected:
+	// 디자이너가 블루프린트에서 쉽게 수정할 수 있도록 스폰 지연 시간을 변수로 만듭니다.
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "AI")
+	float SpawnMovementDelay = 2.0f;
+
+	// 지연 시간에 사용할 타이머 핸들
+	FTimerHandle SpawnDelayTimerHandle;
+
+	// 타이머가 만료되었을 때 호출될 함수
+	void ActivateMovementAndAI();
 };

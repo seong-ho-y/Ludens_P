@@ -49,6 +49,7 @@ void AEnemyProjectile::BeginPlay()
 
 void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	/*
 	if (HitComp && OtherComp && OtherActor)
 	{
 		// 충돌에 관련된 두 컴포넌트의 프로필 이름을 가져옵니다.
@@ -67,6 +68,7 @@ void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, U
 		FString MyResponseStr = UEnum::GetValueAsString(MyResponseToOther);
 		FString OtherResponseStr = UEnum::GetValueAsString(OtherResponseToMe);
 
+		
 		// 빨간색 에러 로그로 출력하여 눈에 잘 띄게 합니다.
 		UE_LOG(LogTemp, Error, TEXT("================ HIT DEBUG START ================"));
 		UE_LOG(LogTemp, Error, TEXT("Projectile '%s' (My Profile: %s)"), *GetName(), *MyProfileName.ToString());
@@ -75,8 +77,12 @@ void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, U
 		UE_LOG(LogTemp, Error, TEXT("My Response to Their Type is: [ %s ]"), *MyResponseStr);
 		UE_LOG(LogTemp, Error, TEXT("Their Response to My Type is: [ %s ]"), *OtherResponseStr);
 		UE_LOG(LogTemp, Error, TEXT("================ HIT DEBUG END ================"));
+		
 	}
-	// --- 디버그 로그 끝 ---
+	*/
+	// ------- 디버그 로그 코드 끝 -------
+
+	
 	// 나 자신이나 나를 쏜 소유자(Owner)와 부딪힌 경우는 무시합니다.
 	AActor* MyOwner = GetOwner();
 	if (OtherActor == nullptr || OtherActor == this || OtherActor == MyOwner)

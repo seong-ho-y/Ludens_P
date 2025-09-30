@@ -71,7 +71,7 @@ void UExplosionComponent::BeginPlay()
 
 void UExplosionComponent::Multicast_PlayExplodeVFX_Implementation(FVector_NetQuantize VFXLocation)
 {
-	UE_LOG(LogTemp, Warning, TEXT("PlayExplodeVFX"));
+	//UE_LOG(LogTemp, Warning, TEXT("PlayExplodeVFX"));
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(
 		GetWorld(),
 		ExplosionEffect,
