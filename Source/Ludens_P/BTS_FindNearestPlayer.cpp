@@ -35,5 +35,13 @@ void UBTS_FindNearestPlayer::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* 
 	if (UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent())
 	{
 		BB->SetValueAsObject(TargetActorKey.SelectedKeyName, Best); // 없으면 null로 클리어됨
+		if (Best)
+		{
+			BB->SetValueAsVector(TargetLocationKey.SelectedKeyName, Best->GetActorLocation());
+		}
+		else
+		{
+			BB->ClearValue(TargetLocationKey.SelectedKeyName);
+		}
 	}
 }
