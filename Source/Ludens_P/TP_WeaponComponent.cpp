@@ -45,21 +45,25 @@ void UTP_WeaponComponent::BeginPlay()
 void UTP_WeaponComponent::Fire()
 {
 	// 위치 및 방향
-	FVector CameraLocation = Character->FirstPersonCameraComponent->GetComponentLocation();
-	FRotator SpawnRotation = Character->GetActorRotation();
-	if (APlayerController* PC = Cast<APlayerController>(Character->GetController()))
-	{
-		SpawnRotation = PC->PlayerCameraManager->GetCameraRotation();
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("❗ GetController() is null, fallback to actor rotation"));
-	}
-	// 카메라 앞쪽에서 발사
-	constexpr float Distance = 10.0f;
-	FVector FireDirection = SpawnRotation.Vector();
-	FVector SpawnLocation = CameraLocation + FireDirection * Distance;
+	APlayerController* PC = Cast<APlayerController>(Character->GetController());
+	if (!PC) return;
+	FRotator SpawnRotation = PC->PlayerCameraManager->GetCameraRotation();
+	
+	// Pitch 보정용 쿼터니언 생성(위쪽으로 7도 회전)
+	FQuat PitchAdjustment = FQuat(Character->GetActorRightVector(), FMath::DegreesToRadians(-7.0f));
 
+	// 회전 쿼터니언에 보정 곱하기
+	FQuat SpawnQuat = SpawnRotation.Quaternion();
+	SpawnQuat = PitchAdjustment * SpawnQuat;
+
+	// 다시 Rotator로 변환
+	SpawnRotation = SpawnQuat.Rotator();
+	
+	// 총구 앞쪽에서 발사
+	constexpr float Distance = 30.0f;
+	FVector FireDirection = SpawnRotation.Vector();
+	FVector SpawnLocation = GetMuzzleLocation() + FireDirection * Distance;
+	//UE_LOG(LogTemp, Log, TEXT("FireFireFIre"));
 	if (Character->HasAuthority())
 	{
 		HandleFire(SpawnLocation, SpawnRotation);
@@ -76,6 +80,8 @@ void UTP_WeaponComponent::ServerFire_Implementation(FVector_NetQuantize SpawnLoc
 }
 void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotator& SpawnRotation) //서버에서 쓰는 Fire (얘가 진짜 Projectile을 쏘는거임)
 {
+	//UE_LOG(LogTemp, Log, TEXT("HandleFire"));
+
 	if (!ProjectileClass) //프로젝타일 null값 방지
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ ProjectileClass is null"));
@@ -91,7 +97,9 @@ void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotato
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = GetOwner();
 	SpawnParams.Instigator = Cast<APawn>(GetOwner());
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+	//SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
+
 
 	ALudens_PProjectile* Projectile = GetWorld()->SpawnActor<ALudens_PProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams); // (스폰 위치, 방향, 액터가 게임 월드가 스폰될 때 디테알한 부분을 조정 가능.)
 	if (!Projectile)
@@ -107,14 +115,30 @@ void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotato
 		UGameplayStatics::PlaySoundAtLocation(this, FireSound, Character->GetActorLocation());
 	}
 
-	if (FireAnimation)
+	if (WeaponAttackMontage)
 	{
-		UAnimInstance* AnimInstance = Character->GetMesh1P()->GetAnimInstance();
-		if (AnimInstance)
+		PlayMontage(WeaponAttackMontage, 1.0f);
+	}
+}
+
+FVector UTP_WeaponComponent::GetMuzzleLocation() const
+{
+	// 총구의 위치 계산
+	if (AActor* OwnerActor = GetOwner())
+	{
+		// 이름이 Muzzle인 StaticMeshComponent 먼저 찾기
+		TArray<UStaticMeshComponent*> MeshComponents;
+		OwnerActor->GetComponents<UStaticMeshComponent>(MeshComponents);
+		for (UStaticMeshComponent* Comp : MeshComponents)
 		{
-			AnimInstance->Montage_Play(FireAnimation, 1.f);
+			if (Comp && Comp->GetName() == TEXT("Muzzle"))
+			{
+				return Comp->GetComponentLocation();
+			}
 		}
 	}
+	// 없으면 자체 위치 반환 (안전 fallback)
+	return GetComponentLocation();
 }
 
 void UTP_WeaponComponent::ServerAbsorb_Implementation()
@@ -189,6 +213,7 @@ void UTP_WeaponComponent::PerformAbsorb()
 		GetWorld()->GetTimerManager().ClearTimer(AbsorbDelayTimer);
 		return;
 	}
+	PlayMontage(AbsorbMontage, 1.f);
 	TargetJelloo->JellooTakeDamage(AbsorbAmount);
 	Character->SavedAmmo += AbsorbAmount;
 }
@@ -213,6 +238,26 @@ void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) //�
 		{
 			Subsystem->RemoveMappingContext(FireMappingContext);
 		}
+	}
+}
+
+void UTP_WeaponComponent::PlayMontage(UAnimMontage* Montage, float PlaySpeed) const
+{
+	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
+	if (!OwnerChar)
+	{
+		UE_LOG(LogTemp, Error, TEXT("OwnerChar is nullptr!"));
+		return;
+	};
+	UAnimInstance* AnimInstance = OwnerChar->GetMesh() ? OwnerChar->GetMesh()->GetAnimInstance() : nullptr;
+	if (!AnimInstance)
+	{
+		UE_LOG(LogTemp, Error, TEXT("AnimInstance is nullptr!"));
+		return;
+	}
+	if (AnimInstance && Montage)
+	{
+		AnimInstance->Montage_Play(Montage, PlaySpeed);
 	}
 }
 

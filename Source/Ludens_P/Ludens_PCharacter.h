@@ -10,6 +10,9 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
+#include "NiagaraSystem.h"
+#include "NiagaraFunctionLibrary.h"
+#include "NiagaraComponent.h"
 #include "Ludens_PCharacter.generated.h"
 
 class UInputComponent;
@@ -75,6 +78,11 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* AbsorbAction;
 	
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Niagara")
+	UNiagaraSystem* DashNiagara;
+	
+private:
 	UPROPERTY()
 	class UInputMappingContext* DefaultMappingContext;
 	UPROPERTY()
@@ -217,6 +225,10 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_AbsorbComplete(const FInputActionValue& Value);
 	FTimerHandle AbsorbCompleteTimerHandle;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastPlayDashEffect();
+	
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 };

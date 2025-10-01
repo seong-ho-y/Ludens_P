@@ -43,21 +43,22 @@ public:
 	// 플레이어 이동 속도
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement", ReplicatedUsing=OnRep_MoveSpeed)
 	float MoveSpeed;
+private:
 	float CalculateMoveSpeed; // 능력 강화시 계산용
 	float KnockedMoveSpeed = 100.0f;
 	float DeadMoveSpeed = 0.f;
-	
+public:
 	// 플레이어가 공격 당한 상태인지 확인, 공격 당하면 일정 시간 동안 무적 상태
 	UPROPERTY(VisibleAnywhere, Category = "Player", ReplicatedUsing=OnRep_IsAttacked)
 	bool IsAttacked = false;
 	FTimerHandle InvincibilityTimerHandle;
 
 	//플레이어의 생존 여부
-	UPROPERTY(VisibleAnywhere, Category = "Player", ReplicatedUsing=OnRep_Dead)
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Player", ReplicatedUsing=OnRep_Dead)
 	bool IsDead = false;
 
 	//플레이어의 생존 여부
-	UPROPERTY(VisibleAnywhere, Category = "Player", ReplicatedUsing=OnRep_Knocked)
+	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Player", ReplicatedUsing=OnRep_Knocked)
 	bool IsKnocked = false;
 
 	UPROPERTY(VisibleAnywhere, Category = "Player", Replicated)
