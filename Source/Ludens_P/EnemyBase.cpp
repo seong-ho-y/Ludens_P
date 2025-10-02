@@ -191,7 +191,21 @@ void AEnemyBase::Activate(const FVector& Location, const FRotator& Rotation)
 	
 	SetActorLocation(Location);
 	SetActorRotation(Rotation);
+	SetActorHiddenInGame(true);
+	SetActorEnableCollision(false);
+	bIsActiveInPool = true;
 
+	if (SpawnVFX)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), SpawnVFX, Location-FVector(0,0,150), Rotation, FVector(3));
+	}
+	GetWorld()->GetTimerManager().SetTimer(
+		FinalizeSpawnTimerHandle,
+		this,
+		&AEnemyBase::FinalizeSpawn,
+		2.0f,
+		false);
+	/*
 	// --- 디버깅 코드 추가 ---
 	if (USkeletalMeshComponent* MyMesh = GetMesh())
 	{
@@ -203,31 +217,32 @@ void AEnemyBase::Activate(const FVector& Location, const FRotator& Rotation)
 		DrawDebugSphere(GetWorld(), SocketLocation, 30.f, 12, FColor::Green, false, 5.0f);
 	}
 	// --- 디버깅 코드 끝 ---
+	*/
+}
+void AEnemyBase::FinalizeSpawn()
+{
+	if (!HasAuthority()) return;
 
-	
-	if (!SpawnVFX) return;
-	if (SpawnVFX && GetMesh()) // SpawnVFX와 메쉬가 유효한지 확인
-	{
-		// '위치'에 스폰하는 대신, '메쉬의 소켓'에 붙여서 스폰합니다.
-		UNiagaraFunctionLibrary::SpawnSystemAttached(
-			SpawnVFX,                       // 스폰할 나이아가라 시스템
-			GetMesh(),                      // 부착할 컴포넌트 (캐릭터의 메쉬)
-			TEXT("VFX"),             // 아까 만든 소켓 이름
-			FVector(0.0f),                  // 소켓 위치에서의 추가 오프셋 (보통 0)
-			FRotator(0.0f),                 // 소켓 회전에서의 추가 회전 (보통 0)
-			FVector(3.0f),                  // 스케일
-			EAttachLocation::SnapToTarget, // 부착 규칙
-			true,                           // 자동으로 활성화
-			ENCPoolMethod::None,
-			true);
-	}
+	// 모든 클라이언트에게 Mesh를 보여주라는 명령을 내립니다.
+	Multicast_FinalizeSpawn();
+}
+void AEnemyBase::Multicast_FinalizeSpawn_Implementation()
+{
+	// ✨ Mesh를 보이게 하고 충돌을 켭니다.
+	SetActorHiddenInGame(false);
+	SetActorEnableCollision(true);
 
 	bIsActiveInPool = true;
-	UpdateActiveState(true); // 서버에서도 직접 호출
+	// 기존의 활성화 로직을 여기서 호출하여 AI, 움직임 타이머 등을 시작시킵니다.
+	UpdateActiveState(true); 
 
-	if (CCC && Descriptor)
+	// 서버라면 스탯 초기화 같은 게임 로직을 처리합니다.
+	if (HasAuthority())
 	{
-		CCC->InitStats(Descriptor->MaxHP);
+		if (CCC && Descriptor)
+		{
+			CCC->InitStats(Descriptor->MaxHP);
+		}
 	}
 }
 
@@ -236,6 +251,7 @@ void AEnemyBase::Deactivate()
 {
 	if (!HasAuthority()) return; // 서버에서만 실행
 
+	GetWorld()->GetTimerManager().ClearTimer(FinalizeSpawnTimerHandle);
 
 	bIsActiveInPool = false;
 	UpdateActiveState(false); // 서버에서도 직접 호출

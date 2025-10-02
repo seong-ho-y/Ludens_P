@@ -129,6 +129,15 @@ protected:
 	// 지연 시간에 사용할 타이머 핸들
 	FTimerHandle SpawnDelayTimerHandle;
 
+	FTimerHandle FinalizeSpawnTimerHandle;
+
+	// 서버에서 타이머가 호출할 함수
+	void FinalizeSpawn();
+
+	// 서버와 모든 클라이언트에서 호출될 함수 (실제로 Mesh를 보이게 함)
+	UFUNCTION(NetMulticast, Unreliable)
+	void Multicast_FinalizeSpawn();
+	
 	// 타이머가 만료되었을 때 호출될 함수
 	void ActivateMovementAndAI();
 };
