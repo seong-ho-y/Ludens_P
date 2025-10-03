@@ -6,6 +6,8 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "PlayerState_Real.h"
+#include "GameFramework/Character.h"
 
 ALudens_PProjectile::ALudens_PProjectile() 
 {
@@ -32,6 +34,7 @@ ALudens_PProjectile::ALudens_PProjectile()
 
 	// Die after 3 seconds by default
 	InitialLifeSpan = 3.0f;
+	
 }
 
 void ALudens_PProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -42,13 +45,22 @@ void ALudens_PProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor
 	{
 		return;
 	}
+	
+	// 안전하게 캐스팅하여 할당
+	PSR = Cast<APlayerState_Real>(Cast<ACharacter>(GetOwner())->GetPlayerState());
 
+	if (!PSR)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[PlayerStateComponent] PSR is nullptr!"));
+		return;
+	}
+	
 	// 1. 부딪힌 대상이 적인지(AEnemyBase를 상속받았는지) 확인합니다.
 	AEnemyBase* HitEnemy = Cast<AEnemyBase>(OtherActor);
 	if (HitEnemy)
 	{
 		// 2. 데미지 처리를 위한 정보를 준비합니다.
-		const float DamageAmount = 5.0f; // 이 프로젝타일의 기본 데미지
+		const float DamageAmount = PSR->AttackDamage; // 이 프로젝타일의 기본 데미지
 		AController* InstigatorController = MyOwner ? MyOwner->GetInstigatorController() : nullptr; // 나를 쏜 폰의 컨트롤러
 
 		// 3. 언리얼 데미지 시스템을 통해 데미지를 전달합니다.

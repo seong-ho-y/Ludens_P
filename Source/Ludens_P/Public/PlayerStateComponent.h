@@ -19,8 +19,9 @@ class LUDENS_P_API UPlayerStateComponent : public UActorComponent
 public:
 	UPROPERTY()
 	class ACharacter* Character;
+	UPROPERTY()
+	class APlayerState_Real* PSR;
 	
-public:	
 	// Sets default values for this component's properties
 	UPlayerStateComponent();
 

@@ -1,11 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PlayerStateComponent.h"
-
-#include "SWarningOrErrorBox.h"
+#include "PlayerState_Real.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
+#include "SWarningOrErrorBox.h"
 #include "DSP/Delay.h"
 #include "Net/UnrealNetwork.h"
 
@@ -23,11 +23,20 @@ void UPlayerStateComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
+	// 안전하게 캐스팅하여 할당
+	PSR = Cast<APlayerState_Real>(Cast<ACharacter>(GetOwner())->GetPlayerState());
+
+	if (!PSR)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[PlayerStateComponent] PSR is nullptr!"));
+		return;
+	}
+
 	if (GetOwner()->HasAuthority())
 	{
-		CurrentHP = MaxHP;
-		CurrentShield = MaxShield;
-		MoveSpeed = 600.0f; // 기본 이동 속도 설정
+		CurrentHP = PSR->MaxHP;
+		CurrentShield = PSR->MaxShield;
+		MoveSpeed = PSR->MoveSpeed;
 		CalculateMoveSpeed = MoveSpeed;
 	}
 	Character = Cast<ACharacter>(GetOwner());
@@ -84,7 +93,7 @@ void UPlayerStateComponent::TakeDamage(float Amount)
 void UPlayerStateComponent::EnableShieldRegen()
 {
 	bCanRegenShield = true;
-	GetWorld()->GetTimerManager().SetTimer(RegenShieldTimer, this, &UPlayerStateComponent::RegenShieldHandle, 0.5f, true);
+	GetWorld()->GetTimerManager().SetTimer(RegenShieldTimer, this, &UPlayerStateComponent::RegenShieldHandle, PSR->ShieldRegenSpeed, true);
 }
 
 void UPlayerStateComponent::RegenShieldHandle()
