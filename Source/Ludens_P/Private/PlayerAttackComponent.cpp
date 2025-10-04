@@ -99,7 +99,11 @@ void UPlayerAttackComponent::TryMeleeAttack()
 		Server_TryMeleeAttack();
 		return;
 	}
-	if (bIsMeleeAttacking) return; // 근접 공격 중이면 시행 X
+	if (bIsMeleeAttacking)
+	{
+		return; // 근접 공격 중이면 시행 X
+
+	}
 	bIsMeleeAttacking = true;
 	PlayMontage(MeleeAttackMontage, 2.0f); // AnimMontage 재생
 	
