@@ -4,6 +4,7 @@
 #include "PlayerAttackComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "MeleeAttackHandler.h"
+#include "PlayerState_Real.h"
 #include "WeaponAttackHandler.h"
 #include "Ludens_P/Ludens_PCharacter.h"
 
@@ -37,6 +38,7 @@ void UPlayerAttackComponent::BeginPlay()
 			WeaponAttackHandler->WeaponComp = OwnerChar->FindComponentByClass<UTP_WeaponComponent>();
 		}
 	}
+	
 	if (!Character)
 	{
 		Character = Cast<ALudens_PCharacter>(GetOwner());
@@ -69,7 +71,7 @@ void UPlayerAttackComponent::TryWeaponAttack()
 	}
 	// 서버라면 실제 공격 처리
 	WeaponAttackHandler->HandleWeaponAttack(AttackDamage);
-	GetWorld()->GetTimerManager().SetTimer(WeaponAttackTimer, this, &UPlayerAttackComponent::EndWeaponAttack, WeaponAttackCoolTime, false); // 근접 공격 쿨타임 적용
+	GetWorld()->GetTimerManager().SetTimer(WeaponAttackTimer, this, &UPlayerAttackComponent::EndWeaponAttack, WeaponAttackCoolTime, false); // 무기 공격 쿨타임 적용
 }
 
 void UPlayerAttackComponent::EndWeaponAttack()

@@ -81,7 +81,10 @@ private:
 public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Niagara")
 	UNiagaraSystem* DashNiagara;
-	
+	UPROPERTY()
+	class APlayerState_Real* PSR = nullptr;
+private:
+	bool bPSRInitialized = false;
 private:
 	UPROPERTY()
 	class UInputMappingContext* DefaultMappingContext;
@@ -99,6 +102,7 @@ public:
 
 protected:
 	virtual void BeginPlay();
+	void Tick(float DeltaTime) override;
 
 public:
 		
@@ -163,9 +167,9 @@ protected:
 	
 	// 대시 시스템 변수
 	UPROPERTY(EditDefaultsOnly, Category = "Dash")
-	int8 MaxDashCount = 3;
+	int MaxDashCount = 3;
 	UPROPERTY(VisibleAnywhere, Category = "Dash", Replicated)
-	int8 CurrentDashCount = 3;
+	int CurrentDashCount = 3;
 	UPROPERTY(EditDefaultsOnly, Category = "Dash")
 	float DashCooldown = 0.5f;
 	UPROPERTY(EditDefaultsOnly, Category = "Dash")
@@ -204,22 +208,22 @@ protected:
 	
 	//** 재장전 시스템 변수
 	UPROPERTY(EditDefaultsOnly, Category = "Reload")
-	int16 MaxSavedAmmo = 500; // 최대로 저장할 수 있는 탄알 수
+	int MaxSavedAmmo; // 최대로 저장할 수 있는 탄알 수
 public:
 	UPROPERTY(EditDefaultsOnly, Category = "Reload", ReplicatedUsing = OnRep_SavedAmmo)
-	int16 SavedAmmo = 100; // 저장되어 있는 탄알
+	int SavedAmmo; // 저장되어 있는 탄알
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Reload")
-	int16 MaxAmmo = 10; // 최대로 장전 할 수 있는 탄알 수
+	int MaxAmmo; // 최대로 장전 할 수 있는 탄알 수
 	UPROPERTY(EditDefaultsOnly, Category = "Reload", ReplicatedUsing = OnRep_CurrentAmmo)
-	int16 CurrentAmmo = 10; // 장전 완료 된 탄알
+	int CurrentAmmo; // 장전 완료 된 탄알
 	
 	UFUNCTION()
 	void OnRep_SavedAmmo();
 	UFUNCTION()
 	void OnRep_CurrentAmmo();
 public:
-	int16 GetCurrentAmmo() const;
+	int GetCurrentAmmo() const;
 
 protected:
 	UFUNCTION(Server, Reliable)

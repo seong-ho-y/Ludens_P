@@ -26,7 +26,6 @@ private:
 public:	
 	// Sets default values for this component's properties
 	UPlayerAttackComponent();
-
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
 	float AttackDamage; // 플레이어 공격력

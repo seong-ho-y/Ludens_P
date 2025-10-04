@@ -13,6 +13,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "JellooComponent.h"
+#include "PlayerState_Real.h"
 #include "Net/UnrealNetwork.h"
 #include "Projects.h"
 #include "Animation/AnimInstance.h"
@@ -31,7 +32,7 @@ UTP_WeaponComponent::UTP_WeaponComponent()
 void UTP_WeaponComponent::BeginPlay()
 {
 	Super::BeginPlay();
-
+	
 	if (!Character)
 	{
 		Character = Cast<ALudens_PCharacter>(GetOwner());
@@ -119,8 +120,16 @@ void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotato
 	{
 		PlayMontage(WeaponAttackMontage, 1.0f);
 	}
+	// 안전하게 캐스팅하여 할당
+	PSR = Cast<APlayerState_Real>(Cast<ACharacter>(GetOwner())->GetPlayerState());
 
-	GetWorld()->GetTimerManager().SetTimer(WeaponAttackTimer, this, &UTP_WeaponComponent::EndWeaponAttack, WeaponAttackCoolTime, false); // 근접 공격 쿨타임 적용
+	if (!PSR)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[PlayerStateComponent] PSR is nullptr! in HandleFire"));
+		return;
+	}
+	
+	GetWorld()->GetTimerManager().SetTimer(WeaponAttackTimer, this, &UTP_WeaponComponent::EndWeaponAttack, PSR->WeaponAttackCoolTime, false); // 무기 공격 쿨타임 적용
 }
 
 void UTP_WeaponComponent::EndWeaponAttack()
@@ -190,7 +199,16 @@ void UTP_WeaponComponent::HandleAbsorb()
 
 	// 라인 트레이스를 하여 무언가에 맞았는지를 나타냄
 	bool bHit = Character->GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Pawn, Params);
+	
+	// 안전하게 캐스팅하여 할당
+	PSR = Cast<APlayerState_Real>(Cast<ACharacter>(GetOwner())->GetPlayerState());
 
+	if (!PSR)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[PlayerStateComponent] PSR is nullptr! in HandleAbsorb"));
+		return;
+	}
+	
 	// 6. CreatureCombatComponent가 있으면 데미지 적용
 	if (bHit && Hit.GetActor())
 	{
@@ -201,7 +219,7 @@ void UTP_WeaponComponent::HandleAbsorb()
 			// 타이머가 이미 작동 중인지 먼저 확인
 			if (!GetWorld()->GetTimerManager().IsTimerActive(AbsorbDelayTimer))
 			{
-				GetWorld()->GetTimerManager().SetTimer(AbsorbDelayTimer, this, &UTP_WeaponComponent::PerformAbsorb, AbsorbDelay, false);
+				GetWorld()->GetTimerManager().SetTimer(AbsorbDelayTimer, this, &UTP_WeaponComponent::PerformAbsorb, PSR->AbsorbDelay, false);
 			}
 		}
 	}
@@ -224,6 +242,7 @@ void UTP_WeaponComponent::PerformAbsorb()
 	PlayMontage(AbsorbMontage, 1.f);
 	TargetJelloo->JellooTakeDamage(AbsorbAmount);
 	Character->SavedAmmo += AbsorbAmount;
+	UE_LOG(LogTemp, Log, TEXT("SavedAmmo: %d"), Character->SavedAmmo);
 }
 
 void UTP_WeaponComponent::StopPerformAbsorb()

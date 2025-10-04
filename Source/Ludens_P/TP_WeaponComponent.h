@@ -61,6 +61,9 @@ public:
 	UTP_WeaponComponent();
 	void BeginPlay();
 	
+	UPROPERTY()
+	class APlayerState_Real* PSR;
+	
 	/** Make the weapon Fire a Projectile */
 	UFUNCTION(BlueprintCallable, Category="Weapon")
 	void Fire();

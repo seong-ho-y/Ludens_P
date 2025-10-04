@@ -51,7 +51,7 @@ void ALudens_PProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor
 
 	if (!PSR)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[PlayerStateComponent] PSR is nullptr!"));
+		UE_LOG(LogTemp, Error, TEXT("[PlayerStateComponent] PSR is nullptr! in Projectile"));
 		return;
 	}
 	

@@ -28,7 +28,7 @@ void APlayerState_Real::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(APlayerState_Real, ShieldRegenSpeed);
 	DOREPLIFETIME(APlayerState_Real, DashRechargeTime);
 	DOREPLIFETIME(APlayerState_Real, MaxDashCount);
-	DOREPLIFETIME(APlayerState_Real, JumpZVelocity);
+	// DOREPLIFETIME(APlayerState_Real, JumpZVelocity);
 	DOREPLIFETIME(APlayerState_Real, AttackDamage);
 	DOREPLIFETIME(APlayerState_Real, WeaponAttackCoolTime);
 	DOREPLIFETIME(APlayerState_Real, CriticalRate);
