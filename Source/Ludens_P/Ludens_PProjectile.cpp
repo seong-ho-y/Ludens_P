@@ -6,8 +6,6 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "PlayerState_Real.h"
-#include "GameFramework/Character.h"
 
 ALudens_PProjectile::ALudens_PProjectile() 
 {
@@ -33,8 +31,7 @@ ALudens_PProjectile::ALudens_PProjectile()
 	ProjectileMovement->bShouldBounce = true;
 
 	// Die after 3 seconds by default
-	InitialLifeSpan = 3.0f;
-	
+	InitialLifeSpan = 10.0f;
 }
 
 void ALudens_PProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -60,7 +57,7 @@ void ALudens_PProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor
 	if (HitEnemy)
 	{
 		// 2. 데미지 처리를 위한 정보를 준비합니다.
-		const float DamageAmount = PSR->AttackDamage; // 이 프로젝타일의 기본 데미지
+		const float DamageAmount = 5.0f; // 이 프로젝타일의 기본 데미지
 		AController* InstigatorController = MyOwner ? MyOwner->GetInstigatorController() : nullptr; // 나를 쏜 폰의 컨트롤러
 
 		// 3. 언리얼 데미지 시스템을 통해 데미지를 전달합니다.

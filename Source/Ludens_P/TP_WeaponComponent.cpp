@@ -32,7 +32,7 @@ UTP_WeaponComponent::UTP_WeaponComponent()
 void UTP_WeaponComponent::BeginPlay()
 {
 	Super::BeginPlay();
-	
+
 	if (!Character)
 	{
 		Character = Cast<ALudens_PCharacter>(GetOwner());
@@ -162,7 +162,6 @@ void UTP_WeaponComponent::ServerAbsorb_Implementation()
 	HandleAbsorb();
 }
 
-
 void UTP_WeaponComponent::HandleAbsorb()
 {
 	// 반드시 서버에서만 로직 실행
@@ -219,7 +218,7 @@ void UTP_WeaponComponent::HandleAbsorb()
 			// 타이머가 이미 작동 중인지 먼저 확인
 			if (!GetWorld()->GetTimerManager().IsTimerActive(AbsorbDelayTimer))
 			{
-				GetWorld()->GetTimerManager().SetTimer(AbsorbDelayTimer, this, &UTP_WeaponComponent::PerformAbsorb, PSR->AbsorbDelay, false);
+				GetWorld()->GetTimerManager().SetTimer(AbsorbDelayTimer, this, &UTP_WeaponComponent::PerformAbsorb, AbsorbDelay, false);
 			}
 		}
 	}
@@ -242,7 +241,6 @@ void UTP_WeaponComponent::PerformAbsorb()
 	PlayMontage(AbsorbMontage, 1.f);
 	TargetJelloo->JellooTakeDamage(AbsorbAmount);
 	Character->SavedAmmo += AbsorbAmount;
-	UE_LOG(LogTemp, Log, TEXT("SavedAmmo: %d"), Character->SavedAmmo);
 }
 
 void UTP_WeaponComponent::StopPerformAbsorb()

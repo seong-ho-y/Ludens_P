@@ -43,8 +43,8 @@ void UCreatureCombatComponent::TakeDamage(float Amount)
 
 void UCreatureCombatComponent::OnRep_CurrentHP()
 {
-	UE_LOG(LogTemp, Warning, TEXT("[%s] CCC::OnRep_CurrentHP fired. Broadcasting OnHealthChanged."), 
-		  GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
+	//UE_LOG(LogTemp, Warning, TEXT("[%s] CCC::OnRep_CurrentHP fired. Broadcasting OnHealthChanged."), 
+	//	  GetOwner()->HasAuthority() ? TEXT("SERVER") : TEXT("CLIENT"));
 	// ✨ 체력이 변경되었음을 외부에 알리는 신호를 보냅니다(Broadcast).
 	OnHealthChanged.Broadcast(CurrentHP, MaxHP);
 }

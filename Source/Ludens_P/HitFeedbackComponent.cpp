@@ -36,7 +36,7 @@ void UHitFeedbackComponent::Multicast_PlayHitEffects_Implementation(const FVecto
 {
 	if (!HitVFX)
 	{
-		UE_LOG(LogTemp, Error, TEXT("HitVFX is Not Set!"));
+		//UE_LOG(LogTemp, Error, TEXT("HitVFX is Not Set!"));
 		return;
 	}
 
@@ -52,20 +52,18 @@ void UHitFeedbackComponent::StartHitFlash()
 	// BodyMID가 없으면 Owner로부터 찾아옵니다.
 	if (!BodyMID)
 	{
-		UE_LOG(LogTemp, Display, TEXT("No BodyMID"));
-		return;
-		/*
+		//UE_LOG(LogTemp, Warning, TEXT("No BodyMID"));
+		
 		ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
 		if (OwnerChar && OwnerChar->GetMesh())
 		{
 			BodyMID = OwnerChar->GetMesh()->CreateAndSetMaterialInstanceDynamic(0);
 		}
-		*/
 	}
 
 	if (BodyMID)
 	{
-		UE_LOG(LogTemp, Display, TEXT("Starting HitFlash"));
+		//UE_LOG(LogTemp, Log, TEXT("Starting HitFlash"));
 		BodyMID->SetScalarParameterValue(EmissiveParamName, FlashIntensity);
 		GetWorld()->GetTimerManager().SetTimer(HitFlashTimer, this, &UHitFeedbackComponent::EndHitFlash, FlashDuration, false);
 	}

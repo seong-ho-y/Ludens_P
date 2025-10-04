@@ -30,6 +30,7 @@ void AEnemyPoolManager::BeginPlay()
                 AEnemyBase* NewEnemy_Sp = GetWorld()->SpawnActor<AEnemyBase>(SniperClass, SpawnLoc, SpawnRot, Params);
                 AEnemyBase* NewEnemy_Ex = GetWorld()->SpawnActor<AEnemyBase>(ExploClass, SpawnLoc, SpawnRot, Params);
                 AEnemyBase* NewEnemy_St = GetWorld()->SpawnActor<AEnemyBase>(ChargerClass, SpawnLoc, SpawnRot, Params);
+                AEnemyBase* NewEnemy_M = GetWorld()->SpawnActor<AEnemyBase>(MagicClass, SpawnLoc, SpawnRot, Params);
                 {
                     EnemyPools.FindOrAdd(ShooterClass).PooledEnemies.Add(NewEnemy_S);
                     //EnemyPools.FindOrAdd(WalkerClass).PooledEnemies.Add(NewEnemy);
@@ -38,6 +39,7 @@ void AEnemyPoolManager::BeginPlay()
                     EnemyPools.FindOrAdd(SniperClass).PooledEnemies.Add(NewEnemy_Sp);
                     EnemyPools.FindOrAdd(ExploClass).PooledEnemies.Add(NewEnemy_Ex);
                     EnemyPools.FindOrAdd(ChargerClass).PooledEnemies.Add(NewEnemy_St);
+                    EnemyPools.FindOrAdd(MagicClass).PooledEnemies.Add(NewEnemy_M);
                     //NewEnemy->Deactivate(); // 생성 직후 바로 비활성화
                     NewEnemy_S->Deactivate();
                     NewEnemy_T->Deactivate();
@@ -45,6 +47,7 @@ void AEnemyPoolManager::BeginPlay()
                     NewEnemy_Sp->Deactivate();
                     NewEnemy_Ex->Deactivate();
                     NewEnemy_St->Deactivate();
+                    NewEnemy_M->Deactivate();
                 }
             }
         }
