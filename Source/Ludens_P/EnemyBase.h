@@ -7,8 +7,10 @@
 #include "GameFramework/Character.h"
 #include "DeathHandlerInterface.h"
 #include "StealthInterface.h"
+#include "BehaviorTree/BehaviorTreeTypes.h"
 #include "EnemyBase.generated.h"
 
+class UBlackboardComponent;
 class UEnemyDescriptor;
 class UShieldComponent;
 class UWidgetComponent;
@@ -20,6 +22,7 @@ class LUDENS_P_API AEnemyBase : public ACharacter, public IDeathHandlerInterface
 	GENERATED_BODY()
 public:
 	virtual void Tick(float DeltaTime) override;
+	void RotateToPlayer(float DeltaSeconds);
 
 	virtual void EngageStealth_Implementation() override;
 	virtual void DisengageStealth_Implementation() override;
@@ -33,8 +36,6 @@ public:
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	UCreatureCombatComponent* CCC;
-
-	
 
 	// AActor로부터 상속받은 TakeDamage 함수를 정확한 시그니처로 오버라이드합니다.
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;

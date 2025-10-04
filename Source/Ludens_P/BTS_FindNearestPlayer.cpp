@@ -5,6 +5,7 @@
 #include "BehaviorTree/BlackboardComponent.h"
 #include "AIController.h"
 #include "GameFramework/Actor.h"
+#include "Kismet/KismetMathLibrary.h"
 
 UBTS_FindNearestPlayer::UBTS_FindNearestPlayer()
 {
@@ -16,8 +17,9 @@ UBTS_FindNearestPlayer::UBTS_FindNearestPlayer()
 	TargetActorKey.AddObjectFilter(this, GET_MEMBER_NAME_CHECKED(UBTS_FindNearestPlayer, TargetActorKey), AActor::StaticClass());
 }
 
-void UBTS_FindNearestPlayer::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float)
+void UBTS_FindNearestPlayer::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds)
 {
+	Super::TickNode(OwnerComp, NodeMemory, DeltaSeconds);
 	AAIController* AI = OwnerComp.GetAIOwner();
 	APawn* Self = AI ? AI->GetPawn() : nullptr;
 	if (!Self) return;
@@ -34,14 +36,16 @@ void UBTS_FindNearestPlayer::TickNode(UBehaviorTreeComponent& OwnerComp, uint8* 
 
 	if (UBlackboardComponent* BB = OwnerComp.GetBlackboardComponent())
 	{
+		BB->SetValueAsInt(RandNum.SelectedKeyName, FMath::RandRange(0,100));
 		BB->SetValueAsObject(TargetActorKey.SelectedKeyName, Best); // 없으면 null로 클리어됨
 		if (Best)
 		{
 			BB->SetValueAsVector(TargetLocationKey.SelectedKeyName, Best->GetActorLocation());
+			BB->SetValueAsFloat(DistanceToPlayerKey.SelectedKeyName, FMath::Sqrt(BestDistSq));
 		}
 		else
 		{
-			BB->ClearValue(TargetLocationKey.SelectedKeyName);
+			BB->ClearValue(DistanceToPlayerKey.SelectedKeyName);
 		}
 	}
 }
