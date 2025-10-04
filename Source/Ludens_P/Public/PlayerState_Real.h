@@ -32,7 +32,7 @@ public:
 	float MaxShield = 100.f;
 
 	UPROPERTY(Replicated)
-	float MoveSpeed = 1200.f;
+	float MoveSpeed = 1000.f;
 
 	UPROPERTY(Replicated)
 	float ShieldRegenSpeed = 0.5f; // 쉴드 재생 속도
