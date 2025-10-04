@@ -13,6 +13,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "JellooComponent.h"
+#include "PlayerState_Real.h"
 #include "Net/UnrealNetwork.h"
 #include "Projects.h"
 #include "Animation/AnimInstance.h"
@@ -63,7 +64,7 @@ void UTP_WeaponComponent::Fire()
 	constexpr float Distance = 30.0f;
 	FVector FireDirection = SpawnRotation.Vector();
 	FVector SpawnLocation = GetMuzzleLocation() + FireDirection * Distance;
-	//UE_LOG(LogTemp, Log, TEXT("FireFireFIre"));
+	
 	if (Character->HasAuthority())
 	{
 		HandleFire(SpawnLocation, SpawnRotation);
@@ -80,8 +81,8 @@ void UTP_WeaponComponent::ServerFire_Implementation(FVector_NetQuantize SpawnLoc
 }
 void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotator& SpawnRotation) //서버에서 쓰는 Fire (얘가 진짜 Projectile을 쏘는거임)
 {
-	//UE_LOG(LogTemp, Log, TEXT("HandleFire"));
-
+	bIsWeaponAttacking = true; // 공격 했다는 걸 bool타입으로 표시
+	
 	if (!ProjectileClass) //프로젝타일 null값 방지
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ ProjectileClass is null"));
@@ -119,6 +120,21 @@ void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotato
 	{
 		PlayMontage(WeaponAttackMontage, 1.0f);
 	}
+	// 안전하게 캐스팅하여 할당
+	PSR = Cast<APlayerState_Real>(Cast<ACharacter>(GetOwner())->GetPlayerState());
+
+	if (!PSR)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[PlayerStateComponent] PSR is nullptr! in HandleFire"));
+		return;
+	}
+	
+	GetWorld()->GetTimerManager().SetTimer(WeaponAttackTimer, this, &UTP_WeaponComponent::EndWeaponAttack, PSR->WeaponAttackCoolTime, false); // 무기 공격 쿨타임 적용
+}
+
+void UTP_WeaponComponent::EndWeaponAttack()
+{
+	bIsWeaponAttacking = false;
 }
 
 FVector UTP_WeaponComponent::GetMuzzleLocation() const
@@ -182,7 +198,16 @@ void UTP_WeaponComponent::HandleAbsorb()
 
 	// 라인 트레이스를 하여 무언가에 맞았는지를 나타냄
 	bool bHit = Character->GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Pawn, Params);
+	
+	// 안전하게 캐스팅하여 할당
+	PSR = Cast<APlayerState_Real>(Cast<ACharacter>(GetOwner())->GetPlayerState());
 
+	if (!PSR)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[PlayerStateComponent] PSR is nullptr! in HandleAbsorb"));
+		return;
+	}
+	
 	// 6. CreatureCombatComponent가 있으면 데미지 적용
 	if (bHit && Hit.GetActor())
 	{
@@ -241,7 +266,7 @@ void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) //�
 	}
 }
 
-void UTP_WeaponComponent::PlayMontage(UAnimMontage* Montage, float PlaySpeed) const
+void UTP_WeaponComponent::PlayMontage_Implementation(UAnimMontage* Montage, float PlaySpeed)
 {
 	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
 	if (!OwnerChar)

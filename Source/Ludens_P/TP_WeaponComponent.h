@@ -61,6 +61,9 @@ public:
 	UTP_WeaponComponent();
 	void BeginPlay();
 	
+	UPROPERTY()
+	class APlayerState_Real* PSR;
+	
 	/** Make the weapon Fire a Projectile */
 	UFUNCTION(BlueprintCallable, Category="Weapon")
 	void Fire();
@@ -70,6 +73,14 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category="Weapon")
 	FVector GetMuzzleLocation() const; // 총구 위치 계산
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
+	float WeaponAttackCoolTime = 0.3f; // 플레이어 공격 쿨타임
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
+	bool bIsWeaponAttacking = false; // 플레이어가 무기 공격을 하고 있는지 확인
+	FTimerHandle WeaponAttackTimer; // 무기 공격 타이머
+	UFUNCTION()
+	void EndWeaponAttack();
 	
 	UFUNCTION(Server, Reliable)
 	void ServerAbsorb(); // 클라이언트가 RPC 서버에 젤루 흡수 요청
@@ -90,6 +101,6 @@ protected:
 	UFUNCTION()
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 public:
-	UFUNCTION()
-	void PlayMontage(UAnimMontage* Montage, float PlaySpeed) const;
+	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
+	void PlayMontage(UAnimMontage* Montage, float PlaySpeed);
 };

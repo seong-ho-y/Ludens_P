@@ -4,6 +4,7 @@
 #include "PlayerAttackComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "MeleeAttackHandler.h"
+#include "PlayerState_Real.h"
 #include "WeaponAttackHandler.h"
 #include "Ludens_P/Ludens_PCharacter.h"
 
@@ -13,7 +14,6 @@ UPlayerAttackComponent::UPlayerAttackComponent()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
 	// ...
 }
 
@@ -38,6 +38,7 @@ void UPlayerAttackComponent::BeginPlay()
 			WeaponAttackHandler->WeaponComp = OwnerChar->FindComponentByClass<UTP_WeaponComponent>();
 		}
 	}
+	
 	if (!Character)
 	{
 		Character = Cast<ALudens_PCharacter>(GetOwner());
@@ -58,7 +59,8 @@ void UPlayerAttackComponent::TryWeaponAttack()
 	}
 	
 	if (Character->GetCurrentAmmo() <= 0) return; // 남은 탄알이 0이면 공격 처리를 하지 않고 리턴
-	
+	if (bIsWeaponAttacking) return;
+	bIsWeaponAttacking = true;
 	AttackDamage = 30;
 	// 무기 공격 함수 호출
 	if (!GetOwner()->HasAuthority())
@@ -69,6 +71,12 @@ void UPlayerAttackComponent::TryWeaponAttack()
 	}
 	// 서버라면 실제 공격 처리
 	WeaponAttackHandler->HandleWeaponAttack(AttackDamage);
+	GetWorld()->GetTimerManager().SetTimer(WeaponAttackTimer, this, &UPlayerAttackComponent::EndWeaponAttack, WeaponAttackCoolTime, false); // 무기 공격 쿨타임 적용
+}
+
+void UPlayerAttackComponent::EndWeaponAttack()
+{
+	bIsWeaponAttacking = false;
 }
 
 void UPlayerAttackComponent::Server_TryMeleeAttack_Implementation()
@@ -115,10 +123,10 @@ void UPlayerAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	// ...
+
 }
 
-void UPlayerAttackComponent::PlayMontage(UAnimMontage* Montage, float PlaySpeed) const
+void UPlayerAttackComponent::PlayMontage_Implementation(UAnimMontage* Montage, float PlaySpeed)
 {
 	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
 	if (!OwnerChar)
