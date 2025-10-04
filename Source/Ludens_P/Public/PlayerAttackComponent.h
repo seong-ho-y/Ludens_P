@@ -23,12 +23,11 @@ private:
 	class ALudens_PCharacter* Character; // 캐릭터 클래스 선언
 	UPROPERTY(EditAnywhere, Category = Montage)
 	UAnimMontage* MeleeAttackMontage;
+
+	float AttackDamage = 9999.f;
 public:	
 	// Sets default values for this component's properties
 	UPlayerAttackComponent();
-	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
-	float AttackDamage; // 플레이어 공격력
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
 	float WeaponAttackCoolTime = 2.f; // 플레이어 공격 쿨타임
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")

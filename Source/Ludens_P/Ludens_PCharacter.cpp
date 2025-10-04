@@ -394,22 +394,15 @@ void ALudens_PCharacter::Interact(const FInputActionValue& Value) // 앞에 있�
 	// 라인 트레이스를 하여 무언가에 맞았는지를 나타냄
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Pawn, Params);
 	
-	if (bHit && Hit.GetActor())
+
+	// 맞은 액터가 어떤 컴포넌트를 가지고 있는지 검사
+	if (bHit && Hit.GetActor()->FindComponentByClass<UPlayerStateComponent>())
 	{
-		// 맞은 액터가 어떤 컴포넌트를 가지고 있는지 검사
-		if (Hit.GetActor()->FindComponentByClass<UCreatureCombatComponent>())
-		{
-			MeleeAttack(Value);
-		}
-		else if (Hit.GetActor()->FindComponentByClass<UPlayerStateComponent>())
-		{
-			Revive(Value);
-		}
+		Revive(Value);
 	}
-	else if (!Hit.GetActor())
+	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Hit.GetActor() is null!"));
-		return;
+		MeleeAttack(Value);
 	}
 }
 
