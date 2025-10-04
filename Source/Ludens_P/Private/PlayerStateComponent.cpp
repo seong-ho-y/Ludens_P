@@ -55,6 +55,17 @@ void UPlayerStateComponent::TickComponent(float DeltaTime, enum ELevelTick TickT
 				Character->GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
 			}
 			
+			///
+
+			if (GetOwnerRole() == ROLE_Authority && PSR)
+			{
+				PlayerColor = PSR->PlayerColor; 
+			}
+
+			///
+
+
+
 			bPSRInitialized = true;  // 한 번만 실행되도록
 		}
 	}

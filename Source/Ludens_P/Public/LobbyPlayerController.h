@@ -9,7 +9,7 @@
 class ALobbyPreviewRig;
 class UTextureRenderTarget2D;
 class UWBP_Lobby;
-class ALobbyPlayerState;
+class APlayerState_Real;
 class ALobbyGameState;
 class APlayerState;
 
@@ -65,7 +65,7 @@ private:
     void SpawnAndWirePreviewRigs();
 
     // ---- 내부 헬퍼 ----
-    ALobbyPlayerState* GetLobbyPS() const;
+    APlayerState_Real* GetLobbyPS() const;
     ALobbyGameState* GetLobbyGS() const;
 
     // ---- 동적 RT: 각 클라이언트 전용 (중복 금지! private에만 둠) ----

@@ -36,4 +36,36 @@ void APlayerState_Real::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(APlayerState_Real, AbsorbDelay);
 	DOREPLIFETIME(APlayerState_Real, MaxSavedAmmo);
 	DOREPLIFETIME(APlayerState_Real, MaxAmmo);
+
+	///
+
+	DOREPLIFETIME(APlayerState_Real, AppearanceId);
+	DOREPLIFETIME(APlayerState_Real, PreviewColor);
+	DOREPLIFETIME(APlayerState_Real, SelectedColor);
+	DOREPLIFETIME(APlayerState_Real, SubskillId);
+	DOREPLIFETIME(APlayerState_Real, bReady);
+
+	// [중요] 상성 색 (서버가 Ready에서 확정해 주입 → 전 클라 복제)
+	DOREPLIFETIME(APlayerState_Real, PlayerColor);
+
+	///
 }
+
+
+///
+
+// --- OnRep들: UI/표현 갱신 트리거 ---
+void APlayerState_Real::OnRep_AppearanceId() { OnAnyLobbyFieldChanged.Broadcast(); }
+void APlayerState_Real::OnRep_PreviewColor() { OnAnyLobbyFieldChanged.Broadcast(); }
+void APlayerState_Real::OnRep_SelectedColor() { OnAnyLobbyFieldChanged.Broadcast(); }
+void APlayerState_Real::OnRep_SubskillId() { OnAnyLobbyFieldChanged.Broadcast(); }
+void APlayerState_Real::OnRep_Ready() { OnAnyLobbyFieldChanged.Broadcast(); }
+
+void APlayerState_Real::NotifyAnyLobbyFieldChanged()
+{
+	OnAnyLobbyFieldChanged.Broadcast(); // [PS-UNIFY] 서버에서 수동 트리거
+}
+
+
+///
+

@@ -9,7 +9,7 @@
 
 class ALobbyPreviewRig; class UButton; class UBorder;
 class UTextBlock;
-class ALobbyPlayerState;
+class APlayerState_Real;
 class UWidget;
 
 
@@ -133,7 +133,7 @@ private:
 
     UFUNCTION() void OnPSChanged();
 
-    UPROPERTY() class ALobbyPlayerState* PS_Cached = nullptr;
+    UPROPERTY() class APlayerState_Real* PS_Cached = nullptr;
 
     TArray<UBorder*> AllDim() const { return { Dim_A0, Dim_A1, Dim_A2, Dim_A3 }; }
     TArray<UBorder*> AllSel() const { return { Sel_A0, Sel_A1, Sel_A2, Sel_A3 }; }
@@ -179,7 +179,7 @@ private:
     UFUNCTION() void OnAnyPSChanged();
 
     // 타인 PS 바운드 집합(중복 방지)
-    TSet<TWeakObjectPtr<ALobbyPlayerState>> BoundOtherPS;
+    TSet<TWeakObjectPtr<APlayerState_Real>> BoundOtherPS;
 
 
     UPROPERTY(meta = (BindWidget))          class UImage* Img_Self = nullptr;

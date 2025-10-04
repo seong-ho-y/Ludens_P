@@ -1,6 +1,6 @@
 // LobbyPlayerController.cpp
 #include "LobbyPlayerController.h"
-#include "LobbyPlayerState.h"
+#include "PlayerState_Real.h" // 수정 완료
 #include "LobbyGameState.h"
 #include "WBP_Lobby.h"      
 #include "LobbyPreviewRig.h" 
@@ -132,10 +132,10 @@ void ALobbyPlayerController::SpawnAndWirePreviewRigs()
 }
 
 
-// ===== S2: 클라 → 서버 RPC 구현 =====
+// ===== 서버 RPC 구현 =====
 void ALobbyPlayerController::ServerSetAppearance_Implementation(int32 InAppearanceId)
 {
-    if (ALobbyPlayerState* PS = GetLobbyPS())
+    if (APlayerState_Real* PS = GetLobbyPS())
     {
         PS->AppearanceId = FMath::Clamp(InAppearanceId, 0, 3);
         PS->NotifyAnyLobbyFieldChanged();
@@ -150,7 +150,7 @@ void ALobbyPlayerController::ServerSetAppearance_Implementation(int32 InAppearan
 
 void ALobbyPlayerController::ServerSetSubskill_Implementation(int32 InSubskillId)
 {
-    if (ALobbyPlayerState* PS = GetLobbyPS())
+    if (APlayerState_Real* PS = GetLobbyPS())
     {
         PS->SubskillId = FMath::Clamp(InSubskillId, 0, 4);
         PS->NotifyAnyLobbyFieldChanged();
@@ -163,7 +163,7 @@ void ALobbyPlayerController::ServerSetPreviewColor_Implementation(ELobbyColor In
     UE_LOG(LogTemp, Log, TEXT("[LobbyPC] ServerSetPreviewColor InColor=%d HasAuthority=%d"),  // LOG B
         (int32)InColor, (int32)HasAuthority());
 
-    if (ALobbyPlayerState* PS = GetLobbyPS())
+    if (APlayerState_Real* PS = GetLobbyPS())
     {
         if (!PS->bReady)
         {
@@ -182,7 +182,7 @@ void ALobbyPlayerController::ServerSetPreviewColor_Implementation(ELobbyColor In
 
 void ALobbyPlayerController::ServerReadyOn_Implementation(ELobbyColor Requested)
 {
-    ALobbyPlayerState* PS = GetLobbyPS();
+    APlayerState_Real* PS = GetLobbyPS();
     ALobbyGameState* GS = GetLobbyGS();
     if (!PS || !GS) return;
 
@@ -213,6 +213,22 @@ void ALobbyPlayerController::ServerReadyOn_Implementation(ELobbyColor Requested)
         PS->SelectedColor = ColorToLock;
         PS->bReady = true;
 
+        ///
+        // [신규] 상성 색 = 선택 색 매핑을 PS에 커밋(서버에서 1회)
+        auto MapToEnemyColor = [](ELobbyColor C)
+            {
+                switch (C) {
+                case ELobbyColor::Red:   return EEnemyColor::Red;
+                case ELobbyColor::Green: return EEnemyColor::Green;
+                case ELobbyColor::Blue:  return EEnemyColor::Blue;
+                default:                 return EEnemyColor::Red; // 폴백
+                }
+            };
+        /// PS->PlayerColor = MapToEnemyColor(PS->SelectedColor);  // 
+        PS->ForceNetUpdate();
+        ///
+
+
         // 호스트(서버 로컬) 위젯 즉시 갱신
         PS->NotifyAnyLobbyFieldChanged();
 
@@ -234,7 +250,7 @@ void ALobbyPlayerController::ServerReadyOn_Implementation(ELobbyColor Requested)
 
 void ALobbyPlayerController::ServerReadyOff_Implementation()
 {
-    ALobbyPlayerState* PS = GetLobbyPS();
+    APlayerState_Real* PS = GetLobbyPS();
     ALobbyGameState* GS = GetLobbyGS();
     if (!PS || !GS) return;
 
@@ -265,7 +281,7 @@ void ALobbyPlayerController::CaptureMiniFor(APlayerState* OtherPS, bool bLeftSlo
     ALobbyPreviewRig* Rig = bLeftSlot ? Rig_ThumbL : Rig_ThumbR;
     if (!Rig) return;
 
-    auto* LPS = Cast<ALobbyPlayerState>(OtherPS);
+    auto* LPS = Cast<APlayerState_Real>(OtherPS);
 
     UE_LOG(LogTemp, Display, TEXT("[Mini] %s id=%d Ready=%d Prev=%d Sel=%d slot=%s"),
         *LPS->GetPlayerName(), LPS->GetPlayerId(),
@@ -366,7 +382,7 @@ void ALobbyPlayerController::BindAllPSDelegates()
         bool bNewBound = false;
         for (APlayerState* PS : GS->PlayerArray)
         {
-            if (ALobbyPlayerState* LPS = Cast<ALobbyPlayerState>(PS))
+            if (APlayerState_Real* LPS = Cast<APlayerState_Real>(PS))
             {
                 if (!LPS->OnAnyLobbyFieldChanged.IsAlreadyBound(this, &ALobbyPlayerController::OnAnyPSChangedHandler))
                 {
@@ -384,15 +400,15 @@ void ALobbyPlayerController::RefreshMiniSlots()
     AGameStateBase* GS = GetWorld() ? GetWorld()->GetGameState<AGameStateBase>() : nullptr;
     if (!GS) return;
 
-    TArray<ALobbyPlayerState*> Others;
+    TArray<APlayerState_Real*> Others;
     for (APlayerState* PS : GS->PlayerArray)
     {
         if (PS && PS != PlayerState)
-            if (auto* LPS = Cast<ALobbyPlayerState>(PS)) Others.Add(LPS);
+            if (auto* LPS = Cast<APlayerState_Real>(PS)) Others.Add(LPS);
     }
 
     // 정렬 기준 고정(플레이어 ID 오름차순) → 좌/우 안정 배치
-    Others.Sort([](const ALobbyPlayerState& A, const ALobbyPlayerState& B)
+    Others.Sort([](const APlayerState_Real& A, const APlayerState_Real& B)
         { return A.GetPlayerId() < B.GetPlayerId(); });
 
     ClearMiniRT(true);

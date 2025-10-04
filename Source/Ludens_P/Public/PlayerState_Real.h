@@ -2,15 +2,17 @@
 
 #pragma once
 
+
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
 #include "Components/ActorComponent.h"
 #include "Ludens_P/EEnemyColor.h"
 #include "Net/UnrealNetwork.h"
+#include "LobbyTypes.h"
 #include "PlayerState_Real.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class LUDENS_P_API APlayerState_Real : public APlayerState
@@ -67,8 +69,58 @@ public:
 	UPROPERTY(Replicated)
 	int MaxAmmo = 15; // 최대 재장전 가능한 탈알(젤루) ✅
 
+	/// 로비 관련 수정
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLobbyFieldChanged);
+
+	UPROPERTY(ReplicatedUsing = OnRep_AppearanceId, BlueprintReadOnly, Category = "Lobby")
+	int32 AppearanceId = -1;              // 로비에서 고른 외형(A0~A3 등)
+
+	UPROPERTY(ReplicatedUsing = OnRep_PreviewColor, BlueprintReadOnly, Category = "Lobby")
+	ELobbyColor PreviewColor = ELobbyColor::None;  // 편집 중 미리보기 색
+
+	UPROPERTY(ReplicatedUsing = OnRep_SelectedColor, BlueprintReadOnly, Category = "Lobby")
+	ELobbyColor SelectedColor = ELobbyColor::None; // Ready 시점에 확정된 색(잠금)
+
+	UPROPERTY(ReplicatedUsing = OnRep_SubskillId, BlueprintReadOnly, Category = "Lobby")
+	int32 SubskillId = -1;                // 보조 스킬(인덱스)
+
+	// Ready 토글(잠금 여부)
+	UPROPERTY(ReplicatedUsing = OnRep_Ready, BlueprintReadOnly, Category = "Lobby")
+	bool bReady = false;
+
+	// 로비 선택값 중 하나라도 바뀌면 브로드캐스트(UMG 갱신용)
+	UPROPERTY(BlueprintAssignable, Category = "Lobby")
+	FOnLobbyFieldChanged OnAnyLobbyFieldChanged;
+
+	// 이미 존재하는 상성용 플레이어 색 (적/플레이어 공용 열거형을 재사용)
+	// - 로비에서 확정된 SelectedColor를 EEnemyColor로 매핑해 서버가 채운 뒤 복제
+	// - 인게임 로직/이펙트/크로스헤어 등에서 참조
+	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, ReplicatedUsing = OnRep_PlayerColor, Category = "Player")
+	EEnemyColor PlayerColor = EEnemyColor::Red;
+
+		
+	///
+
+
+
 protected:
 	UFUNCTION()
 	void OnRep_PlayerColor();
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
+
+
+	/// 로비 관련 수정
+
+	UFUNCTION() void OnRep_AppearanceId();
+	UFUNCTION() void OnRep_PreviewColor();
+	UFUNCTION() void OnRep_SelectedColor();
+	UFUNCTION() void OnRep_SubskillId();
+	UFUNCTION() void OnRep_Ready();
+
+	UFUNCTION(BlueprintCallable, Category = "Lobby")
+	void NotifyAnyLobbyFieldChanged(); // 로비 즉시 반영용 이벤트 트리거
+
+
+	///
 };

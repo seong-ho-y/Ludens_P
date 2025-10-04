@@ -4,7 +4,7 @@
 #include "WBP_Lobby.h"
 #include "LobbyPreviewRig.h"
 #include "LobbyPlayerController.h"
-#include "LobbyPlayerState.h"
+#include "PlayerState_Real.h" // 수정 완료
 #include "LobbyGameState.h"  
 #include "Components/Button.h"
 #include "Components/Border.h"
@@ -45,7 +45,7 @@ void UWBP_Lobby::BP_SetSubskill(int32 Id)
 void UWBP_Lobby::BP_ReadyOn()
 {
     if (auto PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
-        if (auto PS = PC->GetPlayerState<ALobbyPlayerState>())
+        if (auto PS = PC->GetPlayerState<APlayerState_Real>())  
             PC->ServerReadyOn(PS->PreviewColor);
 }
 void UWBP_Lobby::BP_ReadyOff()
@@ -85,7 +85,7 @@ void UWBP_Lobby::NativeConstruct()
     // PlayerState 델리게이트 연결 (기존)
     if (auto PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
     {
-        PS_Cached = PC->GetPlayerState<ALobbyPlayerState>();
+        PS_Cached = PC->GetPlayerState<APlayerState_Real>();
         if (PS_Cached)
         {
             PS_Cached->OnAnyLobbyFieldChanged.AddDynamic(this, &UWBP_Lobby::OnPSChanged);
@@ -293,7 +293,7 @@ void UWBP_Lobby::TryBindPS()
 
     if (auto PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
     {
-        if (auto PS = PC->GetPlayerState<ALobbyPlayerState>())
+        if (auto PS = PC->GetPlayerState<APlayerState_Real>())
         {
             PS_Cached = PS;
             PS_Cached->OnAnyLobbyFieldChanged.AddDynamic(this, &UWBP_Lobby::OnPSChanged);
@@ -469,7 +469,7 @@ void UWBP_Lobby::OnGSReadyCountChanged(int32 /*NewReadyCount*/)
 }
 
 // ---- [Other mini slots] helpers ----
-static FLinearColor ColorForSlot(const ALobbyPlayerState* PS)
+static FLinearColor ColorForSlot(const APlayerState_Real* PS)
 {
     if (!PS) return FLinearColor(0, 0, 0, 0);
     const ELobbyColor C = PS->bReady ? PS->SelectedColor : PS->PreviewColor;
@@ -490,34 +490,34 @@ void UWBP_Lobby::RefreshOtherSlots()
     if (!GS || !PC) return;
 
     // 내 PS
-    auto* SelfPS = PC->GetPlayerState<ALobbyPlayerState>();
+    auto* SelfPS = PC->GetPlayerState<APlayerState_Real>();
 
     // 타인 목록(최대 2명)
-    TArray<ALobbyPlayerState*> Others;
+    TArray<APlayerState_Real*> Others;
     Others.Reserve(2);
     for (APlayerState* Base : GS->PlayerArray)
     {
-        if (auto* LPS = Cast<ALobbyPlayerState>(Base))
+        if (auto* LPS = Cast<APlayerState_Real>(Base))
         {
             if (LPS != SelfPS) Others.Add(LPS);
         }
     }
 
     // 좌/우 고정용 정렬(작은 PlayerId가 왼쪽)
-    Others.Sort([](const ALobbyPlayerState& A, const ALobbyPlayerState& B)
+    Others.Sort([](const APlayerState_Real& A, const APlayerState_Real& B)
         {
             return A.GetPlayerId() < B.GetPlayerId();
         });
 
     // 색/READY 라벨 반영(기존 동작 유지)
-    auto FillMini = [](UBorder* Swatch, UTextBlock* TxtReady, const ALobbyPlayerState* PS)
+    auto FillMini = [](UBorder* Swatch, UTextBlock* TxtReady, const APlayerState_Real* PS)
         {
             if (Swatch)   Swatch->SetBrushColor(ColorForSlot(PS));
             if (TxtReady) TxtReady->SetText((PS && PS->bReady) ? FText::FromString(TEXT("READY")) : FText());
         };
 
-    ALobbyPlayerState* L = Others.IsValidIndex(0) ? Others[0] : nullptr;
-    ALobbyPlayerState* R = Others.IsValidIndex(1) ? Others[1] : nullptr;
+    APlayerState_Real* L = Others.IsValidIndex(0) ? Others[0] : nullptr;
+    APlayerState_Real* R = Others.IsValidIndex(1) ? Others[1] : nullptr;
 
     // 색/READY 라벨은 기존처럼
     FillMini(Swatch_Color_OtherL, Txt_Ready_OtherL, L);
@@ -535,11 +535,11 @@ void UWBP_Lobby::RefreshOtherSlots()
 
 void UWBP_Lobby::RebindOtherPSDelegates()
 {
-    auto* GS = GetWorld() ? GetWorld()->GetGameState<ALobbyGameState>() : nullptr;
+    auto* GS = GetWorld() ? GetWorld()->GetGameState<APlayerState_Real>() : nullptr;
     auto* PC = GetOwningPlayer();
     if (!GS || !PC) return;
 
-    auto* SelfPS = PC->GetPlayerState<ALobbyPlayerState>();
+    auto* SelfPS = PC->GetPlayerState<APlayerState_Real>();
 
     // 기존 바인딩 해제
     for (auto& Weak : BoundOtherPS)
@@ -549,7 +549,7 @@ void UWBP_Lobby::RebindOtherPSDelegates()
 
     // 새 바인딩
     for (APlayerState* Base : GS->PlayerArray)
-        if (auto* LPS = Cast<ALobbyPlayerState>(Base))
+        if (auto* LPS = Cast<APlayerState_Real>(Base))
             if (LPS != SelfPS)
             {
                 LPS->OnAnyLobbyFieldChanged.AddDynamic(this, &UWBP_Lobby::OnAnyPSChanged);
