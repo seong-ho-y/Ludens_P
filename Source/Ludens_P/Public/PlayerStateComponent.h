@@ -19,8 +19,9 @@ class LUDENS_P_API UPlayerStateComponent : public UActorComponent
 public:
 	UPROPERTY()
 	class ACharacter* Character;
+	UPROPERTY()
+	class APlayerState_Real* PSR;
 	
-public:	
 	// Sets default values for this component's properties
 	UPlayerStateComponent();
 
@@ -44,6 +45,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement", ReplicatedUsing=OnRep_MoveSpeed)
 	float MoveSpeed;
 private:
+	bool bPSRInitialized = false; // PSR 할당 되었는지 확인
 	float CalculateMoveSpeed; // 능력 강화시 계산용
 	float KnockedMoveSpeed = 100.0f;
 	float DeadMoveSpeed = 0.f;
@@ -90,6 +92,7 @@ public:
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+	void TickComponent(float DeltaTime, enum ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 	
 	UFUNCTION()
 	void OnRep_PlayerColor();
