@@ -15,9 +15,9 @@
 DEFINE_LOG_CATEGORY_STATIC(LogLobbyPC, Log, All);
 
 // ===== ≥ª∫Œ «Ô∆€ =====
-ALobbyPlayerState* ALobbyPlayerController::GetLobbyPS() const
+APlayerState_Real* ALobbyPlayerController::GetLobbyPS() const
 {
-    return GetPlayerState<ALobbyPlayerState>();
+    return GetPlayerState<APlayerState_Real>();
 }
 
 ALobbyGameState* ALobbyPlayerController::GetLobbyGS() const

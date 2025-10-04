@@ -535,7 +535,7 @@ void UWBP_Lobby::RefreshOtherSlots()
 
 void UWBP_Lobby::RebindOtherPSDelegates()
 {
-    auto* GS = GetWorld() ? GetWorld()->GetGameState<APlayerState_Real>() : nullptr;
+    auto* GS = GetWorld() ? GetWorld()->GetGameState<ALobbyGameState>() : nullptr;
     auto* PC = GetOwningPlayer();
     if (!GS || !PC) return;
 

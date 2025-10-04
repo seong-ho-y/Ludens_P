@@ -93,11 +93,8 @@ public:
 	UPROPERTY(BlueprintAssignable, Category = "Lobby")
 	FOnLobbyFieldChanged OnAnyLobbyFieldChanged;
 
-	// 이미 존재하는 상성용 플레이어 색 (적/플레이어 공용 열거형을 재사용)
-	// - 로비에서 확정된 SelectedColor를 EEnemyColor로 매핑해 서버가 채운 뒤 복제
-	// - 인게임 로직/이펙트/크로스헤어 등에서 참조
-	UPROPERTY(VisibleInstanceOnly, BlueprintReadOnly, ReplicatedUsing = OnRep_PlayerColor, Category = "Player")
-	EEnemyColor PlayerColor = EEnemyColor::Red;
+	UFUNCTION(BlueprintCallable, Category = "Lobby")
+	void NotifyAnyLobbyFieldChanged(); // 로비 즉시 반영용 이벤트 트리거
 
 		
 	///
@@ -107,7 +104,7 @@ public:
 protected:
 	UFUNCTION()
 	void OnRep_PlayerColor();
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
 
 	/// 로비 관련 수정
@@ -117,9 +114,6 @@ protected:
 	UFUNCTION() void OnRep_SelectedColor();
 	UFUNCTION() void OnRep_SubskillId();
 	UFUNCTION() void OnRep_Ready();
-
-	UFUNCTION(BlueprintCallable, Category = "Lobby")
-	void NotifyAnyLobbyFieldChanged(); // 로비 즉시 반영용 이벤트 트리거
 
 
 	///
