@@ -396,7 +396,7 @@ void ALudens_PCharacter::Interact(const FInputActionValue& Value) // 앞에 있�
 	
 
 	// 맞은 액터가 어떤 컴포넌트를 가지고 있는지 검사
-	if (bHit && Hit.GetActor()->FindComponentByClass<UPlayerStateComponent>())
+	if (bHit && Hit.GetActor() && Hit.GetActor()->FindComponentByClass<UPlayerStateComponent>())
 	{
 		Revive(Value);
 	}
