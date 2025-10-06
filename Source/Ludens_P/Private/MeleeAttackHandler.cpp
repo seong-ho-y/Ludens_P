@@ -7,6 +7,7 @@
 #include "JellooComponent.h"
 #include "GameFramework/Character.h"
 #include "Ludens_P/Ludens_PCharacter.h"
+#include "Ludens_P/ShieldComponent.h"
 
 void UMeleeAttackHandler::BeginPlay()
 {
@@ -27,6 +28,7 @@ void UMeleeAttackHandler::HandleMeleeAttack(float damage)
 	
 	if (damage) // 나중에 적이 흰색인 경우로 제한
 	{
+		UE_LOG(LogTemp, Log, TEXT("damage 존재 : %f"), damage)
 		ALudens_PCharacter* LudensCharacter = Cast<ALudens_PCharacter>(OwnerCharacter);
 		if (!LudensCharacter)
 		{
@@ -56,12 +58,17 @@ void UMeleeAttackHandler::HandleMeleeAttack(float damage)
 		bool bHit = OwnerCharacter->GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Pawn, Params);
 
 		// 6. CreatureCombatComponent가 있으면 데미지 적용
-		if (bHit && Hit.GetActor())
+		AActor* Target = Hit.GetActor();
+		if (bHit && Target)
 		{
+			UE_LOG(LogTemp, Warning, TEXT("CCC found, line traced"));
 			// 맞은 액터가 CCC를 가지고 있는지 검사
-			if (UCreatureCombatComponent* CombatComp = Hit.GetActor()->FindComponentByClass<UCreatureCombatComponent>())
+			if (UCreatureCombatComponent* CombatComp = Target->FindComponentByClass<UCreatureCombatComponent>())
 			{
-				CombatComp->TakeDamage(damage);
+				if (UShieldComponent* ShieldComp = Target->GetComponentByClass<UShieldComponent>())
+				{
+					if (ShieldComp->AreAllShieldsBroken()) CombatComp->TakeDamage(damage);
+				}
 			}
 		}
 	}
