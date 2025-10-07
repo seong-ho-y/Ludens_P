@@ -42,7 +42,16 @@ void ALudens_PProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor
 	{
 		return;
 	}
+	
+	// 안전하게 캐스팅하여 할당
+	PSR = Cast<APlayerState_Real>(Cast<ACharacter>(GetOwner())->GetPlayerState());
 
+	if (!PSR)
+	{
+		UE_LOG(LogTemp, Error, TEXT("[PlayerStateComponent] PSR is nullptr! in Projectile"));
+		return;
+	}
+	
 	// 1. 부딪힌 대상이 적인지(AEnemyBase를 상속받았는지) 확인합니다.
 	AEnemyBase* HitEnemy = Cast<AEnemyBase>(OtherActor);
 	if (HitEnemy)

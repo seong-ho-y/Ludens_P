@@ -18,6 +18,7 @@
 #include "WeaponAttackHandler.h"
 #include "CreatureCombatComponent.h"
 #include "JellooComponent.h"
+#include "PlayerState_Real.h"
 #include "ReviveComponent.h"
 
 #include "Engine/LocalPlayer.h"
@@ -51,8 +52,7 @@ ALudens_PCharacter::ALudens_PCharacter()
 
 	RewardSystem = CreateDefaultSubobject<URewardSystemComponent>(TEXT("RewardSystem"));
 	
-	JumpCount = 0; // Default 점프 수 설정
-	GetCharacterMovement()->JumpZVelocity = 600.f;
+	// GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->GravityScale = 2.0f;
 	GetCharacterMovement()->AirControl = 1.0f;
 	OriginalGroundFriction = 8.0f;
@@ -64,16 +64,12 @@ ALudens_PCharacter::ALudens_PCharacter()
 
 	// 이동 컴포넌트 복제 설정
 	GetCharacterMovement()->SetIsReplicated(true);
-
-	// 초기 탄알 수 설정
-	CurrentAmmo = MaxAmmo;
 }
 
 void ALudens_PCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
-	CurrentDashCount = MaxDashCount; // 게임 시작 시 최대 대쉬 충전
 
 	// 로컬 플레이어 컨트롤러 확인
 	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
@@ -106,8 +102,33 @@ void ALudens_PCharacter::BeginPlay()
 	else if (!PlayerStateComponent) UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerStateComponent is null!"))
 	
 	else if (!ReviveComponent) UE_LOG(LogTemplateCharacter, Error, TEXT("ReviveComponent is null!"));
+}
+
+void ALudens_PCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
 	
-	
+	// PlayerState가 아직 할당되지 않았을 때만 할당 시도
+	if (!bPSRInitialized)
+	{
+		PSR = Cast<APlayerState_Real>(GetPlayerState());
+		if (PSR) // 115 번째 줄
+		{
+			CurrentDashCount = PSR->MaxDashCount;
+			CurrentAmmo = PSR->MaxAmmo;
+			MaxSavedAmmo = PSR->MaxSavedAmmo;
+			SavedAmmo = MaxSavedAmmo / 2;
+			MaxAmmo = PSR->MaxAmmo;
+			CurrentAmmo = MaxAmmo;
+
+			bPSRInitialized = true;  // 한 번만 실행되도록
+			UE_LOG(LogTemplateCharacter, Log, TEXT("PSR Completed in Ludens_PCharacter!"))
+		}
+	}
+	// 다른 Tick 로직에서도 PSR을 접근하는 경우
+	if (!PSR) return;
+    
+	// 이후 안전하게 PSR 멤버 사용 가능
 }
 
 void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -309,7 +330,7 @@ void ALudens_PCharacter::Dash(const FInputActionValue& Value)
 				DashRechargeTimerHandle,
 				this,
 				&ALudens_PCharacter::RechargeDash,
-				DashRechargeTime,
+				PSR->DashRechargeTime,
 				true
 			);
 		}
@@ -323,7 +344,7 @@ void ALudens_PCharacter::Server_Dash_Implementation()
 
 void ALudens_PCharacter::RechargeDash()
 {
-	if (GetLocalRole() == ROLE_Authority && CurrentDashCount < MaxDashCount)
+	if (GetLocalRole() == ROLE_Authority && CurrentDashCount < PSR->MaxDashCount)
 	{
 		CurrentDashCount++;
 	}
@@ -373,22 +394,15 @@ void ALudens_PCharacter::Interact(const FInputActionValue& Value) // 앞에 있�
 	// 라인 트레이스를 하여 무언가에 맞았는지를 나타냄
 	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Pawn, Params);
 	
-	if (bHit && Hit.GetActor())
+
+	// 맞은 액터가 어떤 컴포넌트를 가지고 있는지 검사
+	if (bHit && Hit.GetActor()->FindComponentByClass<UPlayerStateComponent>())
 	{
-		// 맞은 액터가 어떤 컴포넌트를 가지고 있는지 검사
-		if (Hit.GetActor()->FindComponentByClass<UCreatureCombatComponent>())
-		{
-			MeleeAttack(Value);
-		}
-		else if (Hit.GetActor()->FindComponentByClass<UPlayerStateComponent>())
-		{
-			Revive(Value);
-		}
+		Revive(Value);
 	}
-	else if (!Hit.GetActor())
+	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("Hit.GetActor() is null!"));
-		return;
+		MeleeAttack(Value);
 	}
 }
 
@@ -415,7 +429,7 @@ void ALudens_PCharacter::Fire(const FInputActionValue& Value)
 		Server_Fire(Value);
 		return;
 	}
-	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked) return;
+	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked || WeaponComponent->bIsWeaponAttacking || bIsReloading) return;
 	if (CurrentAmmo > 0)
 	{
 		// 서버: 실제 발사 처리
@@ -437,7 +451,6 @@ void ALudens_PCharacter::Reload(const FInputActionValue& Value)
 	{
 		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
 	}
-	
 
 	if (GetLocalRole() < ROLE_Authority)
 	{
@@ -450,6 +463,9 @@ void ALudens_PCharacter::Reload(const FInputActionValue& Value)
 
 void ALudens_PCharacter::HandleReload()
 {
+	if (bIsReloading) return; // 이미 재장전 중이면 리턴
+	
+	bIsReloading = true;
 	if (CurrentAmmo != MaxAmmo)
 	{
 		if (SavedAmmo <= 0)
@@ -467,6 +483,13 @@ void ALudens_PCharacter::HandleReload()
 			CurrentAmmo = MaxAmmo;
 		}
 	}
+
+	GetWorld()->GetTimerManager().SetTimer(ReloadTimerHandle, this, &ALudens_PCharacter::EndReload, ReloadTime, false);
+}
+
+void ALudens_PCharacter::EndReload()
+{
+	bIsReloading = false;
 }
 
 void ALudens_PCharacter::OnRep_SavedAmmo()
@@ -479,7 +502,7 @@ void ALudens_PCharacter::OnRep_CurrentAmmo()
 	// 재장전 시 변경되는 UI, 사운드 등
 }
 
-int16 ALudens_PCharacter::GetCurrentAmmo() const // PlayerAttackComponent에서 현재 탄알 수 확인용
+int ALudens_PCharacter::GetCurrentAmmo() const // PlayerAttackComponent에서 현재 탄알 수 확인용
 {
 	return CurrentAmmo;
 }
@@ -536,11 +559,6 @@ void ALudens_PCharacter::Absorb(const FInputActionValue& Value)
 		{
 			WeaponComponent->HandleAbsorb();
 		}
-	}
-	else if (!Hit.GetActor())
-	{
-		UE_LOG(LogTemp, Error, TEXT("Hit.GetActor() is null!"));
-		return;
 	}
 }
 

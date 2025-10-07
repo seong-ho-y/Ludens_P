@@ -1,11 +1,11 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "PlayerStateComponent.h"
-
-#include "SWarningOrErrorBox.h"
+#include "PlayerState_Real.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
+#include "SWarningOrErrorBox.h"
 #include "DSP/Delay.h"
 #include "Net/UnrealNetwork.h"
 
@@ -23,21 +23,47 @@ void UPlayerStateComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (GetOwner()->HasAuthority())
-	{
-		CurrentHP = MaxHP;
-		CurrentShield = MaxShield;
-		MoveSpeed = 600.0f; // 기본 이동 속도 설정
-		CalculateMoveSpeed = MoveSpeed;
-	}
 	Character = Cast<ACharacter>(GetOwner());
-	if (Character)
-	{
-		// 이 컴포넌트가 부착된 캐릭터의 초기 이동 속도를 설정합니다.
-		// OnRep_MoveSpeed가 초기값에 대해 호출될 수 있으므로 클라이언트에서도 필요합니다.
-		Character->GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
-	}
 }
+
+void UPlayerStateComponent::TickComponent(float DeltaTime, enum ELevelTick TickType,
+	FActorComponentTickFunction* ThisTickFunction)
+{
+	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+
+	if (!bPSRInitialized)
+	{
+		AActor* Owner = GetOwner();
+		if (!Owner) return;
+
+		APawn* Pawn = Cast<APawn>(Owner);
+		if (!Pawn) return;
+
+		PSR = Cast<APlayerState_Real>(Pawn->GetPlayerState());
+		
+		if (PSR)
+		{
+			CurrentHP = PSR->MaxHP;
+			CurrentShield = PSR->MaxShield;
+			MoveSpeed = PSR->MoveSpeed;
+			CalculateMoveSpeed = MoveSpeed;
+
+			if (Character)
+			{
+				// 이 컴포넌트가 부착된 캐릭터의 초기 이동 속도를 설정합니다.
+				// OnRep_MoveSpeed가 초기값에 대해 호출될 수 있으므로 클라이언트에서도 필요합니다.
+				Character->GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
+			}
+			
+			bPSRInitialized = true;  // 한 번만 실행되도록
+		}
+	}
+	// 다른 Tick 로직에서도 PSR을 접근하는 경우
+	if (!PSR) return;
+    
+	// 이후 안전하게 PSR 멤버 사용 가능
+}
+
 
 void UPlayerStateComponent::OnRep_PlayerColor()
 {
@@ -84,7 +110,7 @@ void UPlayerStateComponent::TakeDamage(float Amount)
 void UPlayerStateComponent::EnableShieldRegen()
 {
 	bCanRegenShield = true;
-	GetWorld()->GetTimerManager().SetTimer(RegenShieldTimer, this, &UPlayerStateComponent::RegenShieldHandle, 0.5f, true);
+	GetWorld()->GetTimerManager().SetTimer(RegenShieldTimer, this, &UPlayerStateComponent::RegenShieldHandle, PSR->ShieldRegenSpeed, true);
 }
 
 void UPlayerStateComponent::RegenShieldHandle()

@@ -17,7 +17,9 @@
 #include "HitFeedbackComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "StealthComponent.h"
+#include "BehaviorTree/BlackboardComponent.h"
 #include "Blueprint/UserWidget.h"
+#include "Kismet/KismetMathLibrary.h"
 
 AEnemyBase::AEnemyBase()
 {
