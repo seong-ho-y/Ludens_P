@@ -3,6 +3,8 @@
 #include "Ludens_PGameMode.h"
 #include "EnemyPoolManager.h"
 #include "Ludens_PPlayerController.h"
+#include "PlayerState_Real.h"
+#include "Ludens_PCharacter.h"
 #include "PlayerStateComponent.h"
 #include "RewardSystemComponent.h"
 #include "GameFramework/GameStateBase.h"
@@ -35,7 +37,7 @@ ALudens_PGameMode::ALudens_PGameMode()
 	ColorRotation.Add(EEnemyColor::Blue);
 	//PlayerController 할당을 위해서 c++ 클래스를 할당해놓음
 	PlayerControllerClass = ALudens_PPlayerController::StaticClass();
-
+	PlayerStateClass = APlayerState_Real::StaticClass(); // 추가한 PlayerState
 	bUseSeamlessTravel = true;
 }
 void ALudens_PGameMode::BeginPlay()
@@ -77,8 +79,16 @@ void ALudens_PGameMode::HandleStartingNewPlayer_Implementation(APlayerController
 {
 	Super::HandleStartingNewPlayer_Implementation(NewPlayer); // Super 호출도 _Implementation으로 변경
 
+	// (디버그) 현재 GM/PC/PS/PAWN이 무엇인지 1회 찍어 확인
+	UE_LOG(LogTemp, Log, TEXT("[InGameGM] GM=%s, PC=%s, Pawn=%s, PS=%s"),
+		*GetClass()->GetName(),
+		*GetNameSafe(PlayerControllerClass),
+		*GetNameSafe(DefaultPawnClass),
+		*GetNameSafe(PlayerStateClass));
+
 	// 이제 이 안에서 AssignColorToPlayer를 호출하면 됩니다.
 	AssignColorToPlayer(NewPlayer);
+
 }
 
 // ✨ 새로 추가된 함수의 전체 내용입니다.
