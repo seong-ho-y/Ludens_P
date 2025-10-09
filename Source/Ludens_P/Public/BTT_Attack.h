@@ -34,7 +34,4 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Blackboard")
 	UAnimMontage* AttackAnim;
 
-	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_PlayerAttackEffects(UAnimMontage* AttackAnim, UNiagaraSystem* AttackVFX);
-	
 };
