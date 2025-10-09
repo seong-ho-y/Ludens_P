@@ -20,6 +20,7 @@
 #include "JellooComponent.h"
 #include "PlayerState_Real.h"
 #include "ReviveComponent.h"
+#include "LudensAppearanceData.h"
 
 #include "Engine/LocalPlayer.h"
 #include "Net/UnrealNetwork.h"
@@ -72,15 +73,22 @@ void ALudens_PCharacter::BeginPlay()
 	Super::BeginPlay();
 
 	// 로컬 플레이어 컨트롤러 확인
-	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
-		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = 
-			ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		if (ULocalPlayer* LP = PC->GetLocalPlayer())
 		{
-			// 기본 입력 매핑 컨텍스트 추가
-			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+			if (UEnhancedInputLocalPlayerSubsystem* Subsys = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(LP))
+			{
+				if (DefaultMappingContext)
+				{
+					Subsys->AddMappingContext(DefaultMappingContext, 0);
+				}
+				else
+				{
+					UE_LOG(LogTemplateCharacter, Error, TEXT("❌ DefaultMappingContext is NULL. Set it on BP_FirstPersonPlayerController or Character BP."));
+				}
+			}
 		}
-	}
 
 	//컴포넌트 할당
 	PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
@@ -102,6 +110,12 @@ void ALudens_PCharacter::BeginPlay()
 	else if (!PlayerStateComponent) UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerStateComponent is null!"))
 	
 	else if (!ReviveComponent) UE_LOG(LogTemplateCharacter, Error, TEXT("ReviveComponent is null!"));
+
+
+	// 로비 UI 모드 잔상이 있으면 입력이 막힐 수 있음 → 게임 전용으로 전환
+	PC->SetInputMode(FInputModeGameOnly{});
+	PC->bShowMouseCursor = false;
+
 }
 
 void ALudens_PCharacter::Tick(float DeltaTime)
@@ -120,6 +134,32 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 			SavedAmmo = MaxSavedAmmo / 2;
 			MaxAmmo = PSR->MaxAmmo;
 			CurrentAmmo = MaxAmmo;
+
+			// 외형/색 1회 적용
+			if (!bCosmeticsApplied && AppearanceDB && Mesh1P)
+			{
+				// 로비에서 선택한 외형/색을 1회 반영
+
+				// 변경: EEnemyColor → ELobbyColor 매핑 1줄 추가
+				auto ToLobbyColor = [](EEnemyColor C)->ELobbyColor
+					{
+						switch (C)
+						{
+						case EEnemyColor::Red:   return ELobbyColor::Red;
+						case EEnemyColor::Green: return ELobbyColor::Green;
+						case EEnemyColor::Blue:  return ELobbyColor::Blue;
+						default:                 return ELobbyColor::Red;
+						}
+					};
+
+				AppearanceDB->ApplyTo(Mesh1P, PSR->AppearanceId, ToLobbyColor(PSR->PlayerColor));
+
+
+				bCosmeticsApplied = true;
+			}
+
+			// 스킬 선택값 캐시(스킬 자체 로직은 아직 미구현이므로 보관만)
+			CachedSubskillId = PSR->SubskillId;
 
 			bPSRInitialized = true;  // 한 번만 실행되도록
 			UE_LOG(LogTemplateCharacter, Log, TEXT("PSR Completed in Ludens_PCharacter!"))

@@ -233,5 +233,10 @@ void UPlayerStateComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UPlayerStateComponent, IsKnocked);
 	DOREPLIFETIME(UPlayerStateComponent, IsDead);
 	DOREPLIFETIME(UPlayerStateComponent, MoveSpeed);
+
+	// 상성 색 복제 추가
+
+	DOREPLIFETIME(UPlayerStateComponent, PlayerColor);
+	DOREPLIFETIME(UPlayerStateComponent, bCanRegenShield); // 경고 해소
 }
 

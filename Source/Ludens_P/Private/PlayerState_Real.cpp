@@ -66,6 +66,35 @@ void APlayerState_Real::NotifyAnyLobbyFieldChanged()
 	OnAnyLobbyFieldChanged.Broadcast(); // [PS-UNIFY] 서버에서 수동 트리거
 }
 
+// PlayerState_Real.cpp
+void APlayerState_Real::CopyProperties(APlayerState* PS)
+{
+	Super::CopyProperties(PS);
+	if (auto* R = Cast<APlayerState_Real>(PS))
+	{
+		// 인게임에 필요한 최소 선택값만 보존
+		R->PlayerColor = PlayerColor;
+		R->AppearanceId = AppearanceId;
+		R->SubskillId = SubskillId;
+	}
+}
+
+void APlayerState_Real::OverrideWith(APlayerState* PS)
+{
+	Super::OverrideWith(PS);
+	if (auto* R = Cast<APlayerState_Real>(PS))
+	{
+		PlayerColor = R->PlayerColor;
+		AppearanceId = R->AppearanceId;
+		SubskillId = R->SubskillId;
+	}
+}
+
+void APlayerState_Real::SeamlessTravelTo(APlayerState* NewPS)
+{
+	Super::SeamlessTravelTo(NewPS);
+	CopyProperties(NewPS); // 보수적으로 한 번 더 보장
+}
 
 ///
 
