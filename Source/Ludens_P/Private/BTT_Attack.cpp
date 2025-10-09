@@ -154,6 +154,4 @@ void UBTT_Attack::OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeM
 	}
 }
 
-void UBTT_Attack::Multicast_PlayerAttackEffects_Implementation(UAnimMontage* AttackAnim, UNiagaraSystem* AttackVFX)
-{
-}
+
