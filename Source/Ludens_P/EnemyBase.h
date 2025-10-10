@@ -10,6 +10,9 @@
 #include "BehaviorTree/BehaviorTreeTypes.h"
 #include "EnemyBase.generated.h"
 
+struct FEnemySpawnProfile;
+class ALudens_PGameMode;
+class AEnemyPoolManager;
 class UBlackboardComponent;
 class UEnemyDescriptor;
 class UShieldComponent;
@@ -22,7 +25,6 @@ class LUDENS_P_API AEnemyBase : public ACharacter, public IDeathHandlerInterface
 	GENERATED_BODY()
 public:
 	virtual void Tick(float DeltaTime) override;
-	void RotateToPlayer(float DeltaSeconds);
 
 	virtual void EngageStealth_Implementation() override;
 	virtual void DisengageStealth_Implementation() override;
@@ -55,8 +57,11 @@ public:
 	void InitializeMID();
 protected:
 	virtual void BeginPlay() override;
+public:
+	void InitializeEnemy(const FEnemySpawnProfile& Profile);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
+
 
 	UFUNCTION()
 	void OnRep_ColorType();
@@ -167,4 +172,6 @@ private:
 	// ✨ VFX 재생을 모든 클라이언트에게 전파하기 위한 Multicast 함수
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlaySpawnVFX(FVector_NetQuantize Location, FRotator Rotation);
+
+	FLinearColor GetColorValue(EEnemyColor Color) const;
 };

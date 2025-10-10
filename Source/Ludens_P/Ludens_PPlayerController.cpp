@@ -35,22 +35,16 @@ void ALudens_PPlayerController::SetupInputComponent()
 void ALudens_PPlayerController::Server_RequestSpawnEnemy_Implementation()
 {
 	// 이제 이 코드는 100% 서버에서 실행됩니다.
-    UE_LOG(LogTemp,Log,TEXT("Server_Request 호출 : PlayerController"));
-	// 1. 서버 월드에 있는 PoolManager를 찾습니다.
-	AEnemyPoolManager* PoolManager = Cast<AEnemyPoolManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AEnemyPoolManager::StaticClass()));
-	if (PoolManager)
-	{
-		// 2. 서버의 가득 찬 창고에서 스폰을 호출합니다.
-		FVector SpawnLoc = FVector(300.f, 300.f, 158.f);
-		FRotator SpawnRot = FRotator::ZeroRotator;
+	UE_LOG(LogTemp, Log, TEXT("Server_Request 호출 : PlayerController"));
 
-		PoolManager->SpawnEnemy(ShooterEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Black);
-		PoolManager->SpawnEnemy(WalkerEnemyBPClass, SpawnLoc+FVector(50,0,0), SpawnRot, EEnemyColor::Magenta);
-		PoolManager->SpawnEnemy(TankerEnemyBPClass, SpawnLoc+FVector(50,0,0), SpawnRot, EEnemyColor::Cyan);
-		PoolManager->SpawnEnemy(RunnerEnemyBPClass, SpawnLoc+FVector(50,0,0), SpawnRot, EEnemyColor::Red);
-		PoolManager->SpawnEnemy(SniperEnemyBPClass, SpawnLoc+FVector(50,0,0), SpawnRot, EEnemyColor::Green);
-		PoolManager->SpawnEnemy(ExploEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Blue);
-		PoolManager->SpawnEnemy(StealthEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Yellow);
-		PoolManager->SpawnEnemy(MagicEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Black);
+	// GameMode의 메서드 호출
+	// GetAuthGameMode<T>()는 서버 월드의 GameMode를 T타입으로 안전하게 가져옵니다.
+	ALudens_PGameMode* GM = GetWorld()->GetAuthGameMode<ALudens_PGameMode>();
+
+	// GameMode를 성공적으로 가져왔는지 항상 확인합니다.
+	if (GM)
+	{
+		// GM 스폰함수 호출
+		GM->StartSpawningEnemies(); 
 	}
 }

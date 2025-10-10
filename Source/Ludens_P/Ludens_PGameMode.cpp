@@ -9,8 +9,8 @@
 #include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
-#include "WorldPartition/ContentBundle/ContentBundleLog.h"
 #include "EnemySpawnPoint.h"
+#include "WorldPartition/ContentBundle/ContentBundleLog.h"
 
 class URewardSystemComponent;
 class UPlayerStateComponent;
@@ -131,39 +131,77 @@ void ALudens_PGameMode::StartSpawningEnemies()
 
 	// 1. 월드에 배치된 모든 스폰 포인트를 찾습니다.
 	TArray<AActor*> SpawnPointActors;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABP_EnemySpawnPoint::StaticClass(), SpawnPointActors);
+	// 2. BP_EnemySpawnPoint 대신, 그것의 C++ 부모 클래스인 AEnemySpawnPoint를 찾습니다.
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEnemySpawnPoint::StaticClass(), SpawnPointActors);
 
 	if (SpawnPointActors.Num() == 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("월드에 배치된 스폰 포인트가 하나도 없습니다!"));
+		UE_LOG(LogTemp, Warning, TEXT("월드에 AEnemySpawnPoint 타입의 액터가 하나도 없습니다!"));
 		return;
 	}
     
 	UE_LOG(LogTemp, Log, TEXT("%d개의 스폰 포인트를 찾았습니다. 스폰을 시작합니다."), SpawnPointActors.Num());
 
-	// 2. 스폰할 적의 수를 정합니다. (예: 방의 개수 * 방당 평균 2마리)
-	const int32 NumberOfEnemiesToSpawn = 10; 
-	FRotator SpawnRot = FRotator::ZeroRotator;
+	// 2. 스폰할 적의 수를 정합니다. (예: 10마리)
+	const int32 NumberOfEnemiesToSpawn = 10;
+    
+	// 스폰 가능한 포인트 수보다 많이 스폰하지 않도록 보정합니다.
+	int32 ActualEnemiesToSpawn = FMath::Min(NumberOfEnemiesToSpawn, SpawnPointActors.Num());
+    
+	UE_LOG(LogTemp, Log, TEXT("%d개의 스폰 포인트 중 %d개의 적을 스폰합니다."), SpawnPointActors.Num(), ActualEnemiesToSpawn);
 
-	for (int32 i = 0; i < NumberOfEnemiesToSpawn; ++i)
+	for (int32 i = 0; i < ActualEnemiesToSpawn; ++i)
 	{
 		// 3. 사용 가능한 스폰 포인트 중에서 랜덤하게 하나를 고릅니다.
 		int32 RandomIndex = FMath::RandRange(0, SpawnPointActors.Num() - 1);
 		AActor* SelectedSpawnPoint = SpawnPointActors[RandomIndex];
-		FVector SpawnLoc = SelectedSpawnPoint->GetActorLocation();
+		FVector SpawnLocation = SelectedSpawnPoint->GetActorLocation();
 
-		// 4. 해당 위치에 적을 스폰합니다.
-		// TODO: 어떤 종류의 적을 스폰할지 결정하는 로직 추가
-		PoolManager->SpawnEnemy(WalkerEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Magenta);
-
-		// 5. (선택사항) 한 번 사용한 스폰 포인트는 다시 사용하지 않도록 배열에서 제거합니다.
-		// 이렇게 하면 모든 적이 다른 위치에서 스폰되는 것을 보장할 수 있습니다.
+		// 4. (중요!) 한 번 사용한 스폰 포인트는 목록에서 제거하여 중복 스폰을 방지합니다.
 		SpawnPointActors.RemoveAt(RandomIndex);
 
-		// 만약 더 이상 사용할 스폰 포인트가 없으면 루프를 중단합니다.
-		if (SpawnPointActors.Num() == 0)
-		{
-			break;
-		}
+		// 5. CreateRandomEnemyProfile()을 호출하여 스폰할 적의 정보를 생성합니다.
+		FEnemySpawnProfile ProfileToSpawn = CreateRandomEnemyProfile();
+       
+		// 6. 생성된 프로필과 위치를 사용하여 PoolManager에게 스폰을 요청합니다.
+		PoolManager->SpawnEnemy(ProfileToSpawn, SpawnLocation, FRotator::ZeroRotator);
 	}
+}
+FEnemySpawnProfile ALudens_PGameMode::CreateRandomEnemyProfile()
+{
+	FEnemySpawnProfile Profile;
+
+	// 1. 적 타입 결정: 8개 중에 하나를 공평하게 뽑습니다.
+	if (EnemyBPs.Num() > 0)
+	{
+		int32 RandomIndex = FMath::RandRange(0, EnemyBPs.Num() - 1);
+		Profile.EnemyClass = EnemyBPs[RandomIndex];
+	}
+
+	// 2. 색깔 결정: 확률에 따라 등급을 나눕니다.
+	float ColorRoll = FMath::FRand(); // 0.0 ~ 1.0 사이의 랜덤 값
+	if (ColorRoll < 0.5f) // 50% 확률: 약한 등급 (R, G, B)
+	{
+		Profile.Color = (EEnemyColor)FMath::RandRange(0, 2); // Red, Green, Blue 중 랜덤
+	}
+	else if (ColorRoll < 0.85f) // 35% 확률: 중간 등급 (Y, M, C)
+	{
+		Profile.Color = (EEnemyColor)FMath::RandRange(3, 5); // Yellow, Magenta, Cyan 중 랜덤
+	}
+	else // 15% 확률: 최강 등급 (Black)
+	{
+		Profile.Color = EEnemyColor::Black;
+	}
+
+	// 3. 강화형 결정: 25% 확률로 강화형이 됩니다.
+	if (FMath::FRand() < 0.25f)
+	{
+		Profile.StatDataAsset = EnhancedStatDA;
+	}
+	else
+	{
+		Profile.StatDataAsset = nullptr;
+	}
+
+	return Profile;
 }

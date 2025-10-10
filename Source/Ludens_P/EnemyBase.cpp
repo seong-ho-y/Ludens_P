@@ -5,7 +5,6 @@
 #include "Net/UnrealNetwork.h"
 #include "EnemyDescriptor.h"
 #include "EnemyHealthBarBase.h"
-#include "EnemyPoolManager.h"
 #include "PlayerStateComponent.h"
 #include "ShieldComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -17,10 +16,11 @@
 #include "HitFeedbackComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "StealthComponent.h"
-#include "BehaviorTree/BlackboardComponent.h"
 #include "Blueprint/UserWidget.h"
-#include "EntitySystem/MovieSceneEntitySystemRunner.h"
-#include "Kismet/KismetMathLibrary.h"
+#include "Ludens_PGameMode.h"
+#include "EnemyPoolManager.h"
+
+struct FEnemySpawnProfile;
 
 AEnemyBase::AEnemyBase()
 {
@@ -91,44 +91,11 @@ void AEnemyBase::DisengageStealth_Implementation()
 void AEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
-	/*
-	// 서버에서만 이 테스트를 실행합니다.
-	if (HasAuthority())
-	{
-		
-		// HitFeedbackComponent 클래스의 '설계도 원본(CDO)'을 직접 가져옵니다.
-		UHitFeedbackComponent* DefaultComponent = UHitFeedbackComponent::StaticClass()->GetDefaultObject<UHitFeedbackComponent>();
-        
-		if (DefaultComponent && DefaultComponent->HitVFX)
-		{
-			// CDO에는 HitVFX가 유효하게 할당되어 있을 경우
-			UE_LOG(LogTemp, Warning, TEXT("CDO CHECK: HitVFX is VALID on the Class Default Object."));
-		}
-		else
-		{
-			// CDO에서조차 HitVFX가 nullptr일 경우
-			UE_LOG(LogTemp, Error, TEXT("CDO CHECK: HitVFX is NULL on the Class Default Object!"));
-		}
 
-		// 현재 이 액터 인스턴스가 가진 컴포넌트의 값도 확인합니다.
-		if (HitFeedbackComponent && HitFeedbackComponent->HitVFX)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("INSTANCE CHECK: HitVFX is VALID on this spawned actor instance."));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("INSTANCE CHECK: HitVFX is NULL on this spawned actor instance!"));
-		}
-	}
-	*/
-	
-	// 3. "핵심 보험 코드": 현재 ColorType 값으로 색상을 한번 더 설정합니다.
-	// OnRep이 먼저 실행되어 색 변경을 놓쳤더라도, BeginPlay가 끝나는 시점에
-	// 최종적으로 올바른 색상을 보장해주는 매우 중요한 코드입니다.
-	//SetBodyColor(ColorType);
 	if (CCC)
 	{
 		CCC->OnHealthChanged.AddDynamic(this, &AEnemyBase::OnHealthUpdated);
+		CCC->OnDied.AddDynamic(this, &AEnemyBase::HandleDied);
 	}
 	if (ShieldComponent)
 	{
@@ -138,21 +105,37 @@ void AEnemyBase::BeginPlay()
 	{
 		HealthBarUI = Cast<UEnemyHealthBarBase>(HealthBarWidget->GetUserWidgetObject());
 	}
-	// Descriptor와 CCC가 모두 유효할 때만 초기화 로직을 실행합니다.
-	if (Descriptor && CCC)
-	{
-		// 이동속도 적용
-		GetCharacterMovement()->MaxWalkSpeed = Descriptor->WalkSpeed;
-		// HP 적용
-		CCC->InitStats(Descriptor->MaxHP);
-	}
-	if (CCC)
-	{
-		CCC->OnDied.AddDynamic(this, &AEnemyBase::HandleDied);
-	}
 
 }
 
+void AEnemyBase::InitializeEnemy(const FEnemySpawnProfile& Profile)
+{
+	if (!HasAuthority()) return;
+	if (!Descriptor || !CCC) return;
+	// 1. 기본 스탯을 항상 Descriptor에서 먼저 가져옵니다. (스탯 리셋 효과)
+	float FinalMaxHP = Descriptor->MaxHP;
+	float FinalWalkSpeed = Descriptor->WalkSpeed;
+	float FinalMaxShield = Descriptor->MaxShield;
+
+	// 2. 프로필에 강화형 스탯(StatDataAsset)이 있다면 보정치를 적용합니다.
+	if (Profile.StatDataAsset)
+	{
+		FinalMaxHP *= Profile.StatDataAsset->HealthMultiplier;
+		FinalWalkSpeed *= Profile.StatDataAsset->SpeedMultiplier;
+		FinalMaxShield *= Profile.StatDataAsset->ShieldMultiplier;
+	}
+
+	// 3. 최종 계산된 스탯을 각 컴포넌트에 적용합니다.
+	GetCharacterMovement()->MaxWalkSpeed = FinalWalkSpeed;
+	CCC->InitStats(FinalMaxHP); // CCC의 InitStats가 최대 체력과 현재 체력을 모두 설정해준다고 가정
+	ShieldComponent->DefaultShieldHealth = FinalMaxShield;
+
+	// 4. 색깔 등 외형을 변경합니다.
+	// 2. 색깔에 맞춰 머티리얼을 바꿉니다.
+	// 메시 컴포넌트의 다이내믹 머티리얼 인스턴스를 생성하고,
+	// "BodyColor" 같은 벡터 파라미터의 값을 바꿔주면 됩니다.
+	ChangeColorType(Profile.Color);
+}
 void AEnemyBase::OnHealthUpdated(float NewCurrentHP, float NewMaxHP)
 {
 	// 위젯에 업데이트 명령을 내립니다.
@@ -384,6 +367,30 @@ void AEnemyBase::ActivateMovementAndAI()
 	}
 }
 
+FLinearColor AEnemyBase::GetColorValue(EEnemyColor Color) const
+{
+	switch (Color)
+	{
+	case EEnemyColor::Red:
+		return FLinearColor::Red;
+	case EEnemyColor::Green:
+		return FLinearColor::Green;
+	case EEnemyColor::Blue:
+		return FLinearColor::Blue;
+	case EEnemyColor::Yellow:
+		return FLinearColor::Yellow;
+	case EEnemyColor::Magenta:
+			return FLinearColor(1.0f, 0.0f, 1.0f); // R=1, G=0, B=1
+	case EEnemyColor::Cyan:
+		return FLinearColor(0.0f, 1.0f, 1.0f); // R=0, G=1, B=1
+	case EEnemyColor::Black:
+		return FLinearColor::Black;
+	default:
+		// 혹시 모를 예외 상황을 대비해 기본값(흰색)을 반환합니다.
+			return FLinearColor::White;
+	}
+}
+
 void AEnemyBase::PlayCastMontage_Implementation()
 {
 	if (!HasAuthority()) return;
@@ -603,9 +610,8 @@ void AEnemyBase::HandleDied()
 	}
     
 	// 1. 레벨에 있는 PoolManager를 찾기
-	AEnemyPoolManager* PoolManager = Cast<AEnemyPoolManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AEnemyPoolManager::StaticClass()));
 
-	if (PoolManager)
+	if (AEnemyPoolManager* PoolManager = Cast<AEnemyPoolManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AEnemyPoolManager::StaticClass())))
 	{
 		// 2. 자기 자신을 풀로 반환을 요청
 		PoolManager->ReturnEnemy(this);

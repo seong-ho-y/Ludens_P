@@ -1,5 +1,7 @@
 #include "EnemyPoolManager.h"
 
+#include "Ludens_PGameMode.h"
+
 
 AEnemyPoolManager::AEnemyPoolManager()
 {
@@ -56,43 +58,55 @@ void AEnemyPoolManager::BeginPlay()
 }
 
 // 적 스폰 요청 처리 (서버에서만 실행)
-AEnemyBase* AEnemyPoolManager::SpawnEnemy(TSubclassOf<AEnemyBase> EnemyClass, const FVector& Location, const FRotator& Rotation, EEnemyColor EnemyColor)
+AEnemyBase* AEnemyPoolManager::SpawnEnemy(const FEnemySpawnProfile& Profile, const FVector& Location, const FRotator& Rotation)
 {
-    if (!HasAuthority() || !EnemyClass) return nullptr;
+    if (!HasAuthority() || !Profile.EnemyClass)
+    {
+        return nullptr;
+    }
 
-    // 해당 클래스의 풀이 있는지 확인하고, 없으면 새로 생성
-    FEnemyPool& Pool = EnemyPools.FindOrAdd(EnemyClass);
+    // 해당 클래스의 풀을 찾거나 새로 만듭니다.
+    FEnemyPool& Pool = EnemyPools.FindOrAdd(Profile.EnemyClass);
 
-    // 1. 풀에서 비활성화된 적을 먼저 찾아본다.
+    // 2. 풀에서 재사용 가능한 적을 먼저 찾습니다.
     for (AEnemyBase* Enemy : Pool.PooledEnemies)
     {
-        // 유효하고, 비활성화 상태인 적을 찾았다면 재사용
-        if (Enemy && !Enemy->IsActive())
+        // 유효하고, 비활성화된(숨겨진) 적을 찾았다면 재사용합니다.
+        if (Enemy && Enemy->IsHidden()) // IsHidden()은 액터가 숨겨져 있는지 확인하는 표준 함수입니다.
         {
-            Enemy->Activate(Location, Rotation);
-            Enemy->ChangeColorType(EnemyColor);
-            UE_LOG(LogTemp, Log, TEXT("Reused an enemy from the pool!"));
-            return Enemy; // 찾았으니 즉시 반환
+            // 위치와 회전값을 설정합니다.
+            Enemy->SetActorLocationAndRotation(Location, Rotation);
+            
+            // !! 핵심 !!: 프로필 정보를 넘겨 모든 상태(스탯, 색깔, 강화)를 한번에 초기화합니다.
+            Enemy->InitializeEnemy(Profile);
+            
+            // 액터를 다시 보이게 하고, 충돌과 틱을 활성화합니다.
+            Enemy->SetActorHiddenInGame(false);
+            Enemy->SetActorEnableCollision(true);
+            Enemy->SetActorTickEnabled(true);
+
+            UE_LOG(LogTemp, Log, TEXT("Reused an enemy (%s) from the pool!"), *Profile.EnemyClass->GetName());
+            return Enemy; // 재사용했으니 즉시 반환
         }
     }
 
-    // 2. 여기까지 왔다는 것은 풀에 재사용할 적이 없다는 의미.
-    // 따라서 새로운 적을 생성한다.
-    UE_LOG(LogTemp, Warning, TEXT("No available enemy in pool for %s. Spawning a new one."), *EnemyClass->GetName());
+    // 3. 재사용할 적이 없다면 새로 스폰합니다.
+    UE_LOG(LogTemp, Warning, TEXT("No available enemy in pool for %s. Spawning a new one."), *Profile.EnemyClass->GetName());
 
     FActorSpawnParameters Params;
-    Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+    Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-    AEnemyBase* NewEnemy = GetWorld()->SpawnActor<AEnemyBase>(EnemyClass, Location, Rotation, Params);
-
+    AEnemyBase* NewEnemy = GetWorld()->SpawnActor<AEnemyBase>(Profile.EnemyClass, Location, Rotation, Params);
     if (NewEnemy)
     {
-        Pool.PooledEnemies.Add(NewEnemy); // 새로 생성했으니 풀에 추가
-        NewEnemy->Activate(Location, Rotation); // Activate 함수가 있다면 호출 (없어도 무방)
-        NewEnemy->ChangeColorType(EnemyColor);
+        // 새로 생성한 적을 풀에 추가합니다.
+        Pool.PooledEnemies.Add(NewEnemy);
+        
+        // !! 핵심 !!: 새로 만든 적도 동일한 함수로 상태를 초기화합니다.
+        NewEnemy->InitializeEnemy(Profile);
     }
 
-    return NewEnemy; // 새로 생성한 적을 반환
+    return NewEnemy;
 }
      
 
