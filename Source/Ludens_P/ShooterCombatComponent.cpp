@@ -1,5 +1,7 @@
 #include "ShooterCombatComponent.h"
 #include <cstdarg> // va_list
+
+#include "EnemyBase.h"
 #include "EnemyProjectileWeaponComponent.h"
 
 void UShooterCombatComponent::BeginPlay()
@@ -20,7 +22,12 @@ void UShooterCombatComponent::BeginPlay()
 bool UShooterCombatComponent::TryFire(AActor* Target)
 {
 	if (!CanFire() || !IsValid(Target)) return false;
-	
+
+	if (AEnemyBase* OwnerCharacter = Cast<AEnemyBase>(GetOwner()))
+	{
+		// ✨ 캐릭터에게 슈팅 몽타주를 재생하라고 명령합니다.
+		OwnerCharacter->PlayShootMontage();
+	}
 	BeginBurst(Target); //쏠 수 있으면 BeginBurst 호출
 	return true;
 }

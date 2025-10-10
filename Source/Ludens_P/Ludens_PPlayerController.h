@@ -33,6 +33,8 @@ public:
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<AEnemyBase> WalkerEnemyBPClass;
 	UPROPERTY(EditAnywhere)
+	TSubclassOf<AEnemyBase> ShooterEnemyBPClass;
+	UPROPERTY(EditAnywhere)
 	TSubclassOf<AEnemyBase> TankerEnemyBPClass;
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<AEnemyBase> RunnerEnemyBPClass;

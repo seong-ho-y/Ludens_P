@@ -19,6 +19,7 @@
 #include "StealthComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Blueprint/UserWidget.h"
+#include "EntitySystem/MovieSceneEntitySystemRunner.h"
 #include "Kismet/KismetMathLibrary.h"
 
 AEnemyBase::AEnemyBase()
@@ -198,11 +199,8 @@ void AEnemyBase::Activate(const FVector& Location, const FRotator& Rotation)
 	SetActorHiddenInGame(true);
 	SetActorEnableCollision(false);
 	bIsActiveInPool = true;
-
-	if (SpawnVFX)
-	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), SpawnVFX, Location-FVector(0,0,150), Rotation, FVector(3));
-	}
+	Multicast_PlaySpawnVFX(Location - FVector(0,0,150.f), Rotation);
+	
 	GetWorld()->GetTimerManager().SetTimer(
 		FinalizeSpawnTimerHandle,
 		this,
@@ -386,44 +384,65 @@ void AEnemyBase::ActivateMovementAndAI()
 	}
 }
 
-void AEnemyBase::PlayAttackMontage()
+void AEnemyBase::PlayCastMontage_Implementation()
 {
+	if (!HasAuthority()) return;
 	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-	if (AnimInstance && MeleeAttackMontage)
+	if (AnimInstance && CastMontage)
 	{
-		if (!AnimInstance->Montage_IsPlaying(MeleeAttackMontage))
-		{
-			AnimInstance->Montage_Play(MeleeAttackMontage);
-		}
+		AnimInstance->Montage_Play(CastMontage);
 	}
 }
 
-void AEnemyBase::PlayDashEffects()
+void AEnemyBase::PlayShootMontage_Implementation()
 {
-	// 이 로직은 서버에서만 실행되어야 합니다.
-	if (HasAuthority())
+	if (!HasAuthority()) return;
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && ShootMontage)
 	{
-		// 1. 몽타주 재생 (서버에서 재생하면 애니메이션 상태가 클라이언트로 복제됩니다)
-		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-		if (AnimInstance && DashMontage)
-		{
-			AnimInstance->Montage_Play(DashMontage);
-		}
-
-		// 2. 모든 클라이언트에게 VFX를 재생하라고 명령
-		Multicast_PlayDashVFX();
+		AnimInstance->Montage_Play(ShootMontage);
 	}
 }
 
-void AEnemyBase::Multicast_PlayDashVFX_Implementation()
+void AEnemyBase::Multicast_PlaySpawnVFX_Implementation(FVector_NetQuantize Location, FRotator Rotation)
 {
+	if (SpawnVFX)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), SpawnVFX, Location, Rotation, FVector(3.0f));
+	}
+}
+
+void AEnemyBase::PlayDashEffects_Implementation()
+{
+	// ✨ 이 함수는 서버와 모든 클라이언트에서 직접 실행됩니다.
+    
+	// 1. 몽타주 재생
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && DashMontage)
+	{
+		if (!AnimInstance->IsAnyMontagePlaying())
+		AnimInstance->Montage_Play(DashMontage);
+	}
+
+	// 2. VFX 재생
 	if (DashVFX)
 	{
-		// 각 클라이언트와 서버가 자신의 위치에 VFX를 생성합니다.
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DashVFX, GetActorLocation());
 	}
 }
 
+// '공격' Multicast 함수의 실제 내용
+void AEnemyBase::PlayAttackMontage_Implementation()
+{
+	// ✨ 이 함수도 서버와 모든 클라이언트에서 직접 실행됩니다.
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && MeleeAttackMontage)
+	{
+		if (!AnimInstance->IsAnyMontagePlaying())
+		AnimInstance->Montage_Play(MeleeAttackMontage);
+	}
+}
 // 이 함수는 서버에서만 호출되어야 합니다.
 void AEnemyBase::ChangeColorType(EEnemyColor NewColor)
 {

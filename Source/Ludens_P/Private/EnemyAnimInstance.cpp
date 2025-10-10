@@ -4,6 +4,8 @@
 #include "EnemyAnimInstance.h"
 
 #include "EnemyMeleeComp.h"
+#include "MagicComponent.h"
+#include "Ludens_P/ShooterCombatComponent.h"
 
 void UEnemyAnimInstance::AnimNotify_MeleeAttack()
 {
@@ -14,6 +16,18 @@ void UEnemyAnimInstance::AnimNotify_MeleeAttack()
 		if (MeleeComp)
 		{
 			MeleeComp->Attack();
+		}
+	}
+}
+void UEnemyAnimInstance::AnimNotify_MagicCast()
+{
+	AActor* Owner = TryGetPawnOwner();
+	if (Owner)
+	{
+		UMagicComponent* MagicComp = Owner->GetComponentByClass<UMagicComponent>();
+		if (MagicComp)
+		{
+			MagicComp->CastSpellAtLocation();
 		}
 	}
 }

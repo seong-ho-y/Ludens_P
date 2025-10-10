@@ -55,8 +55,6 @@ public:
 	UPROPERTY(EditAnywhere, Category="Pool Config")
     TSubclassOf<AEnemyBase> ExploClass;
 	UPROPERTY(EditAnywhere, Category="Pool Config")
-	TSubclassOf<AEnemyBase> SupportClass;
-	UPROPERTY(EditAnywhere, Category="Pool Config")
 	TSubclassOf<AEnemyBase> MagicClass;
 	
 	UPROPERTY(EditAnywhere, Category="Pool Config")

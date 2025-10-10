@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
 #include "EEnemyColor.h"
+#include "EnemyPoolManager.h"
 #include "Ludens_PGameMode.generated.h"
 
 
@@ -18,6 +19,8 @@ class ALudens_PGameMode : public AGameMode
 	//플레이어 시작 위치 받기
 	UPROPERTY()
 	TArray<AActor*> UsedStartSpots;
+	UPROPERTY()
+	AEnemyPoolManager* PoolManager;
 
 	//적 생성
 public:
@@ -33,6 +36,7 @@ public:
 
 protected:
 	void AssignColorToPlayer(AController* NewPlayer);
+	void StartSpawningEnemies();
 	int32 NumLoggedInPlayers = 0;
 	TArray<EEnemyColor> ColorRotation;
 };

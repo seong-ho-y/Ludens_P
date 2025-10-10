@@ -10,6 +10,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
 #include "WorldPartition/ContentBundle/ContentBundleLog.h"
+#include "EnemySpawnPoint.h"
 
 class URewardSystemComponent;
 class UPlayerStateComponent;
@@ -117,6 +118,52 @@ void ALudens_PGameMode::AssignColorToPlayer(AController* NewPlayer)
 			StateComp->PlayerColor = NewColor;
 
 			//UE_LOG(LogTemp, Warning, TEXT("SUCCESS: Assigned Color %s to Player with Index %d."), *UEnum::GetValueAsString(NewColor), PlayerIndex);
+		}
+	}
+}
+void ALudens_PGameMode::StartSpawningEnemies()
+{
+	if (!PoolManager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PoolManager를 찾을 수 없습니다!"));
+		return;
+	}
+
+	// 1. 월드에 배치된 모든 스폰 포인트를 찾습니다.
+	TArray<AActor*> SpawnPointActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ABP_EnemySpawnPoint::StaticClass(), SpawnPointActors);
+
+	if (SpawnPointActors.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("월드에 배치된 스폰 포인트가 하나도 없습니다!"));
+		return;
+	}
+    
+	UE_LOG(LogTemp, Log, TEXT("%d개의 스폰 포인트를 찾았습니다. 스폰을 시작합니다."), SpawnPointActors.Num());
+
+	// 2. 스폰할 적의 수를 정합니다. (예: 방의 개수 * 방당 평균 2마리)
+	const int32 NumberOfEnemiesToSpawn = 10; 
+	FRotator SpawnRot = FRotator::ZeroRotator;
+
+	for (int32 i = 0; i < NumberOfEnemiesToSpawn; ++i)
+	{
+		// 3. 사용 가능한 스폰 포인트 중에서 랜덤하게 하나를 고릅니다.
+		int32 RandomIndex = FMath::RandRange(0, SpawnPointActors.Num() - 1);
+		AActor* SelectedSpawnPoint = SpawnPointActors[RandomIndex];
+		FVector SpawnLoc = SelectedSpawnPoint->GetActorLocation();
+
+		// 4. 해당 위치에 적을 스폰합니다.
+		// TODO: 어떤 종류의 적을 스폰할지 결정하는 로직 추가
+		PoolManager->SpawnEnemy(WalkerEnemyBPClass, SpawnLoc, SpawnRot, EEnemyColor::Magenta);
+
+		// 5. (선택사항) 한 번 사용한 스폰 포인트는 다시 사용하지 않도록 배열에서 제거합니다.
+		// 이렇게 하면 모든 적이 다른 위치에서 스폰되는 것을 보장할 수 있습니다.
+		SpawnPointActors.RemoveAt(RandomIndex);
+
+		// 만약 더 이상 사용할 스폰 포인트가 없으면 루프를 중단합니다.
+		if (SpawnPointActors.Num() == 0)
+		{
+			break;
 		}
 	}
 }

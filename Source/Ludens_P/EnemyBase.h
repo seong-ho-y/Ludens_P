@@ -143,8 +143,14 @@ protected:
 	void ActivateMovementAndAI();
 
 public:
-	virtual void PlayAttackMontage();
-	virtual void PlayDashEffects();
+	UFUNCTION(NetMulticast, Reliable)
+	void PlayAttackMontage();
+	UFUNCTION(NetMulticast, Reliable)
+	void PlayDashEffects();
+	UFUNCTION(NetMulticast, Reliable)
+	void PlayShootMontage();
+	UFUNCTION(NetMulticast, Reliable)
+	void PlayCastMontage();
 
 protected:
 	UPROPERTY(EditAnywhere, Category = "Combat")
@@ -153,7 +159,12 @@ protected:
 	UAnimMontage* DashMontage;
 	UPROPERTY(EditAnywhere, Category = "Combat")
 	UNiagaraSystem* DashVFX;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	UAnimMontage* ShootMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	UAnimMontage* CastMontage;
 private:
+	// ✨ VFX 재생을 모든 클라이언트에게 전파하기 위한 Multicast 함수
 	UFUNCTION(NetMulticast, Reliable)
-	void Multicast_PlayDashVFX();
+	void Multicast_PlaySpawnVFX(FVector_NetQuantize Location, FRotator Rotation);
 };
