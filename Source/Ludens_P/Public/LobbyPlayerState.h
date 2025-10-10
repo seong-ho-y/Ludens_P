@@ -13,7 +13,7 @@ class LUDENS_P_API ALobbyPlayerState : public APlayerState
 {
     GENERATED_BODY()
 
-public:                                        // <-- public ¼½¼Ç¿¡ UPROPERTYµé!
+public:                                        // <-- public ï¿½ï¿½ï¿½Ç¿ï¿½ UPROPERTYï¿½ï¿½!
     ALobbyPlayerState();
 
     UPROPERTY(ReplicatedUsing = OnRep_Appearance, BlueprintReadOnly, Category = "Lobby")
@@ -27,7 +27,7 @@ public:                                        // <-- public ¼½¼Ç¿¡ UPROPERTYµé!
 
     UPROPERTY(ReplicatedUsing = OnRep_Subskill, BlueprintReadOnly, Category = "Lobby")
     int32 SubskillId = -1;
-
+    
     UPROPERTY(ReplicatedUsing = OnRep_Ready, BlueprintReadOnly, Category = "Lobby")
     bool bReady = false;
 
@@ -35,7 +35,7 @@ public:                                        // <-- public ¼½¼Ç¿¡ UPROPERTYµé!
     FOnLobbyPSChanged OnAnyLobbyFieldChanged;
 
     UFUNCTION(BlueprintCallable, Category = "Lobby")
-    void NotifyAnyLobbyFieldChanged(); // ¼­¹ö/È£½ºÆ® Áï½Ã UI ¹Ý¿µ¿ë
+    void NotifyAnyLobbyFieldChanged(); // ï¿½ï¿½ï¿½ï¿½/È£ï¿½ï¿½Æ® ï¿½ï¿½ï¿½ UI ï¿½Ý¿ï¿½ï¿½ï¿½
 
     virtual void CopyProperties(APlayerState* PlayerState) override;
     virtual void SeamlessTravelTo(APlayerState* NewPlayerState) override;
