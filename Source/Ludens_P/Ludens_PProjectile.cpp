@@ -3,6 +3,7 @@
 #include "Ludens_PProjectile.h"
 
 #include "EnemyBase.h"
+#include "PlayerState_Real.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
