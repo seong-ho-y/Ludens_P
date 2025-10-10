@@ -141,4 +141,19 @@ protected:
 	
 	// 타이머가 만료되었을 때 호출될 함수
 	void ActivateMovementAndAI();
+
+public:
+	virtual void PlayAttackMontage();
+	virtual void PlayDashEffects();
+
+protected:
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	UAnimMontage* MeleeAttackMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	UAnimMontage* DashMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	UNiagaraSystem* DashVFX;
+private:
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayDashVFX();
 };

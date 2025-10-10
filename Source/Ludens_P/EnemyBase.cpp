@@ -50,6 +50,8 @@ AEnemyBase::AEnemyBase()
 	{
 		UE_LOG(LogTemp, Error, TEXT("FATAL ERROR: Could not find WBP_EnemyHealthBar at the specified path!"));
 	}
+	GetMesh()->SetIsReplicated(true);
+	
 }
 void AEnemyBase::Tick(float DeltaTime)
 {
@@ -254,6 +256,14 @@ void AEnemyBase::Deactivate()
 	if (!HasAuthority()) return; // 서버에서만 실행
 
 	GetWorld()->GetTimerManager().ClearTimer(FinalizeSpawnTimerHandle);
+	// 1. AnimInstance를 가져와서 변수에 저장합니다.
+
+	// 2. AnimInstance가 유효한 포인터인지(nullptr이 아닌지) 확인합니다.
+    if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+    {
+        // 3. 유효할 때만 Montage_Stop을 호출합니다.
+        AnimInstance->Montage_Stop(0.1f);
+    }
 
 	bIsActiveInPool = false;
 	UpdateActiveState(false); // 서버에서도 직접 호출
@@ -375,6 +385,45 @@ void AEnemyBase::ActivateMovementAndAI()
 		}
 	}
 }
+
+void AEnemyBase::PlayAttackMontage()
+{
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && MeleeAttackMontage)
+	{
+		if (!AnimInstance->Montage_IsPlaying(MeleeAttackMontage))
+		{
+			AnimInstance->Montage_Play(MeleeAttackMontage);
+		}
+	}
+}
+
+void AEnemyBase::PlayDashEffects()
+{
+	// 이 로직은 서버에서만 실행되어야 합니다.
+	if (HasAuthority())
+	{
+		// 1. 몽타주 재생 (서버에서 재생하면 애니메이션 상태가 클라이언트로 복제됩니다)
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+		if (AnimInstance && DashMontage)
+		{
+			AnimInstance->Montage_Play(DashMontage);
+		}
+
+		// 2. 모든 클라이언트에게 VFX를 재생하라고 명령
+		Multicast_PlayDashVFX();
+	}
+}
+
+void AEnemyBase::Multicast_PlayDashVFX_Implementation()
+{
+	if (DashVFX)
+	{
+		// 각 클라이언트와 서버가 자신의 위치에 VFX를 생성합니다.
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DashVFX, GetActorLocation());
+	}
+}
+
 // 이 함수는 서버에서만 호출되어야 합니다.
 void AEnemyBase::ChangeColorType(EEnemyColor NewColor)
 {
