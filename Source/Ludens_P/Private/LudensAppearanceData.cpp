@@ -15,7 +15,7 @@ static UMaterialInterface* PickByColor_DefaultIsRed(const FAppearanceMatSet& Set
     }
 }
 
-static ELobbyColor ToLobbyColor(EEnemyColor C)
+static ELobbyColor EnemyToLobbyColor(EEnemyColor C)
 {
     switch (C)
     {
@@ -70,5 +70,5 @@ void ULudensAppearanceData::ApplyTo(USkeletalMeshComponent* MeshComp, int32 Ap, 
 void ULudensAppearanceData::ApplyToByEnemyColor(USkeletalMeshComponent* MeshComp, int32 AppearanceIdx, EEnemyColor EnemyColor) const
 {
     // 내부적으로 기존 ELobbyColor 기반 구현을 재사용
-    ApplyTo(MeshComp, AppearanceIdx, ToLobbyColor(EnemyColor));
+    ApplyTo(MeshComp, AppearanceIdx, EnemyToLobbyColor(EnemyColor));
 }
