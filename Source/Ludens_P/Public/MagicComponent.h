@@ -18,8 +18,8 @@ public:
 	UMagicComponent();
 
 	UFUNCTION(BlueprintCallable, Category="Magic")
-	void CastSpellAtLocation();
-	void PrepareToCast(const FVector& Vector);
+	void CastSpellAtLocation(const FVector& TargetLocation);
+	//void PrepareToCast(const FVector& Vector);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Magic")
 	float CastingTime = 0.7f;

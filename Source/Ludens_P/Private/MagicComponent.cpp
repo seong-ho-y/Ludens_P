@@ -27,9 +27,9 @@ void UMagicComponent::BeginPlay()
 	
 }
 
-void UMagicComponent::CastSpellAtLocation()
+void UMagicComponent::CastSpellAtLocation(const FVector& TargetLocation)
 {
-	FVector SpellLocation = TargetCastLocation;
+	FVector SpellLocation = TargetLocation;
 	Multicast_SpawnWarningDecal(SpellLocation);
 	
 
@@ -37,12 +37,6 @@ void UMagicComponent::CastSpellAtLocation()
 	FTimerDelegate SpellDelegate = FTimerDelegate::CreateUObject(this, &UMagicComponent::ExecuteSpell, SpellLocation);
 	GetWorld()->GetTimerManager().SetTimer(SpellTimerHandle, SpellDelegate, CastingTime, false);
 }
-
-void UMagicComponent::PrepareToCast(const FVector& Location)
-{
-	TargetCastLocation = Location;
-}
-
 
 void UMagicComponent::Multicast_SpawnWarningDecal_Implementation(FVector TargetLocation)
 {

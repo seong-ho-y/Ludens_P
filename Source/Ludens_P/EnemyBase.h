@@ -155,7 +155,7 @@ public:
 	UFUNCTION(NetMulticast, Reliable)
 	void PlayShootMontage();
 	UFUNCTION(NetMulticast, Reliable)
-	void PlayCastMontage();
+	void	PlayCastMontage();
 
 protected:
 	UPROPERTY(EditAnywhere, Category = "Combat")

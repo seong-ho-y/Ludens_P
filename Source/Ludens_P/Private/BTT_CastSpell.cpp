@@ -28,11 +28,7 @@ EBTNodeResult::Type UBTT_CastSpell::ExecuteTask(UBehaviorTreeComponent& OwnerCom
 
 	if (!TargetLocation.IsNearlyZero())
 	{
-		// ✨ 1. MagicComponent에 타겟 위치를 알려주며 시전 준비를 시킵니다.
-		MagicComp->PrepareToCast(TargetLocation);
-
-		// ✨ 2. 캐릭터에게 마법 시전 몽타주를 재생하라고 명령합니다.
-		// (이 예시에서는 캐릭터에 PlayMagicMontage() 함수가 있다고 가정합니다)
+		MagicComp->CastSpellAtLocation(TargetLocation);
 		if (AEnemyBase* EnemyChar = Cast<AEnemyBase>(Pawn))
 		{
 			EnemyChar->PlayCastMontage();

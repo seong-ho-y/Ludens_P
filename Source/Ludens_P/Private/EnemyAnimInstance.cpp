@@ -19,15 +19,3 @@ void UEnemyAnimInstance::AnimNotify_MeleeAttack()
 		}
 	}
 }
-void UEnemyAnimInstance::AnimNotify_MagicCast()
-{
-	AActor* Owner = TryGetPawnOwner();
-	if (Owner)
-	{
-		UMagicComponent* MagicComp = Owner->GetComponentByClass<UMagicComponent>();
-		if (MagicComp)
-		{
-			MagicComp->CastSpellAtLocation();
-		}
-	}
-}

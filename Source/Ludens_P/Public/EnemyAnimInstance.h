@@ -16,5 +16,4 @@ class LUDENS_P_API UEnemyAnimInstance : public UAnimInstance
 public:
 	UFUNCTION(BlueprintCallable)
 	void AnimNotify_MeleeAttack();
-	void AnimNotify_MagicCast();
 };

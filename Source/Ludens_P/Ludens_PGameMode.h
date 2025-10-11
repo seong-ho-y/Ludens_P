@@ -56,9 +56,9 @@ public:
 	
 	void BeginPlay();
 
-protected:
+
 	void AssignColorToPlayer(AController* NewPlayer);
-public:
+
 	void StartSpawningEnemies();
 
 	

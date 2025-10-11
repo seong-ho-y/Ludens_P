@@ -30,6 +30,7 @@ protected:
 
 public:
 	virtual void SetupInputComponent() override;
+	void OnPossess(APawn* InPawn);
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<AEnemyBase> WalkerEnemyBPClass;
 	UPROPERTY(EditAnywhere)

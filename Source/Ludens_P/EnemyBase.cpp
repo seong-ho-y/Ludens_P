@@ -52,20 +52,13 @@ AEnemyBase::AEnemyBase()
 		UE_LOG(LogTemp, Error, TEXT("FATAL ERROR: Could not find WBP_EnemyHealthBar at the specified path!"));
 	}
 	GetMesh()->SetIsReplicated(true);
+	// 복제될 ColorType의 기본값을 '초기화 안됨' 상태로 지정
+	ColorType = EEnemyColor::Uninitialized; 
 	
 }
 void AEnemyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	/*
-	if (!HasAuthority())
-	{
-		if (CCC)
-		{
-			UE_LOG(LogTemp, Log, TEXT("[CLIENT TICK] Enemy: %s, CCC->CurrentHP: %f"), *GetName(), CCC->GetCurrentHP());
-		}
-	}
-	*/
 }
 
 void AEnemyBase::EngageStealth_Implementation()
@@ -135,6 +128,29 @@ void AEnemyBase::InitializeEnemy(const FEnemySpawnProfile& Profile)
 	// 메시 컴포넌트의 다이내믹 머티리얼 인스턴스를 생성하고,
 	// "BodyColor" 같은 벡터 파라미터의 값을 바꿔주면 됩니다.
 	ChangeColorType(Profile.Color);
+	
+
+	// [가져온 로직 2] AI 및 움직임 지연 활성화 (서버에서만 타이머 설정)
+	if (HasAuthority())
+	{
+		// 처음엔 AI와 움직임을 끈 상태로 시작
+		GetCharacterMovement()->Deactivate();
+		if (AController* AIController = GetController())
+		{
+			if (UBrainComponent* Brain = Cast<AEnemyAIController>(AIController)->BrainComponent)
+			{
+				Brain->StopLogic("Initial Spawn Delay");
+			}
+		}
+
+		// 타이머를 설정하여 2초 뒤에 AI와 움직임을 활성화
+		GetWorld()->GetTimerManager().SetTimer(
+			  SpawnDelayTimerHandle, 
+			  this, 
+			  &AEnemyBase::ActivateMovementAndAI, 
+			  2.0f, // 2초 지연 (원하는 시간으로 조절)
+			  false);
+	}
 }
 void AEnemyBase::OnHealthUpdated(float NewCurrentHP, float NewMaxHP)
 {
@@ -387,6 +403,7 @@ FLinearColor AEnemyBase::GetColorValue(EEnemyColor Color) const
 		return FLinearColor::Black;
 	default:
 		// 혹시 모를 예외 상황을 대비해 기본값(흰색)을 반환합니다.
+			UE_LOG(LogTemp, Error, TEXT("GetColorValue return White!!"))
 			return FLinearColor::White;
 	}
 }
@@ -495,7 +512,12 @@ void AEnemyBase::OnRep_ShouldShowUI()
 // ColorType 변수가 서버로부터 복제 완료되면 클라이언트에서 자동으로 호출됩니다.
 void AEnemyBase::OnRep_ColorType()
 {
-
+	if (ColorType == EEnemyColor::Uninitialized)
+	{
+		UE_LOG(LogTemp, Error, TEXT("OnRep_ColorType : White"));
+		return;
+	}
+	InitializeMID();
 	// SetBodyColor 함수를 호출하여 MID의 색상을 실제로 변경
 	SetBodyColor(ColorType);
 
@@ -561,6 +583,7 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 	// ----------------------------쉴드 체크 로직-----------------------------------
 	if (ShieldComponent && !ShieldComponent->AreAllShieldsBroken())
 	{
+		UE_LOG(LogTemp, Warning, TEXT("ShieldComponent damageStart"));
 		EEnemyColor DamageColor = EEnemyColor::Black;
 
 		// 1. 공격자 컨트롤러가 있는지 확인

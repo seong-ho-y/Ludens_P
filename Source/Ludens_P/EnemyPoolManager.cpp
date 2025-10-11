@@ -58,7 +58,7 @@ void AEnemyPoolManager::BeginPlay()
 }
 
 // 적 스폰 요청 처리 (서버에서만 실행)
-AEnemyBase* AEnemyPoolManager::SpawnEnemy(const FEnemySpawnProfile& Profile, const FVector& Location, const FRotator& Rotation)
+AEnemyBase* AEnemyPoolManager:: SpawnEnemy(const FEnemySpawnProfile& Profile, const FVector& Location, const FRotator& Rotation)
 {
     if (!HasAuthority() || !Profile.EnemyClass)
     {

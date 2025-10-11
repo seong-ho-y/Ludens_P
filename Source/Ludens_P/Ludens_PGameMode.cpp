@@ -42,6 +42,11 @@ ALudens_PGameMode::ALudens_PGameMode()
 void ALudens_PGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+	PoolManager = Cast<AEnemyPoolManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AEnemyPoolManager::StaticClass()));
+	if (!PoolManager)
+	{
+		UE_LOG(LogTemp, Error, TEXT("FATAL ERROR: PoolManager not found in the persistent level!"));
+	}
 }
 
 
@@ -79,7 +84,7 @@ void ALudens_PGameMode::HandleStartingNewPlayer_Implementation(APlayerController
 	Super::HandleStartingNewPlayer_Implementation(NewPlayer); // Super 호출도 _Implementation으로 변경
 
 	// 이제 이 안에서 AssignColorToPlayer를 호출하면 됩니다.
-	AssignColorToPlayer(NewPlayer);
+	//AssignColorToPlayer(NewPlayer);
 }
 
 // ✨ 새로 추가된 함수의 전체 내용입니다.
@@ -100,7 +105,7 @@ void ALudens_PGameMode::AssignColorToPlayer(AController* NewPlayer)
 
 	int32 PlayerIndex = PlayerCount - 1;
 	//UE_LOG(LogTemp, Warning, TEXT("Calculated Player Index: %d"), PlayerIndex);
-	// --- 진단 로그 끝 ---
+	// --- 진단 로그 끝 ---	
 
 	if (!ColorRotation.IsValidIndex(PlayerIndex))
 	{
@@ -115,9 +120,18 @@ void ALudens_PGameMode::AssignColorToPlayer(AController* NewPlayer)
 		if (StateComp)
 		{
 			EEnemyColor NewColor = ColorRotation[PlayerIndex];
-			StateComp->PlayerColor = NewColor;
 
-			//UE_LOG(LogTemp, Warning, TEXT("SUCCESS: Assigned Color %s to Player with Index %d."), *UEnum::GetValueAsString(NewColor), PlayerIndex);
+			// --- ✨ 안전장치 추가 ✨ ---
+			if (NewColor == EEnemyColor::Uninitialized)
+			{
+				UE_LOG(LogTemp, Error, TEXT("CRITICAL WARNING: Attempted to assign Uninitialized color to Player %s. Check the ColorRotation array in GameMode Blueprint!"), *NewPlayer->GetName());
+				// 여기서 함수를 종료하여 '색 없음' 상태의 플레이어가 생기는 것을 막습니다.
+				// 혹은 임시로 기본 색상을 할당할 수도 있습니다. ex) NewColor = EEnemyColor::Red;
+				return; 
+			}
+			// --- ✨ 여기까지 ---
+			StateComp->PlayerColor = NewColor;
+			UE_LOG(LogTemp, Warning, TEXT("SUCCESS: Assigned Color %s to Player with Index %d."), *UEnum::GetValueAsString(NewColor), PlayerIndex);
 		}
 	}
 }
@@ -180,21 +194,21 @@ FEnemySpawnProfile ALudens_PGameMode::CreateRandomEnemyProfile()
 
 	// 2. 색깔 결정: 확률에 따라 등급을 나눕니다.
 	float ColorRoll = FMath::FRand(); // 0.0 ~ 1.0 사이의 랜덤 값
-	if (ColorRoll < 0.5f) // 50% 확률: 약한 등급 (R, G, B)
+	if (ColorRoll < 0.3f) // 30% 확률: 약한 등급 (R, G, B)
 	{
 		Profile.Color = (EEnemyColor)FMath::RandRange(0, 2); // Red, Green, Blue 중 랜덤
 	}
-	else if (ColorRoll < 0.85f) // 35% 확률: 중간 등급 (Y, M, C)
+	else if (ColorRoll < 0.9f) // 60% 확률: 중간 등급 (Y, M, C)
 	{
 		Profile.Color = (EEnemyColor)FMath::RandRange(3, 5); // Yellow, Magenta, Cyan 중 랜덤
 	}
-	else // 15% 확률: 최강 등급 (Black)
+	else // 10% 확률: 최강 등급 (Black)
 	{
 		Profile.Color = EEnemyColor::Black;
 	}
 
-	// 3. 강화형 결정: 25% 확률로 강화형이 됩니다.
-	if (FMath::FRand() < 0.25f)
+	// 3. 강화형 결정: 5% 확률로 강화형이 됩니다.
+	if (FMath::FRand() < 0.05f)
 	{
 		Profile.StatDataAsset = EnhancedStatDA;
 	}
