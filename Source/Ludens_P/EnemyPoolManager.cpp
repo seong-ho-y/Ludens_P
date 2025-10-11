@@ -1,6 +1,8 @@
 #include "EnemyPoolManager.h"
 
 #include "Ludens_PGameMode.h"
+#include "NiagaraFunctionLibrary.h"
+#include "Kismet/GameplayStatics.h"
 
 
 AEnemyPoolManager::AEnemyPoolManager()
@@ -57,6 +59,8 @@ void AEnemyPoolManager::BeginPlay()
     }
 }
 
+
+
 // 적 스폰 요청 처리 (서버에서만 실행)
 AEnemyBase* AEnemyPoolManager:: SpawnEnemy(const FEnemySpawnProfile& Profile, const FVector& Location, const FRotator& Rotation)
 {
@@ -67,6 +71,7 @@ AEnemyBase* AEnemyPoolManager:: SpawnEnemy(const FEnemySpawnProfile& Profile, co
 
     // 해당 클래스의 풀을 찾거나 새로 만듭니다.
     FEnemyPool& Pool = EnemyPools.FindOrAdd(Profile.EnemyClass);
+
 
     // 2. 풀에서 재사용 가능한 적을 먼저 찾습니다.
     for (AEnemyBase* Enemy : Pool.PooledEnemies)
@@ -105,7 +110,6 @@ AEnemyBase* AEnemyPoolManager:: SpawnEnemy(const FEnemySpawnProfile& Profile, co
         // !! 핵심 !!: 새로 만든 적도 동일한 함수로 상태를 초기화합니다.
         NewEnemy->InitializeEnemy(Profile);
     }
-
     return NewEnemy;
 }
      

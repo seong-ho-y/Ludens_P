@@ -81,6 +81,16 @@ void AEnemyBase::DisengageStealth_Implementation()
 	}
 }
 
+void AEnemyBase::SetStealthAmount(float X)
+{
+	if (HasAuthority()) // 값 변경은 서버에서만!
+	{
+		StealthAmount = X;
+		// 서버에서도 바로 적용되게 하려면 수동 호출
+		OnRep_StealthAmount(); 
+	}
+}
+
 void AEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
@@ -103,8 +113,11 @@ void AEnemyBase::BeginPlay()
 
 void AEnemyBase::InitializeEnemy(const FEnemySpawnProfile& Profile)
 {
+	PlaySpawnVFX();
+
 	if (!HasAuthority()) return;
 	if (!Descriptor || !CCC) return;
+
 	// 1. 기본 스탯을 항상 Descriptor에서 먼저 가져옵니다. (스탯 리셋 효과)
 	float FinalMaxHP = Descriptor->MaxHP;
 	float FinalWalkSpeed = Descriptor->WalkSpeed;
@@ -185,67 +198,26 @@ void AEnemyBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 	DOREPLIFETIME(AEnemyBase, bIsActiveInPool);
 	DOREPLIFETIME(AEnemyBase, ColorType);
 	DOREPLIFETIME(AEnemyBase, bShouldShowUI);
+	// StealthAmount 변수를 복제 리스트에 추가
+	DOREPLIFETIME(AEnemyBase, StealthAmount);
 }
 
-
-// 1. 서버에서 호출되는 활성화 함수
-void AEnemyBase::Activate(const FVector& Location, const FRotator& Rotation)
+void AEnemyBase::OnRep_StealthAmount()
 {
-	if (!HasAuthority()) return; // 서버에서만 실행
-	
-	SetActorLocation(Location);
-	SetActorRotation(Rotation);
-	SetActorHiddenInGame(true);
-	SetActorEnableCollision(false);
-	bIsActiveInPool = true;
-	Multicast_PlaySpawnVFX(Location - FVector(0,0,150.f), Rotation);
-	
-	GetWorld()->GetTimerManager().SetTimer(
-		FinalizeSpawnTimerHandle,
-		this,
-		&AEnemyBase::FinalizeSpawn,
-		2.0f,
-		false);
-	/*
-	// --- 디버깅 코드 추가 ---
-	if (USkeletalMeshComponent* MyMesh = GetMesh())
+	// 실제 머티리얼 업데이트 로직 호출
+	UpdateStealthMaterial();
+}
+
+// 실제 머티리얼 파라미터를 변경하는 함수
+void AEnemyBase::UpdateStealthMaterial()
+{
+	if (StealthMID)
 	{
-		// 1. 액터의 최종 위치 (파란색 구)
-		DrawDebugSphere(GetWorld(), GetActorLocation(), 30.f, 12, FColor::Blue, false, 5.0f);
-
-		// 2. 소켓의 실제 월드 위치 (초록색 구)
-		FVector SocketLocation = MyMesh->GetSocketLocation(TEXT("VFX"));
-		DrawDebugSphere(GetWorld(), SocketLocation, 30.f, 12, FColor::Green, false, 5.0f);
-	}
-	// --- 디버깅 코드 끝 ---
-	*/
-}
-void AEnemyBase::FinalizeSpawn()
-{
-	if (!HasAuthority()) return;
-
-	// 모든 클라이언트에게 Mesh를 보여주라는 명령을 내립니다.
-	Multicast_FinalizeSpawn();
-}
-void AEnemyBase::Multicast_FinalizeSpawn_Implementation()
-{
-	// ✨ Mesh를 보이게 하고 충돌을 켭니다.
-	SetActorHiddenInGame(false);
-	SetActorEnableCollision(true);
-
-	bIsActiveInPool = true;
-	// 기존의 활성화 로직을 여기서 호출하여 AI, 움직임 타이머 등을 시작시킵니다.
-	UpdateActiveState(true); 
-
-	// 서버라면 스탯 초기화 같은 게임 로직을 처리합니다.
-	if (HasAuthority())
-	{
-		if (CCC && Descriptor)
-		{
-			CCC->InitStats(Descriptor->MaxHP);
-		}
+		// 복제된 StealthAmount 값을 사용해 파라미터 설정
+		StealthMID->SetScalarParameterValue(TEXT("StealthAmount"), StealthAmount);
 	}
 }
+
 
 // 2. 서버에서 호출되는 비활성화 함수
 void AEnemyBase::Deactivate()
@@ -275,13 +247,13 @@ void AEnemyBase::Deactivate()
 	UpdateActiveState(false);
 }
 
-// 3. 클라이언트에서 bIsActiveInPool 값이 복제 완료되면 자동으로 호출됨
+
 void AEnemyBase::OnRep_IsActive()
 {
 	UpdateActiveState(bIsActiveInPool);
 }
 
-// 4. 실제 활성/비활성 로직 (서버와 클라이언트 모두에서 실행됨)
+
 void AEnemyBase::UpdateActiveState(bool bNewIsActive)
 {
 	if (bNewIsActive)
@@ -383,6 +355,14 @@ void AEnemyBase::ActivateMovementAndAI()
 	}
 }
 
+void AEnemyBase::PlaySpawnVFX_Implementation()
+{
+	if (SpawnVFX)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), SpawnVFX, GetActorLocation());
+	}
+}
+
 FLinearColor AEnemyBase::GetColorValue(EEnemyColor Color) const
 {
 	switch (Color)
@@ -425,14 +405,6 @@ void AEnemyBase::PlayShootMontage_Implementation()
 	if (AnimInstance && ShootMontage)
 	{
 		AnimInstance->Montage_Play(ShootMontage);
-	}
-}
-
-void AEnemyBase::Multicast_PlaySpawnVFX_Implementation(FVector_NetQuantize Location, FRotator Rotation)
-{
-	if (SpawnVFX)
-	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), SpawnVFX, Location, Rotation, FVector(3.0f));
 	}
 }
 
