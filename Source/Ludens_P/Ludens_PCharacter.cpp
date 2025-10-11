@@ -90,32 +90,29 @@ void ALudens_PCharacter::BeginPlay()
 			}
 		}
 
-	//컴포넌트 할당
-	PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
-	PlayerStateComponent = FindComponentByClass<UPlayerStateComponent>();
-	WeaponComponent = FindComponentByClass<UTP_WeaponComponent>();
-	ReviveComponent =  FindComponentByClass<UReviveComponent>();
-	
-	if (PlayerAttackComponent && WeaponComponent)
-	{
-		PlayerAttackComponent->WeaponAttackHandler->WeaponComp = WeaponComponent;
+		//컴포넌트 할당
+		PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
+		PlayerStateComponent = FindComponentByClass<UPlayerStateComponent>();
+		WeaponComponent = FindComponentByClass<UTP_WeaponComponent>();
+		ReviveComponent = FindComponentByClass<UReviveComponent>();
+
+		if (PlayerAttackComponent && WeaponComponent)
+		{
+			PlayerAttackComponent->WeaponAttackHandler->WeaponComp = WeaponComponent;
+		}
+
+		// --- 널 체크 ---
+		if (!DashAction) { UE_LOG(LogTemplateCharacter, Error, TEXT("DashAction is null!")); }
+		if (!MeleeAttackAction) { UE_LOG(LogTemplateCharacter, Error, TEXT("MeleeAttackAction is null!")); }
+		if (!PlayerAttackComponent) { UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerAttackComponent is null!")); }
+		if (!PlayerStateComponent) { UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerStateComponent is null!")); }
+		if (!ReviveComponent) { UE_LOG(LogTemplateCharacter, Error, TEXT("ReviveComponent is null!")); }
+
+
+		// 로비 UI 모드 잔상이 있으면 입력이 막힐 수 있음 → 게임 전용으로 전환
+		PC->SetInputMode(FInputModeGameOnly{});
+		PC->bShowMouseCursor = false;
 	}
-	
-	if (!DashAction) UE_LOG(LogTemplateCharacter, Error, TEXT("DashAction is null!"))
-	
-	else if (!MeleeAttackAction) UE_LOG(LogTemplateCharacter, Error, TEXT("MeleeAttackAction is null!"))
-	
-	else if (!PlayerAttackComponent) UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerAttackComponent is null!"))
-	
-	else if (!PlayerStateComponent) UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerStateComponent is null!"))
-	
-	else if (!ReviveComponent) UE_LOG(LogTemplateCharacter, Error, TEXT("ReviveComponent is null!"));
-
-
-	// 로비 UI 모드 잔상이 있으면 입력이 막힐 수 있음 → 게임 전용으로 전환
-	PC->SetInputMode(FInputModeGameOnly{});
-	PC->bShowMouseCursor = false;
-
 }
 
 void ALudens_PCharacter::Tick(float DeltaTime)

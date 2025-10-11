@@ -32,8 +32,10 @@ public:
 	void BeginPlay();
 
 protected:
+
 	void AssignColorToPlayer(AController* NewPlayer);
 	int32 NumLoggedInPlayers = 0;
 	TArray<EEnemyColor> ColorRotation;
+
 };
 
