@@ -21,13 +21,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Move")
 	float WalkSpeed = 360.f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Sense")
-	float DetectRange = 2000.f;
-
-	// === (선택) 슈터용 최소 값 ===
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Shooter")
-	float AttackRange = 1200.f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Shooter")
-	float AttackRate = 0.8f; // 초당 발사(ROF) 또는 쿨타임의 역수 개념
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="Stats")
+	float MaxShield = 50.f;
+	float HealthMultiplier = 2.f;
+	float SpeedMultiplier = 1.5f;
+	float ShieldMultiplier = 2.f;
 };

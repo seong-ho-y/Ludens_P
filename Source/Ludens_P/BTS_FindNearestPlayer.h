@@ -23,5 +23,11 @@ protected:
 	UPROPERTY(EditAnywhere, Category="Blakcboard")
 	FBlackboardKeySelector TargetLocationKey;
 
+	UPROPERTY(EditAnywhere, Category="Blakcboard")
+	FBlackboardKeySelector DistanceToPlayerKey;
+
+	UPROPERTY(EditAnywhere, Category="Blakcboard")
+	FBlackboardKeySelector RandNum;
+
 	virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 };

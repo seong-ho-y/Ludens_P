@@ -7,8 +7,13 @@
 #include "GameFramework/Character.h"
 #include "DeathHandlerInterface.h"
 #include "StealthInterface.h"
+#include "BehaviorTree/BehaviorTreeTypes.h"
 #include "EnemyBase.generated.h"
 
+struct FEnemySpawnProfile;
+class ALudens_PGameMode;
+class AEnemyPoolManager;
+class UBlackboardComponent;
 class UEnemyDescriptor;
 class UShieldComponent;
 class UWidgetComponent;
@@ -23,18 +28,16 @@ public:
 
 	virtual void EngageStealth_Implementation() override;
 	virtual void DisengageStealth_Implementation() override;
-	
+	void SetStealthAmount(float X);
+
 	AEnemyBase();
 
-	void Activate(const FVector& Location, const FRotator& Rotation);
 	void Deactivate();
 
 	bool IsActive() const;
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Combat")
 	UCreatureCombatComponent* CCC;
-
-	
 
 	// AActor로부터 상속받은 TakeDamage 함수를 정확한 시그니처로 오버라이드합니다.
 	virtual float TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) override;
@@ -54,8 +57,11 @@ public:
 	void InitializeMID();
 protected:
 	virtual void BeginPlay() override;
+public:
+	void InitializeEnemy(const FEnemySpawnProfile& Profile);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
+
 
 	UFUNCTION()
 	void OnRep_ColorType();
@@ -95,10 +101,6 @@ protected:
 	UMaterialInstanceDynamic* BodyMID;
 
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX")
-	UNiagaraSystem* SpawnVFX;
-
-
 	//색상을 설정하는 함수
 	void SetBodyColor(EEnemyColor NewColor);
 
@@ -130,14 +132,57 @@ protected:
 	FTimerHandle SpawnDelayTimerHandle;
 
 	FTimerHandle FinalizeSpawnTimerHandle;
-
-	// 서버에서 타이머가 호출할 함수
-	void FinalizeSpawn();
-
-	// 서버와 모든 클라이언트에서 호출될 함수 (실제로 Mesh를 보이게 함)
-	UFUNCTION(NetMulticast, Unreliable)
-	void Multicast_FinalizeSpawn();
+	
 	
 	// 타이머가 만료되었을 때 호출될 함수
 	void ActivateMovementAndAI();
+
+public:
+	UFUNCTION(NetMulticast, Reliable)
+	void PlayAttackMontage();
+	UFUNCTION(NetMulticast, Reliable)
+	void PlayDashEffects();
+	UFUNCTION(NetMulticast, Reliable)
+	void PlayShootMontage();
+	UFUNCTION(NetMulticast, Reliable)
+	void PlayCastMontage();
+	// VFX 재생을 모든 클라이언트에 전파할 멀티캐스트 함수
+	UFUNCTION(NetMulticast, Reliable)
+	void PlaySpawnVFX();
+
+protected:
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	UAnimMontage* MeleeAttackMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	UAnimMontage* DashMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	UNiagaraSystem* DashVFX;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	UAnimMontage* ShootMontage;
+	UPROPERTY(EditAnywhere, Category = "Combat")
+	UAnimMontage* CastMontage;
+private:
+
+
+	FLinearColor GetColorValue(EEnemyColor Color) const;
+
+public:
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UNiagaraSystem* SpawnVFX;
+protected:
+	// 1. 은신 값을 저장하고 복제할 변수 선언
+	// ReplicatedUsing = OnRep_StealthAmount는 이 변수가 복제될 때 OnRep_StealthAmount 함수를 호출하라는 의미
+	UPROPERTY(ReplicatedUsing = OnRep_StealthAmount)
+	float StealthAmount;
+
+	// 2. RepNotify로 호출될 함수 선언
+	UFUNCTION()
+	void OnRep_StealthAmount();
+	void UpdateStealthMaterial();
+
+private:
+	// 동적 머티리얼 인스턴스를 저장할 변수
+	UPROPERTY()
+	UMaterialInstanceDynamic* StealthMID;
+	
 };
