@@ -5,6 +5,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/Border.h"
 #include "LobbyTypes.h"
+#include "Ludens_P/EEnemyColor.h"
 #include "WBP_Lobby.generated.h"
 
 class ALobbyPreviewRig; class UButton; class UBorder;
@@ -32,7 +33,7 @@ public:
     float DragYawScale = 0.25f;
 
     UFUNCTION(BlueprintCallable, Category = "Lobby|Input") void BP_SetAppearance(int32 Id);
-    UFUNCTION(BlueprintCallable, Category = "Lobby|Input") void BP_SetPreviewColor(ELobbyColor InColor);
+    UFUNCTION(BlueprintCallable, Category = "Lobby|Input") void BP_SetPreviewColor(EEnemyColor InColor);
     UFUNCTION(BlueprintCallable, Category = "Lobby|Input") void BP_SetSubskill(int32 Id);
     UFUNCTION(BlueprintCallable, Category = "Lobby|Input") void BP_ReadyOn();
     UFUNCTION(BlueprintCallable, Category = "Lobby|Input") void BP_ReadyOff();
@@ -185,5 +186,8 @@ private:
     UPROPERTY(meta = (BindWidget))          class UImage* Img_Self = nullptr;
     UPROPERTY(meta = (BindWidgetOptional))  class UImage* Img_OtherL = nullptr;
     UPROPERTY(meta = (BindWidgetOptional))  class UImage* Img_OtherR = nullptr;
+
+    UPROPERTY(Transient)
+    EEnemyColor CurrentColorCache = EEnemyColor::Red; // 폴백(초기값)
 
 };

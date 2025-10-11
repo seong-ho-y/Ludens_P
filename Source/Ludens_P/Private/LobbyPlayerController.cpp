@@ -10,7 +10,22 @@
 #include "GameFramework/GameStateBase.h"
 #include "Kismet/KismetRenderingLibrary.h"
 #include "GameFramework/Actor.h"
+#include "Ludens_P/EEnemyColor.h"
+#include "LobbyTypes.h"
 
+namespace
+{
+    static ELobbyColor ToLobbyColor(EEnemyColor C)
+    {
+        switch (C)
+        {
+        case EEnemyColor::Red:   return ELobbyColor::Red;
+        case EEnemyColor::Green: return ELobbyColor::Green;
+        case EEnemyColor::Blue:  return ELobbyColor::Blue;
+        default:                 return ELobbyColor::Red; // 폴백
+        }
+    }
+}
 
 DEFINE_LOG_CATEGORY_STATIC(LogLobbyPC, Log, All);
 
@@ -158,7 +173,7 @@ void ALobbyPlayerController::ServerSetSubskill_Implementation(int32 InSubskillId
     }
 }
 
-void ALobbyPlayerController::ServerSetPreviewColor_Implementation(ELobbyColor InColor)
+void ALobbyPlayerController::ServerSetPreviewColor_Implementation(EEnemyColor InColor)
 {
     UE_LOG(LogTemp, Log, TEXT("[LobbyPC] ServerSetPreviewColor InColor=%d HasAuthority=%d"),  // LOG B
         (int32)InColor, (int32)HasAuthority());
@@ -167,8 +182,8 @@ void ALobbyPlayerController::ServerSetPreviewColor_Implementation(ELobbyColor In
     {
         if (!PS->bReady)
         {
-            PS->PreviewColor = InColor;
-            PS->NotifyAnyLobbyFieldChanged(); // 호스트 즉시 갱신
+            PS->PreviewColor = ToLobbyColor(InColor); // ★ 내부에서 1회 변환
+            PS->NotifyAnyLobbyFieldChanged();         // 호스트 즉시 갱신
             PS->ForceNetUpdate();
         }
 
@@ -180,72 +195,55 @@ void ALobbyPlayerController::ServerSetPreviewColor_Implementation(ELobbyColor In
 
 
 
-void ALobbyPlayerController::ServerReadyOn_Implementation(ELobbyColor Requested)
+void ALobbyPlayerController::ServerReadyOn_Implementation(EEnemyColor Requested)
 {
     APlayerState_Real* PS = GetLobbyPS();
     ALobbyGameState* GS = GetLobbyGS();
-    if (!PS || !GS) return;
+    if (!PS || !GS || PS->bReady) return;
 
-    if (PS->bReady) return; // 이미 Ready면 무시
+    // 이미 Ready면 무시
+    if (PS->bReady) return;
 
-    // 유효성 검증 (서버 권위)
-    const bool bHasColor = (PS->PreviewColor != ELobbyColor::None);
-    const bool bHasSkill = (PS->SubskillId >= 0 && PS->SubskillId <= 4);
+    const ELobbyColor ColorToLock = ToLobbyColor(Requested);
+
+    // 유효성 체크(기존 유지)
     const bool bHasAppearance = (PS->AppearanceId >= 0 && PS->AppearanceId <= 3);
+    const bool bHasSkill = (PS->SubskillId >= 0 && PS->SubskillId <= 4);
+    const bool bHasColor = (ColorToLock != ELobbyColor::None); // 기존: Preview/Selected 확인
 
-    UE_LOG(LogTemp, Display, TEXT("[ReadyCheck] Appear=%d SelColor=%d Skill=%d  -> bHasA=%d bHasC=%d bHasS=%d"),
-        PS->AppearanceId, (int)PS->SelectedColor, PS->SubskillId,
-        bHasAppearance, bHasColor, bHasSkill);
-
-    if (!(bHasColor && bHasSkill && bHasAppearance))
+    if (!(bHasAppearance && bHasSkill && bHasColor))
     {
-        return; // 미충족 → 무시 (S3에서 실패 토스트 예정)
+        // 필요시 이유 로그
+        return;
     }
 
-    // 요청 색 보정: None으로 오면 현재 PreviewColor 사용
-    const ELobbyColor ColorToLock = (Requested != ELobbyColor::None) ? Requested : PS->PreviewColor;
-
+    // 서버 권위로 색 락 시도(기존 유지: GState가 ELobbyColor 기반이면 그대로 사용)
     const int32 MyId = PS->GetPlayerId();
-    const bool bLocked = GS->TryLockColor(MyId, ColorToLock);
+    const bool  bLocked = GS->TryLockColor(MyId, ColorToLock);
 
     if (bLocked)
     {
+        // 로비 PS 필드만 갱신 (ELobbyColor 기반)
         PS->SelectedColor = ColorToLock;
         PS->bReady = true;
 
-        ///
-        // [신규] 상성 색 = 선택 색 매핑을 PS에 커밋(서버에서 1회)
-        auto MapToEnemyColor = [](ELobbyColor C)
-            {
-                switch (C) {
-                case ELobbyColor::Red:   return EEnemyColor::Red;
-                case ELobbyColor::Green: return EEnemyColor::Green;
-                case ELobbyColor::Blue:  return EEnemyColor::Blue;
-                default:                 return EEnemyColor::Red; // 폴백
-                }
-            };
-        /// PS->PlayerColor = MapToEnemyColor(PS->SelectedColor);  // 
-        PS->ForceNetUpdate();
-        ///
+        //    최종 확정은 LobbyGameMode::StartGameIfAllReady() 직전에 1회 커밋
 
-
-        // 호스트(서버 로컬) 위젯 즉시 갱신
+        // 알림/복제 업데이트(기존 유지)
         PS->NotifyAnyLobbyFieldChanged();
-
         GS->ReadyCount++;
-        GS->NotifyReadyCountChanged();   // ★ 호스트 UI 활성화 조건 즉시 반영
-
+        GS->NotifyReadyCountChanged();
         PS->ForceNetUpdate();
     }
     else
     {
-        // 충돌: S3에서 UI 토스트 처리 예정
+        // 충돌 시 처리(기존 있었던 안내/로그 유지)
     }
 
-    UE_LOG(LogTemp, Display, TEXT("[RPC] Appear=%d  Preview=%d  Selected=%d  Ready=%d"),
-        PS->AppearanceId, (int)PS->PreviewColor, (int)PS->SelectedColor, (int)PS->bReady);
-
+    UE_LOG(LogTemp, Display, TEXT("[ReadyOn] Appear=%d Preview=%d Selected=%d Ready=%d (ReqEnemy=%d)"),
+        PS->AppearanceId, (int)PS->PreviewColor, (int)PS->SelectedColor, (int)PS->bReady, (int)Requested);
 }
+
 
 
 void ALobbyPlayerController::ServerReadyOff_Implementation()

@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
+#include "Ludens_P/EEnemyColor.h"
 #include "LobbyTypes.h" // ELobbyColor
 #include "Engine/DataAsset.h"
 #include "LudensAppearanceData.generated.h"
@@ -59,4 +60,8 @@ public:
     /** 메쉬 교체 + [캐릭터/무기] 슬롯에 색상별 머티리얼 적용 (프리뷰/인게임 공용) */
     UFUNCTION(BlueprintCallable, Category = "Cosmetics")
     void ApplyTo(class USkeletalMeshComponent* MeshComp, int32 AppearanceIdx, ELobbyColor Color) const;
+
+    // ULudensAppearanceData (public:)
+    UFUNCTION(BlueprintCallable, Category = "Cosmetics")
+    void ApplyToByEnemyColor(class USkeletalMeshComponent* MeshComp, int32 AppearanceIdx, EEnemyColor EnemyColor) const;
 };

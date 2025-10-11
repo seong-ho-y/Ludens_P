@@ -168,7 +168,12 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 						}
 					};
 
-				AppearanceDB->ApplyTo(Mesh1P, PSR->AppearanceId, ToLobbyColor(PSR->PlayerColor));
+				if (AppearanceDB && GetMesh() && PSR)
+				{
+					AppearanceDB->ApplyToByEnemyColor(GetMesh(), PSR->AppearanceId, PSR->PlayerColor);
+					UE_LOG(LogTemp, Display, TEXT("[Cosmetics] Body applied Ap=%d, EnemyColor=%d, Mesh=%s"),
+						PSR->AppearanceId, (int)PSR->PlayerColor, *GetNameSafe(GetMesh()));
+				}
 
 
 				bCosmeticsApplied = true;

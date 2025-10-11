@@ -17,7 +17,20 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/GameStateBase.h"
+#include "Ludens_P/EEnemyColor.h"
+#include "LobbyTypes.h"
 
+
+static EEnemyColor ToEnemy(ELobbyColor C)
+{
+    switch (C)
+    {
+    case ELobbyColor::Red:   return EEnemyColor::Red;
+    case ELobbyColor::Green: return EEnemyColor::Green;
+    case ELobbyColor::Blue:  return EEnemyColor::Blue;
+    default:                 return EEnemyColor::Red;
+    }
+}
 
 void UWBP_Lobby::InitPreviewRefs(ALobbyPreviewRig* InSelf, ALobbyPreviewRig* InOtherL, ALobbyPreviewRig* InOtherR)
 {
@@ -32,22 +45,48 @@ void UWBP_Lobby::BP_SetAppearance(int32 Id)
     if (auto PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
         PC->ServerSetAppearance(Id);
 }
-void UWBP_Lobby::BP_SetPreviewColor(ELobbyColor InColor)
+void UWBP_Lobby::BP_SetPreviewColor(EEnemyColor InColor)
 {
-    if (auto PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
-        PC->ServerSetPreviewColor(InColor);
+    CurrentColorCache = InColor; // 위젯 내부 캐시 업데이트
+
+    if (auto* PC = Cast<ALobbyPlayerController>(GetWorld()->GetFirstPlayerController()))
+    {
+        PC->ServerSetPreviewColor(InColor); // 컨트롤러는 EnemyColor 버전 RPC로 수정해 둔 상태
+    }
 }
+
 void UWBP_Lobby::BP_SetSubskill(int32 Id)
 {
     if (auto PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
         PC->ServerSetSubskill(Id);
 }
+
+
 void UWBP_Lobby::BP_ReadyOn()
 {
-    if (auto PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
-        if (auto PS = PC->GetPlayerState<APlayerState_Real>())  
-            PC->ServerReadyOn(PS->PreviewColor);
+    // 1) 기본은 캐시에 든 EnemyColor를 사용
+    EEnemyColor FinalColor = CurrentColorCache;
+
+    // 2) 안전망: 캐시가 초기값/유효하지 않다고 판단되면 PS의 PreviewColor를 읽어 변환
+    if (auto* PC = Cast<ALobbyPlayerController>(GetWorld()->GetFirstPlayerController()))
+    {
+        if (auto* PS = PC->GetLobbyPS())
+        {
+            if (PS->PreviewColor == ELobbyColor::Red
+                || PS->PreviewColor == ELobbyColor::Green
+                || PS->PreviewColor == ELobbyColor::Blue)
+            {
+                FinalColor = ToEnemy(PS->PreviewColor);
+            }
+        }
+
+        // 3) 최종적으로 EnemyColor 하나만 넘긴다
+        PC->ServerReadyOn(FinalColor);
+    }
+
+    // UI 잠금/버튼 비활성 등 후처리…
 }
+
 void UWBP_Lobby::BP_ReadyOff()
 {
     if (auto PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
@@ -250,9 +289,9 @@ void UWBP_Lobby::BindColorButtons()
 }
 
 // 색
-void UWBP_Lobby::OnClick_ColorR() { if (!PS_Cached || PS_Cached->bReady) return; BP_SetPreviewColor(ELobbyColor::Red); }
-void UWBP_Lobby::OnClick_ColorG() { if (!PS_Cached || PS_Cached->bReady) return; BP_SetPreviewColor(ELobbyColor::Green); }
-void UWBP_Lobby::OnClick_ColorB() { if (!PS_Cached || PS_Cached->bReady) return; BP_SetPreviewColor(ELobbyColor::Blue); }
+void UWBP_Lobby::OnClick_ColorR() { if (!PS_Cached || PS_Cached->bReady) return; BP_SetPreviewColor(EEnemyColor::Red); }
+void UWBP_Lobby::OnClick_ColorG() { if (!PS_Cached || PS_Cached->bReady) return; BP_SetPreviewColor(EEnemyColor::Green); }
+void UWBP_Lobby::OnClick_ColorB() { if (!PS_Cached || PS_Cached->bReady) return; BP_SetPreviewColor(EEnemyColor::Blue); }
 
 void UWBP_Lobby::NativeDestruct()
 {
