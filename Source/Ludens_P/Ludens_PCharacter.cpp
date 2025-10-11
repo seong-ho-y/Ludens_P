@@ -131,6 +131,8 @@ void ALudens_PCharacter::BeginPlay()
 		// 로비 UI 모드 잔상이 있으면 입력이 막힐 수 있음 → 게임 전용으로 전환
 		PC->SetInputMode(FInputModeGameOnly{});
 		PC->bShowMouseCursor = false;
+
+		ApplyCosmeticsFromPSROnce();
 	}
 }
 
@@ -150,34 +152,6 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 			SavedAmmo = MaxSavedAmmo / 2;
 			MaxAmmo = PSR->MaxAmmo;
 			CurrentAmmo = MaxAmmo;
-
-			// 외형/색 1회 적용
-			if (!bCosmeticsApplied && AppearanceDB && Mesh1P)
-			{
-				// 로비에서 선택한 외형/색을 1회 반영
-
-				// 변경: EEnemyColor → ELobbyColor 매핑 1줄 추가
-				auto ToLobbyColor = [](EEnemyColor C)->ELobbyColor
-					{
-						switch (C)
-						{
-						case EEnemyColor::Red:   return ELobbyColor::Red;
-						case EEnemyColor::Green: return ELobbyColor::Green;
-						case EEnemyColor::Blue:  return ELobbyColor::Blue;
-						default:                 return ELobbyColor::Red;
-						}
-					};
-
-				if (AppearanceDB && GetMesh() && PSR)
-				{
-					AppearanceDB->ApplyToByEnemyColor(GetMesh(), PSR->AppearanceId, PSR->PlayerColor);
-					UE_LOG(LogTemp, Display, TEXT("[Cosmetics] Body applied Ap=%d, EnemyColor=%d, Mesh=%s"),
-						PSR->AppearanceId, (int)PSR->PlayerColor, *GetNameSafe(GetMesh()));
-				}
-
-
-				bCosmeticsApplied = true;
-			}
 
 			// 스킬 선택값 캐시(스킬 자체 로직은 아직 미구현이므로 보관만)
 			CachedSubskillId = PSR->SubskillId;
@@ -660,4 +634,47 @@ void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 	DOREPLIFETIME(ALudens_PCharacter, bCanDash);
 	DOREPLIFETIME(ALudens_PCharacter, SavedAmmo);
 	DOREPLIFETIME(ALudens_PCharacter, CurrentAmmo);
+}
+
+void ALudens_PCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	ApplyCosmeticsFromPSROnce(); // 클라: PSR 복제 완료 직후 1회 더 시도
+}
+
+void ALudens_PCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	ApplyCosmeticsFromPSROnce(); // 서버: 폰 소유 확정 시 1회 시도
+}
+
+void ALudens_PCharacter::ApplyCosmeticsFromPSROnce()
+{
+	if (bCosmeticsApplied) return;
+
+	APlayerState_Real* PSRLocal = GetPlayerState<APlayerState_Real>();
+	if (!PSRLocal || !AppearanceDB) return;
+
+	// 3인칭 바디 메시(월드 표시)는 '서버'가 적용해야 다른 클라에도 복제됨
+	if (HasAuthority())
+	{
+		if (USkeletalMeshComponent* Mesh3P = GetMesh())
+		{
+			AppearanceDB->ApplyToByEnemyColor(Mesh3P, PSRLocal->AppearanceId, PSRLocal->PlayerColor);
+		}
+	}
+
+	// 1인칭 팔은 소유 클라 화면 전용(서버가 바꿀 필요 없음)
+	if (IsLocallyControlled())
+	{
+		if (USkeletalMeshComponent* Arms = Mesh1P)
+		{
+			AppearanceDB->ApplyToByEnemyColor(Arms, PSRLocal->AppearanceId, PSRLocal->PlayerColor);
+		}
+	}
+
+	UE_LOG(LogTemp, Display, TEXT("[Cosmetics] Applied Ap=%d, EnemyColor=%d, Owner=%d, Auth=%d"),
+		PSRLocal->AppearanceId, (int)PSRLocal->PlayerColor, (int)IsLocallyControlled(), (int)HasAuthority());
+
+	bCosmeticsApplied = true; // 중복 방지
 }

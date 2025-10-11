@@ -21,16 +21,7 @@
 #include "LobbyTypes.h"
 
 
-static EEnemyColor ToEnemy(ELobbyColor C)
-{
-    switch (C)
-    {
-    case ELobbyColor::Red:   return EEnemyColor::Red;
-    case ELobbyColor::Green: return EEnemyColor::Green;
-    case ELobbyColor::Blue:  return EEnemyColor::Blue;
-    default:                 return EEnemyColor::Red;
-    }
-}
+
 
 void UWBP_Lobby::InitPreviewRefs(ALobbyPreviewRig* InSelf, ALobbyPreviewRig* InOtherL, ALobbyPreviewRig* InOtherR)
 {
@@ -72,11 +63,11 @@ void UWBP_Lobby::BP_ReadyOn()
     {
         if (auto* PS = PC->GetLobbyPS())
         {
-            if (PS->PreviewColor == ELobbyColor::Red
-                || PS->PreviewColor == ELobbyColor::Green
-                || PS->PreviewColor == ELobbyColor::Blue)
+            if (PS->PreviewColor == EEnemyColor::Red
+                || PS->PreviewColor == EEnemyColor::Green
+                || PS->PreviewColor == EEnemyColor::Blue)
             {
-                FinalColor = ToEnemy(PS->PreviewColor);
+                FinalColor = PS->PreviewColor;
             }
         }
 
@@ -203,8 +194,6 @@ void UWBP_Lobby::OnA3Clicked() { if (!PS_Cached || PS_Cached->bReady) return; Se
 
 void UWBP_Lobby::OnPSChanged()
 {
-    UE_LOG(LogTemp, Log, TEXT("[LobbyUI] OnPSChanged: PreviewColor=%d"),
-        (int32)(PS_Cached ? PS_Cached->PreviewColor : ELobbyColor::None)); // 기존 로그
 
     // 기존 UI 갱신 루틴 유지
     UpdateAppearanceHighlight();
@@ -220,8 +209,8 @@ void UWBP_Lobby::OnPSChanged()
 
     const int32      NewAppearanceId = PS_Cached->AppearanceId;
     const bool       bReady = PS_Cached->bReady;
-    const ELobbyColor PreviewC = PS_Cached->PreviewColor;
-    const ELobbyColor SelectedC = PS_Cached->SelectedColor;
+    const EEnemyColor PreviewC = PS_Cached->PreviewColor;
+    const EEnemyColor SelectedC = PS_Cached->SelectedColor;
 
     // (a) 외형 변경 시에만 적용 + 정면 스냅
     if (NewAppearanceId >= 0 && NewAppearanceId != LastAppearanceId)
@@ -406,7 +395,7 @@ bool UWBP_Lobby::CanReadyNow() const
 {
     if (!PS_Cached) return false;
 
-    const bool bHasColor = (PS_Cached->PreviewColor != ELobbyColor::None);
+    const bool bHasColor = (PS_Cached->PreviewColor == EEnemyColor::Red || PS_Cached->PreviewColor == EEnemyColor::Green || PS_Cached->PreviewColor == EEnemyColor::Blue);
     const bool bHasAppearance = (PS_Cached->AppearanceId >= 0);
     const bool bHasSkill = (PS_Cached->SubskillId >= 0);
     return bHasColor && bHasAppearance && bHasSkill && !PS_Cached->bReady;
@@ -511,12 +500,12 @@ void UWBP_Lobby::OnGSReadyCountChanged(int32 /*NewReadyCount*/)
 static FLinearColor ColorForSlot(const APlayerState_Real* PS)
 {
     if (!PS) return FLinearColor(0, 0, 0, 0);
-    const ELobbyColor C = PS->bReady ? PS->SelectedColor : PS->PreviewColor;
+    const EEnemyColor C = PS->bReady ? PS->SelectedColor : PS->PreviewColor;
     switch (C)
     {
-    case ELobbyColor::Red:   return FLinearColor(1, 0, 0, 1);
-    case ELobbyColor::Green: return FLinearColor(0, 1, 0, 1);
-    case ELobbyColor::Blue:  return FLinearColor(0, 0, 1, 1);
+    case EEnemyColor::Red:   return FLinearColor(1, 0, 0, 1);
+    case EEnemyColor::Green: return FLinearColor(0, 1, 0, 1);
+    case EEnemyColor::Blue:  return FLinearColor(0, 0, 1, 1);
     default:                 return FLinearColor(0, 0, 0, 0);
     }
 }

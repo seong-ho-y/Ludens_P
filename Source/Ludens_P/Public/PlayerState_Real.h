@@ -77,10 +77,10 @@ public:
 	int32 AppearanceId = -1;              // 로비에서 고른 외형(A0~A3 등)
 
 	UPROPERTY(ReplicatedUsing = OnRep_PreviewColor, BlueprintReadOnly, Category = "Lobby")
-	ELobbyColor PreviewColor = ELobbyColor::None;  // 편집 중 미리보기 색
+	EEnemyColor PreviewColor = EEnemyColor::Red;   // 폴백(초기값, 편한 값으로)
 
 	UPROPERTY(ReplicatedUsing = OnRep_SelectedColor, BlueprintReadOnly, Category = "Lobby")
-	ELobbyColor SelectedColor = ELobbyColor::None; // Ready 시점에 확정된 색(잠금)
+	EEnemyColor SelectedColor = EEnemyColor::Red;
 
 	UPROPERTY(ReplicatedUsing = OnRep_SubskillId, BlueprintReadOnly, Category = "Lobby")
 	int32 SubskillId = -1;                // 보조 스킬(인덱스)

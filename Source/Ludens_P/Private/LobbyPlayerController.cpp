@@ -13,19 +13,7 @@
 #include "Ludens_P/EEnemyColor.h"
 #include "LobbyTypes.h"
 
-namespace
-{
-    static ELobbyColor ToLobbyColor(EEnemyColor C)
-    {
-        switch (C)
-        {
-        case EEnemyColor::Red:   return ELobbyColor::Red;
-        case EEnemyColor::Green: return ELobbyColor::Green;
-        case EEnemyColor::Blue:  return ELobbyColor::Blue;
-        default:                 return ELobbyColor::Red; // 폴백
-        }
-    }
-}
+
 
 DEFINE_LOG_CATEGORY_STATIC(LogLobbyPC, Log, All);
 
@@ -182,7 +170,7 @@ void ALobbyPlayerController::ServerSetPreviewColor_Implementation(EEnemyColor In
     {
         if (!PS->bReady)
         {
-            PS->PreviewColor = ToLobbyColor(InColor); // ★ 내부에서 1회 변환
+            PS->PreviewColor = InColor;
             PS->NotifyAnyLobbyFieldChanged();         // 호스트 즉시 갱신
             PS->ForceNetUpdate();
         }
@@ -204,12 +192,12 @@ void ALobbyPlayerController::ServerReadyOn_Implementation(EEnemyColor Requested)
     // 이미 Ready면 무시
     if (PS->bReady) return;
 
-    const ELobbyColor ColorToLock = ToLobbyColor(Requested);
+    const EEnemyColor ColorToLock = Requested;
 
     // 유효성 체크(기존 유지)
     const bool bHasAppearance = (PS->AppearanceId >= 0 && PS->AppearanceId <= 3);
     const bool bHasSkill = (PS->SubskillId >= 0 && PS->SubskillId <= 4);
-    const bool bHasColor = (ColorToLock != ELobbyColor::None); // 기존: Preview/Selected 확인
+    const bool bHasColor = (ColorToLock == EEnemyColor::Red || ColorToLock == EEnemyColor::Green || ColorToLock == EEnemyColor::Blue);
 
     if (!(bHasAppearance && bHasSkill && bHasColor))
     {
@@ -255,7 +243,6 @@ void ALobbyPlayerController::ServerReadyOff_Implementation()
     if (PS->bReady)
     {
         GS->UnlockColor(PS->GetPlayerId(), PS->SelectedColor); // 색 잠금 해제
-        PS->SelectedColor = ELobbyColor::None;                  // 커밋 색 초기화
         PS->bReady = false;                                     // 준비 해제
 
         // UI 동기화

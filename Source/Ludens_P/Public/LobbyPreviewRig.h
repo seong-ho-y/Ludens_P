@@ -2,6 +2,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "LobbyTypes.h"
+#include "Ludens_P/EEnemyColor.h"
 #include "LobbyPreviewRig.generated.h"
 
 class USceneComponent;
@@ -24,8 +25,8 @@ public:
     // 외부 API
     UFUNCTION(BlueprintCallable, Category = "Lobby|Preview") void SetRenderTarget(UTextureRenderTarget2D* Target);
     UFUNCTION(BlueprintCallable, Category = "Lobby|Preview") void SetAppearance(int32 Id);
-    UFUNCTION(BlueprintCallable, Category = "Lobby|Preview") void SetPreviewColor(ELobbyColor C);
-    UFUNCTION(BlueprintCallable, Category = "Lobby|Preview") void SetSelectedColor(ELobbyColor C);
+    UFUNCTION(BlueprintCallable, Category = "Lobby|Preview") void SetPreviewColor(EEnemyColor C);
+    UFUNCTION(BlueprintCallable, Category = "Lobby|Preview") void SetSelectedColor(EEnemyColor C);
     UFUNCTION(BlueprintCallable, Category = "Lobby|Preview") void SetReadyView(bool bOn);
     UFUNCTION(BlueprintCallable, Category = "Lobby|Preview") void AddYaw(float DeltaYaw);
     UFUNCTION(BlueprintCallable, Category = "Lobby|Preview") void SnapYawToZero();
@@ -47,8 +48,8 @@ private:
 
     // 현재 상태
     int32       CurrentAppearanceId = -1;
-    ELobbyColor CurrentPreviewColor = ELobbyColor::None;
-    ELobbyColor CurrentSelectedColor = ELobbyColor::None;
+    EEnemyColor CurrentPreviewColor = EEnemyColor::Red;
+    EEnemyColor CurrentSelectedColor = EEnemyColor::Red;
     bool        bReadyView = false;
 
     // DA 적용 전용

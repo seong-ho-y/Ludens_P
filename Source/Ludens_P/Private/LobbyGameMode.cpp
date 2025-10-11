@@ -9,19 +9,6 @@
 #include "Ludens_P/EEnemyColor.h"
 #include "LobbyTypes.h"
 
-namespace
-{
-    static EEnemyColor ToEnemyColor(ELobbyColor C)
-    {
-        switch (C)
-        {
-        case ELobbyColor::Red:   return EEnemyColor::Red;
-        case ELobbyColor::Green: return EEnemyColor::Green;
-        case ELobbyColor::Blue:  return EEnemyColor::Blue;
-        default:                 return EEnemyColor::Red; // 폴백
-        }
-    }
-}
 
 ALobbyGameMode::ALobbyGameMode()
 {
@@ -64,24 +51,14 @@ void ALobbyGameMode::StartGameIfAllReady()
         return;
     }
 
-    // 3) ★ 여기서 '단 한 번만' 색 확정 (ELobbyColor -> EEnemyColor)
-    auto ToEnemyColor = [](ELobbyColor C)
-        {
-            switch (C)
-            {
-            case ELobbyColor::Red:   return EEnemyColor::Red;
-            case ELobbyColor::Green: return EEnemyColor::Green;
-            case ELobbyColor::Blue:  return EEnemyColor::Blue;
-            default:                 return EEnemyColor::Red; // 폴백(프로젝트 규칙에 맞게)
-            }
-        };
+    
 
     for (APlayerState* PSBase : GS->PlayerArray)
     {
         if (auto* PS = Cast<APlayerState_Real>(PSBase))
         {
             // 최종 1회 커밋
-            PS->PlayerColor = ToEnemyColor(PS->SelectedColor);
+            PS->PlayerColor = PS->SelectedColor;
 
             // (선택) 복제 즉시화를 원하면 유지, 아니면 주석처리 가능
             PS->ForceNetUpdate();
