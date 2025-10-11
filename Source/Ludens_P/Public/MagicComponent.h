@@ -18,10 +18,11 @@ public:
 	UMagicComponent();
 
 	UFUNCTION(BlueprintCallable, Category="Magic")
-	void CastSpellAtLocation(const FVector TargetLocation);
+	void CastSpellAtLocation(const FVector& TargetLocation);
+	//void PrepareToCast(const FVector& Vector);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Magic")
-	float CastingTime = 1.5f;
+	float CastingTime = 0.7f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Magic")
 	float SpellDamage = 50.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Magic")
@@ -30,6 +31,7 @@ public:
 	UMaterialInterface* WarningDecalMaterial;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Magic")
 	UNiagaraSystem* SpellEffect;
+	FVector TargetCastLocation = FVector::ZeroVector;
 
 protected:
 	// Called when the game starts
