@@ -20,7 +20,6 @@
 #include "JellooComponent.h"
 #include "PlayerState_Real.h"
 #include "ReviveComponent.h"
-
 #include "Engine/LocalPlayer.h"
 #include "Net/UnrealNetwork.h"
 
@@ -64,6 +63,16 @@ ALudens_PCharacter::ALudens_PCharacter()
 
 	// 이동 컴포넌트 복제 설정
 	GetCharacterMovement()->SetIsReplicated(true);
+
+	// 나이아가라 컴포넌트 생성 및 설정
+	DashNiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("DashNiagaraComponent"));
+    
+	// 메시 컴포넌트에 부착
+	DashNiagaraComponent->SetupAttachment(GetMesh()); 
+    
+	// **가장 중요: 자동 활성화 비활성화**
+	// 블루프린트에서 Set Active로 제어하기 위해 기본적으로 꺼둡니다.
+	DashNiagaraComponent->bAutoActivate = false;
 }
 
 void ALudens_PCharacter::BeginPlay()
@@ -295,8 +304,9 @@ void ALudens_PCharacter::Dash(const FInputActionValue& Value)
 
 		// 서버에서 강제 실행
 		LaunchCharacter(DashDirection * DashSpeed, true, true);
-
-		MulticastPlayDashEffect();
+		// Multicast로 이펙트 활성화 명령 전달**
+		// 서버에서 이 함수를 호출하면, 모든 클라이언트(서버 포함)에서 MulticastControlDashEffect_Implementation이 실행됩니다.
+		MulticastControlDashEffect(true); 
 		CurrentDashCount--;
 		bCanDash = false;
 	
@@ -585,9 +595,53 @@ void ALudens_PCharacter::Server_AbsorbComplete_Implementation(const FInputAction
 	AbsorbComplete(Value);
 }
 
-void ALudens_PCharacter::MulticastPlayDashEffect_Implementation()
+void ALudens_PCharacter::MulticastControlDashEffect_Implementation(bool bActivate)
 {
-	if (DashNiagara) UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DashNiagara, GetActorLocation(), GetActorRotation());
+	if (DashNiagaraComponent)
+	{
+		if (bActivate)
+		{
+			// 모든 클라이언트에서 활성화 명령
+			// 이미 활성화된 경우에도 Reset 옵션으로 재시작 (Set Active는 Reset 옵션을 포함합니다)
+			DashNiagaraComponent->SetActive(true, true); 
+            
+			// 0.3초 후 DeactivateDashEffect 함수 호출하도록 타이머 설정
+			GetWorld()->GetTimerManager().SetTimer(
+				DashEffectTimerHandle,
+				this,
+				&ALudens_PCharacter::DeactivateDashEffect,
+				0.3f, // 대시 이펙트 지속 시간
+				false
+			);
+		}
+		else
+		{
+			// 비활성화 명령 (0.3초 타이머에 의해 호출됨)
+			DashNiagaraComponent->Deactivate();
+            
+			// 타이머 해제 (안전 장치)
+			GetWorld()->GetTimerManager().ClearTimer(DashEffectTimerHandle);
+		}
+	}
+}
+
+void ALudens_PCharacter::DeactivateDashEffect()
+{
+	// MulticastControlDashEffect_Implementation(false)를 직접 호출
+	// 서버에서 호출하면 Multicast로 동작하지 않으므로, 이펙트 비활성화는
+	// 이미 클라이언트와 서버 모두에서 실행되고 있는 Deactivate 함수를 직접 호출하는 방식이 더 간단합니다.
+	// 하지만 네트워크 안정성을 위해 Multicast 함수에 통합하는 것이 가장 좋습니다.
+    
+	// 여기서는 MulticastControlDashEffect_Implementation(false)를 대신 호출하는 로직을 가정합니다.
+	// **다만, Multicast 함수의 Implementation을 직접 호출하는 것은 권장되지 않습니다.**
+	// 가장 안전한 방법은 아래 Dash() 로직처럼, 
+	// 서버에서만 SetTimer를 설정하고, 이 타이머 완료 시 Deactivate()를 호출하는 것입니다.
+
+	// 🌟 안전한 방법: 클라이언트마다 타이머를 실행하고 로컬에서 비활성화
+	if (DashNiagaraComponent)
+	{
+		DashNiagaraComponent->Deactivate();
+	}
 }
 
 void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const

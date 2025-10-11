@@ -79,8 +79,6 @@ private:
 	class UInputAction* AbsorbAction;
 	
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Niagara")
-	UNiagaraSystem* DashNiagara;
 	UPROPERTY()
 	class APlayerState_Real* PSR = nullptr;
 private:
@@ -96,6 +94,12 @@ private:
 	class UTP_WeaponComponent* WeaponComponent;
 	UPROPERTY()
 	class UReviveComponent* ReviveComponent;
+	
+protected:
+	// **1. 나이아가라 컴포넌트 선언**
+	// Static Mesh 등 다른 컴포넌트처럼 캐릭터에 부착되어 사용됩니다.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dash")
+	TObjectPtr<UNiagaraComponent> DashNiagaraComponent; // 'DashNiagara' 대신 컴포넌트 사용
 	
 public:
 	ALudens_PCharacter();
@@ -178,10 +182,11 @@ protected:
 	FTimerHandle DashPhysicsTimerHandle; // 물리 설정 복원 전용
 	FTimerHandle DashCooldownTimerHandle; // 대쉬 쿨타임
 	FTimerHandle DashRechargeTimerHandle; // 대쉬 차지
-
-	UPROPERTY(EditDefaultsOnly, Category = "Dash", Replicated)
+	FTimerHandle DashEffectTimerHandle; // **2. 대쉬 이펙트 비활성화 타이머 핸들**
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash", Replicated)
 	bool bCanDash = true;
-
+	
 	// 근접 공격인지 부활인지 판단하는 함수 선언
 	void Interact(const FInputActionValue& Value);
 	
@@ -237,10 +242,13 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_AbsorbComplete(const FInputActionValue& Value);
 	FTimerHandle AbsorbCompleteTimerHandle;
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastPlayDashEffect();
 	
+public:
+	// **3. 컴포넌트 활성화/비활성화용 Multicast 함수**
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastControlDashEffect(bool bActivate);
+	// **4. 이펙트를 비활성화할 함수**
+	void DeactivateDashEffect();
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
 };

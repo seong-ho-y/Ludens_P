@@ -106,7 +106,7 @@ void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotato
 	if (FireNiagara)
 	{
 		FRotator NiagaraRotation(0.0f, SpawnRotation.Yaw, 0.0f);
-		MulticastSpawnEffect(FireNiagara, SpawnLocation, NiagaraRotation); // 발사할 때 총구 쪽에 나이아가라 재생
+		MulticastSpawnEffect(FireNiagara, SpawnLocation - FVector(20,0,0), NiagaraRotation); // 발사할 때 총구 쪽에 나이아가라 재생
 	}
 
 	ALudens_PProjectile* Projectile = GetWorld()->SpawnActor<ALudens_PProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams); // (스폰 위치, 방향, 액터가 게임 월드가 스폰될 때 디테알한 부분을 조정 가능.)
