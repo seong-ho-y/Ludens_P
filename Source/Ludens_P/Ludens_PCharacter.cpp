@@ -72,6 +72,24 @@ void ALudens_PCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
+
+	//컴포넌트 할당
+	PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
+	PlayerStateComponent = FindComponentByClass<UPlayerStateComponent>();
+	WeaponComponent = FindComponentByClass<UTP_WeaponComponent>();
+	ReviveComponent = FindComponentByClass<UReviveComponent>();
+
+	if (PlayerAttackComponent && PlayerAttackComponent->WeaponAttackHandler && WeaponComponent)
+	{
+		PlayerAttackComponent->WeaponAttackHandler->WeaponComp = WeaponComponent;
+	}
+
+	if (!PlayerAttackComponent) { UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerAttackComponent is null!")); }
+	if (!PlayerStateComponent) { UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerStateComponent is null!")); }
+	if (!WeaponComponent) { UE_LOG(LogTemplateCharacter, Error, TEXT("WeaponComponent is null!")); }
+	if (!ReviveComponent) { UE_LOG(LogTemplateCharacter, Error, TEXT("ReviveComponent is null!")); }
+
+
 	// 로컬 플레이어 컨트롤러 확인
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
@@ -90,6 +108,7 @@ void ALudens_PCharacter::BeginPlay()
 			}
 		}
 
+		/*
 		//컴포넌트 할당
 		PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
 		PlayerStateComponent = FindComponentByClass<UPlayerStateComponent>();
@@ -101,12 +120,12 @@ void ALudens_PCharacter::BeginPlay()
 			PlayerAttackComponent->WeaponAttackHandler->WeaponComp = WeaponComponent;
 		}
 
+		*/
+
 		// --- 널 체크 ---
 		if (!DashAction) { UE_LOG(LogTemplateCharacter, Error, TEXT("DashAction is null!")); }
 		if (!MeleeAttackAction) { UE_LOG(LogTemplateCharacter, Error, TEXT("MeleeAttackAction is null!")); }
-		if (!PlayerAttackComponent) { UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerAttackComponent is null!")); }
-		if (!PlayerStateComponent) { UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerStateComponent is null!")); }
-		if (!ReviveComponent) { UE_LOG(LogTemplateCharacter, Error, TEXT("ReviveComponent is null!")); }
+		
 
 
 		// 로비 UI 모드 잔상이 있으면 입력이 막힐 수 있음 → 게임 전용으로 전환
@@ -474,6 +493,7 @@ void ALudens_PCharacter::Fire(const FInputActionValue& Value)
 		return;
 	}
 	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked || WeaponComponent->bIsWeaponAttacking || bIsReloading) return;
+
 	if (CurrentAmmo > 0)
 	{
 		// 서버: 실제 발사 처리

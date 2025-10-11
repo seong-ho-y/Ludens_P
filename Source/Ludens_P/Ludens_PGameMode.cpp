@@ -19,7 +19,7 @@ class UPlayerStateComponent;
 ALudens_PGameMode::ALudens_PGameMode()
 	: Super()
 {	
-
+	
 	/*
 	// set default pawn class to our Blueprinted character
 	//여기서 BP 캐릭터를 디폴트 폰으로 설정
@@ -34,6 +34,7 @@ ALudens_PGameMode::ALudens_PGameMode()
 		UE_LOG(LogTemp, Error, TEXT("❌ Failed to find BP Pawn!"));
 	}
 	*/
+	/// 아래와 같이 수정함.
 	
 	bUseSeamlessTravel = true;
 	DefaultPawnClass = ALudens_PCharacter::StaticClass();
@@ -99,7 +100,7 @@ void ALudens_PGameMode::HandleStartingNewPlayer_Implementation(APlayerController
 
 }
 
-// ✨ 새로 추가된 함수의 전체 내용입니다.
+//  새로 추가된 함수의 전체 내용입니다.
 void ALudens_PGameMode::AssignColorToPlayer(AController* NewPlayer)
 {
 
