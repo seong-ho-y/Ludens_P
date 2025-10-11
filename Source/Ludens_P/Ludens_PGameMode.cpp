@@ -9,6 +9,7 @@
 #include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
+#include "EnemySpawnPoint.h"
 #include "WorldPartition/ContentBundle/ContentBundleLog.h"
 
 class URewardSystemComponent;
@@ -41,6 +42,11 @@ ALudens_PGameMode::ALudens_PGameMode()
 void ALudens_PGameMode::BeginPlay()
 {
 	Super::BeginPlay();
+	PoolManager = Cast<AEnemyPoolManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AEnemyPoolManager::StaticClass()));
+	if (!PoolManager)
+	{
+		UE_LOG(LogTemp, Error, TEXT("FATAL ERROR: PoolManager not found in the persistent level!"));
+	}
 }
 
 
@@ -78,7 +84,7 @@ void ALudens_PGameMode::HandleStartingNewPlayer_Implementation(APlayerController
 	Super::HandleStartingNewPlayer_Implementation(NewPlayer); // Super 호출도 _Implementation으로 변경
 
 	// 이제 이 안에서 AssignColorToPlayer를 호출하면 됩니다.
-	AssignColorToPlayer(NewPlayer);
+	//AssignColorToPlayer(NewPlayer);
 }
 
 // ✨ 새로 추가된 함수의 전체 내용입니다.
@@ -99,7 +105,7 @@ void ALudens_PGameMode::AssignColorToPlayer(AController* NewPlayer)
 
 	int32 PlayerIndex = PlayerCount - 1;
 	//UE_LOG(LogTemp, Warning, TEXT("Calculated Player Index: %d"), PlayerIndex);
-	// --- 진단 로그 끝 ---
+	// --- 진단 로그 끝 ---	
 
 	if (!ColorRotation.IsValidIndex(PlayerIndex))
 	{
@@ -114,9 +120,102 @@ void ALudens_PGameMode::AssignColorToPlayer(AController* NewPlayer)
 		if (StateComp)
 		{
 			EEnemyColor NewColor = ColorRotation[PlayerIndex];
-			StateComp->PlayerColor = NewColor;
 
-			//UE_LOG(LogTemp, Warning, TEXT("SUCCESS: Assigned Color %s to Player with Index %d."), *UEnum::GetValueAsString(NewColor), PlayerIndex);
+			// --- ✨ 안전장치 추가 ✨ ---
+			if (NewColor == EEnemyColor::Uninitialized)
+			{
+				UE_LOG(LogTemp, Error, TEXT("CRITICAL WARNING: Attempted to assign Uninitialized color to Player %s. Check the ColorRotation array in GameMode Blueprint!"), *NewPlayer->GetName());
+				// 여기서 함수를 종료하여 '색 없음' 상태의 플레이어가 생기는 것을 막습니다.
+				// 혹은 임시로 기본 색상을 할당할 수도 있습니다. ex) NewColor = EEnemyColor::Red;
+				return; 
+			}
+			// --- ✨ 여기까지 ---
+			StateComp->PlayerColor = NewColor;
+			UE_LOG(LogTemp, Warning, TEXT("SUCCESS: Assigned Color %s to Player with Index %d."), *UEnum::GetValueAsString(NewColor), PlayerIndex);
 		}
 	}
+}
+void ALudens_PGameMode::StartSpawningEnemies()
+{
+	if (!PoolManager)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("PoolManager를 찾을 수 없습니다!"));
+		return;
+	}
+
+	// 1. 월드에 배치된 모든 스폰 포인트를 찾습니다.
+	TArray<AActor*> SpawnPointActors;
+	// 2. BP_EnemySpawnPoint 대신, 그것의 C++ 부모 클래스인 AEnemySpawnPoint를 찾습니다.
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEnemySpawnPoint::StaticClass(), SpawnPointActors);
+
+	if (SpawnPointActors.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("월드에 AEnemySpawnPoint 타입의 액터가 하나도 없습니다!"));
+		return;
+	}
+    
+	UE_LOG(LogTemp, Log, TEXT("%d개의 스폰 포인트를 찾았습니다. 스폰을 시작합니다."), SpawnPointActors.Num());
+
+	// 2. 스폰할 적의 수를 정합니다. (예: 10마리)
+	const int32 NumberOfEnemiesToSpawn = 10;
+    
+	// 스폰 가능한 포인트 수보다 많이 스폰하지 않도록 보정합니다.
+	int32 ActualEnemiesToSpawn = FMath::Min(NumberOfEnemiesToSpawn, SpawnPointActors.Num());
+    
+	UE_LOG(LogTemp, Log, TEXT("%d개의 스폰 포인트 중 %d개의 적을 스폰합니다."), SpawnPointActors.Num(), ActualEnemiesToSpawn);
+
+	for (int32 i = 0; i < ActualEnemiesToSpawn; ++i)
+	{
+		// 3. 사용 가능한 스폰 포인트 중에서 랜덤하게 하나를 고릅니다.
+		int32 RandomIndex = FMath::RandRange(0, SpawnPointActors.Num() - 1);
+		AActor* SelectedSpawnPoint = SpawnPointActors[RandomIndex];
+		FVector SpawnLocation = SelectedSpawnPoint->GetActorLocation();
+
+		// 4. (중요!) 한 번 사용한 스폰 포인트는 목록에서 제거하여 중복 스폰을 방지합니다.
+		SpawnPointActors.RemoveAt(RandomIndex);
+
+		// 5. CreateRandomEnemyProfile()을 호출하여 스폰할 적의 정보를 생성합니다.
+		FEnemySpawnProfile ProfileToSpawn = CreateRandomEnemyProfile();
+       
+		// 6. 생성된 프로필과 위치를 사용하여 PoolManager에게 스폰을 요청합니다.
+		PoolManager->SpawnEnemy(ProfileToSpawn, SpawnLocation, FRotator::ZeroRotator);
+	}
+}
+FEnemySpawnProfile ALudens_PGameMode::CreateRandomEnemyProfile()
+{
+	FEnemySpawnProfile Profile;
+
+	// 1. 적 타입 결정: 8개 중에 하나를 공평하게 뽑습니다.
+	if (EnemyBPs.Num() > 0)
+	{
+		int32 RandomIndex = FMath::RandRange(0, EnemyBPs.Num() - 1);
+		Profile.EnemyClass = EnemyBPs[RandomIndex];
+	}
+
+	// 2. 색깔 결정: 확률에 따라 등급을 나눕니다.
+	float ColorRoll = FMath::FRand(); // 0.0 ~ 1.0 사이의 랜덤 값
+	if (ColorRoll < 0.3f) // 30% 확률: 약한 등급 (R, G, B)
+	{
+		Profile.Color = (EEnemyColor)FMath::RandRange(0, 2); // Red, Green, Blue 중 랜덤
+	}
+	else if (ColorRoll < 0.9f) // 60% 확률: 중간 등급 (Y, M, C)
+	{
+		Profile.Color = (EEnemyColor)FMath::RandRange(3, 5); // Yellow, Magenta, Cyan 중 랜덤
+	}
+	else // 10% 확률: 최강 등급 (Black)
+	{
+		Profile.Color = EEnemyColor::Black;
+	}
+
+	// 3. 강화형 결정: 5% 확률로 강화형이 됩니다.
+	if (FMath::FRand() < 0.05f)
+	{
+		Profile.StatDataAsset = EnhancedStatDA;
+	}
+	else
+	{
+		Profile.StatDataAsset = nullptr;
+	}
+
+	return Profile;
 }
