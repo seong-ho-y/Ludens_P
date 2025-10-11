@@ -53,10 +53,10 @@ public:
 	float WeaponAttackCoolTime = 0.3f; // 공격속도 ✅
 
 	UPROPERTY(Replicated)
-	float CriticalRate = 0.1f; // ❌
+	float CriticalRate = 0.1f; // ✅
 
 	UPROPERTY(Replicated)
-	float CriticalDamage = 1.5f; // ❌
+	float CriticalDamage = 1.5f; // ✅
 
 	UPROPERTY(Replicated)
 	float AbsorbDelay = 0.5f; // 젤루 흡수 딜레이 ✅
