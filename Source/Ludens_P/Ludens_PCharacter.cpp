@@ -123,7 +123,8 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 		PSR = Cast<APlayerState_Real>(GetPlayerState());
 		if (PSR) // 115 번째 줄
 		{
-			CurrentDashCount = PSR->MaxDashCount;
+			MaxDashCount = PSR->MaxDashCount;
+			CurrentDashCount = MaxDashCount;
 			CurrentAmmo = PSR->MaxAmmo;
 			MaxSavedAmmo = PSR->MaxSavedAmmo;
 			SavedAmmo = MaxSavedAmmo / 2;
@@ -216,7 +217,7 @@ void ALudens_PCharacter::TestAttack(const FInputActionValue& Value)
 {
 	if (PlayerStateComponent)
 	{
-		PlayerStateComponent->TakeDamage(100.0f);
+		PlayerStateComponent->TakeDamage(30.0f);
 	}
 }
 
@@ -309,7 +310,7 @@ void ALudens_PCharacter::Dash(const FInputActionValue& Value)
 		MulticastControlDashEffect(true); 
 		CurrentDashCount--;
 		bCanDash = false;
-	
+		
 		// 5. 0.2초 후 원래 값 복원 (대시 지속시간에 맞게 조절)
 		GetWorld()->GetTimerManager().SetTimer(
 			DashPhysicsTimerHandle,
@@ -324,13 +325,22 @@ void ALudens_PCharacter::Dash(const FInputActionValue& Value)
 			0.2f,
 			false
 		);
+		
+		// 1. 서버 시간 복제
+		// 현재 서버 시간을 복제 변수에 저장합니다.
+		ReplicatedDashCooldownStartTime = GetWorld()->GetTimeSeconds(); 
+        
+		// 2. OnRep 함수가 서버에서도 실행되도록 수동 호출
+		// 서버의 UI도 업데이트해야 하므로 필수
+		OnRep_DashCooldownTime(); 
 
-		// 1초 후 다음 대쉬 가능
+		// 3. 쿨타임 종료 로직은 서버 타이머로 유지
+		// bCanDash를 True로 바꾸는 로직은 서버에서만 결정해야 합니다.
 		GetWorld()->GetTimerManager().SetTimer(
-			DashCooldownTimerHandle,
-			[this]() { bCanDash = true; },
-			DashCooldown,
-			false
+		   DashCooldownTimerHandle,
+		   [this]() { bCanDash = true; },
+		   DashCooldown,
+		   false
 		);
 
 		//3초마다 대쉬 충전
@@ -362,6 +372,15 @@ void ALudens_PCharacter::RechargeDash()
 	{
 		GetWorld()->GetTimerManager().ClearTimer(DashRechargeTimerHandle);
 	}
+}
+
+void ALudens_PCharacter::OnRep_DashCooldownTime()
+{
+	// 이 함수는 클라이언트와 서버에서 모두 실행됩니다.
+	// **클라이언트 UI**가 쿨타임 시작을 알 수 있게 됩니다.
+    
+	// 이 로직은 UI 바인딩에 필요한 정보를 제공하는 역할을 합니다.
+	// UI 바인딩 로직에서 이 변수를 사용하게 됩니다.
 }
 
 void ALudens_PCharacter::ResetMovementParams() const
@@ -650,6 +669,7 @@ void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 	DOREPLIFETIME(ALudens_PCharacter, JumpCount);
 	DOREPLIFETIME(ALudens_PCharacter, CurrentDashCount);
 	DOREPLIFETIME(ALudens_PCharacter, bCanDash);
+	DOREPLIFETIME(ALudens_PCharacter, ReplicatedDashCooldownStartTime);
 	DOREPLIFETIME(ALudens_PCharacter, SavedAmmo);
 	DOREPLIFETIME(ALudens_PCharacter, CurrentAmmo);
 }

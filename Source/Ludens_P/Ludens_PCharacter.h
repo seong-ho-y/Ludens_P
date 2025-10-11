@@ -88,8 +88,10 @@ private:
 	class UInputMappingContext* DefaultMappingContext;
 	UPROPERTY()
 	class UPlayerAttackComponent* PlayerAttackComponent;
-	UPROPERTY()
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	class UPlayerStateComponent* PlayerStateComponent;
+private:
 	UPROPERTY()
 	class UTP_WeaponComponent* WeaponComponent;
 	UPROPERTY()
@@ -170,15 +172,24 @@ protected:
 	void RechargeDash(); // 대쉬 충전 함수 선언
 	
 	// 대시 시스템 변수
-	UPROPERTY(EditDefaultsOnly, Category = "Dash")
-	int MaxDashCount = 3;
-	UPROPERTY(VisibleAnywhere, Category = "Dash", Replicated)
-	int CurrentDashCount = 3;
-	UPROPERTY(EditDefaultsOnly, Category = "Dash")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dash")
+	int MaxDashCount;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dash", Replicated)
+	int CurrentDashCount;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dash")
 	float DashCooldown = 0.5f;
 	UPROPERTY(EditDefaultsOnly, Category = "Dash")
 	float DashRechargeTime = 3.0f;
+	// 1. 쿨타임 시작 시간 복제 변수 추가
+	// RepNotify를 사용하여 이 값이 클라이언트에게 전달될 때마다 특정 함수를 호출합니다.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_DashCooldownTime, Category = "Dash")
+	float ReplicatedDashCooldownStartTime = 0.0f;
 
+	// 2. RepNotify 함수 선언
+	UFUNCTION()
+	void OnRep_DashCooldownTime();
+
+	
 	FTimerHandle DashPhysicsTimerHandle; // 물리 설정 복원 전용
 	FTimerHandle DashCooldownTimerHandle; // 대쉬 쿨타임
 	FTimerHandle DashRechargeTimerHandle; // 대쉬 차지
@@ -215,12 +226,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Reload")
 	int MaxSavedAmmo; // 최대로 저장할 수 있는 탄알 수
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "Reload", ReplicatedUsing = OnRep_SavedAmmo)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Reload", ReplicatedUsing = OnRep_SavedAmmo)
 	int SavedAmmo; // 저장되어 있는 탄알
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Reload")
 	int MaxAmmo; // 최대로 장전 할 수 있는 탄알 수
-	UPROPERTY(EditDefaultsOnly, Category = "Reload", ReplicatedUsing = OnRep_CurrentAmmo)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Reload", ReplicatedUsing = OnRep_CurrentAmmo)
 	int CurrentAmmo; // 장전 완료 된 탄알
 	
 	UFUNCTION()
