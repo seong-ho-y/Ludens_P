@@ -15,6 +15,17 @@ static UMaterialInterface* PickByColor_DefaultIsRed(const FAppearanceMatSet& Set
     }
 }
 
+static ELobbyColor EnemyToLobbyColor(EEnemyColor C)
+{
+    switch (C)
+    {
+    case EEnemyColor::Red:   return ELobbyColor::Red;
+    case EEnemyColor::Green: return ELobbyColor::Green;
+    case EEnemyColor::Blue:  return ELobbyColor::Blue;
+    default:                 return ELobbyColor::Red; // 폴백
+    }
+}
+
 void ULudensAppearanceData::ApplyTo(USkeletalMeshComponent* MeshComp, int32 Ap, ELobbyColor Color) const
 {
     if (!MeshComp) return;
@@ -54,4 +65,10 @@ void ULudensAppearanceData::ApplyTo(USkeletalMeshComponent* MeshComp, int32 Ap, 
     }
 
     // 나머지 슬롯(유리/화이트/그레이/블랙 등)은 건드리지 않음
+}
+
+void ULudensAppearanceData::ApplyToByEnemyColor(USkeletalMeshComponent* MeshComp, int32 AppearanceIdx, EEnemyColor EnemyColor) const
+{
+    // 내부적으로 기존 ELobbyColor 기반 구현을 재사용
+    ApplyTo(MeshComp, AppearanceIdx, EnemyToLobbyColor(EnemyColor));
 }

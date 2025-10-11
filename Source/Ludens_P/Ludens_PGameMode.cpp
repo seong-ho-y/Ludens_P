@@ -3,6 +3,8 @@
 #include "Ludens_PGameMode.h"
 #include "EnemyPoolManager.h"
 #include "Ludens_PPlayerController.h"
+#include "PlayerState_Real.h"
+#include "Ludens_PCharacter.h"
 #include "PlayerStateComponent.h"
 #include "RewardSystemComponent.h"
 #include "GameFramework/GameStateBase.h"
@@ -17,7 +19,9 @@ class UPlayerStateComponent;
 
 ALudens_PGameMode::ALudens_PGameMode()
 	: Super()
-{
+{	
+	
+	/*
 	// set default pawn class to our Blueprinted character
 	//여기서 BP 캐릭터를 디폴트 폰으로 설정
 	//경로로 찾는 하드코딩을 하기에 경로 달라지면 오류 발생함 !!!!
@@ -30,14 +34,20 @@ ALudens_PGameMode::ALudens_PGameMode()
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ Failed to find BP Pawn!"));
 	}
+	*/
+	/// 아래와 같이 수정함.
+	
+	bUseSeamlessTravel = true;
+	DefaultPawnClass = ALudens_PCharacter::StaticClass();
+	//PlayerController 할당을 위해서 c++ 클래스를 할당해놓음
+	PlayerControllerClass = ALudens_PPlayerController::StaticClass();
+	PlayerStateClass = APlayerState_Real::StaticClass(); // 추가한 PlayerState
+
 
 	ColorRotation.Add(EEnemyColor::Red);
 	ColorRotation.Add(EEnemyColor::Green);
 	ColorRotation.Add(EEnemyColor::Blue);
-	//PlayerController 할당을 위해서 c++ 클래스를 할당해놓음
-	PlayerControllerClass = ALudens_PPlayerController::StaticClass();
 
-	bUseSeamlessTravel = true;
 }
 void ALudens_PGameMode::BeginPlay()
 {
@@ -83,13 +93,31 @@ void ALudens_PGameMode::HandleStartingNewPlayer_Implementation(APlayerController
 {
 	Super::HandleStartingNewPlayer_Implementation(NewPlayer); // Super 호출도 _Implementation으로 변경
 
+	// (디버그)현재 GM / PC / PS / PAWN이 무엇인지 1회 찍어 확인
+	UE_LOG(LogTemp, Log, TEXT("[InGameGM] GM=%s, PC=%s, Pawn=%s, PS=%s"),
+		*GetClass()->GetName(),
+		*GetNameSafe(PlayerControllerClass),
+		*GetNameSafe(DefaultPawnClass),
+		*GetNameSafe(PlayerStateClass));
+	 
+
 	// 이제 이 안에서 AssignColorToPlayer를 호출하면 됩니다.
-	//AssignColorToPlayer(NewPlayer);
+	AssignColorToPlayer(NewPlayer);
+
 }
 
-// ✨ 새로 추가된 함수의 전체 내용입니다.
+//  새로 추가된 함수의 전체 내용입니다.
 void ALudens_PGameMode::AssignColorToPlayer(AController* NewPlayer)
 {
+
+	if (APlayerState_Real* PSR = NewPlayer ? NewPlayer->GetPlayerState<APlayerState_Real>() : nullptr)
+	{
+		// 로비에서 Start 직전에 PSR->PlayerColor가 커밋되어 넘어옴 - 그대로 유지
+		UE_LOG(LogTemp, Log, TEXT("[InGameGM] Keep lobby color: PlayerColor=%d Selected=%d Ready=%d"),
+			(int32)PSR->PlayerColor, (int32)PSR->SelectedColor, PSR->bReady);
+		return; //  덮어쓰기 금지
+	}
+
 	// --- 진단 로그 시작 ---
 	//UE_LOG(LogTemp, Error, TEXT("--- AssignColorToPlayer CALLED for %s ---"), *NewPlayer->GetName());
 
