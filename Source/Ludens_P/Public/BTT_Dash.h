@@ -19,9 +19,7 @@ public:
 protected:
 	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory) override;
 	virtual FString GetStaticDescription() const override;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX")
-	UNiagaraSystem* DashVFX;
+	
 
 	UPROPERTY(EditAnywhere, Category = "Dash")
 	FVector DashImpulse = FVector(2000, 0, 500);

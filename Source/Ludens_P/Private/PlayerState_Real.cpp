@@ -36,4 +36,65 @@ void APlayerState_Real::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(APlayerState_Real, AbsorbDelay);
 	DOREPLIFETIME(APlayerState_Real, MaxSavedAmmo);
 	DOREPLIFETIME(APlayerState_Real, MaxAmmo);
+
+	///
+
+	DOREPLIFETIME(APlayerState_Real, AppearanceId);
+	DOREPLIFETIME(APlayerState_Real, PreviewColor);
+	DOREPLIFETIME(APlayerState_Real, SelectedColor);
+	DOREPLIFETIME(APlayerState_Real, SubskillId);
+	DOREPLIFETIME(APlayerState_Real, bReady);
+
+	// [중요] 상성 색 (서버가 Ready에서 확정해 주입 → 전 클라 복제)
+	DOREPLIFETIME(APlayerState_Real, PlayerColor);
+
+	///
 }
+
+
+///
+
+// --- OnRep들: UI/표현 갱신 트리거 ---
+void APlayerState_Real::OnRep_AppearanceId() { OnAnyLobbyFieldChanged.Broadcast(); }
+void APlayerState_Real::OnRep_PreviewColor() { OnAnyLobbyFieldChanged.Broadcast(); }
+void APlayerState_Real::OnRep_SelectedColor() { OnAnyLobbyFieldChanged.Broadcast(); }
+void APlayerState_Real::OnRep_SubskillId() { OnAnyLobbyFieldChanged.Broadcast(); }
+void APlayerState_Real::OnRep_Ready() { OnAnyLobbyFieldChanged.Broadcast(); }
+
+void APlayerState_Real::NotifyAnyLobbyFieldChanged()
+{
+	OnAnyLobbyFieldChanged.Broadcast(); // [PS-UNIFY] 서버에서 수동 트리거
+}
+
+// PlayerState_Real.cpp
+void APlayerState_Real::CopyProperties(APlayerState* PS)
+{
+	Super::CopyProperties(PS);
+	if (auto* R = Cast<APlayerState_Real>(PS))
+	{
+		// 인게임에 필요한 최소 선택값만 보존
+		R->PlayerColor = PlayerColor;
+		R->AppearanceId = AppearanceId;
+		R->SubskillId = SubskillId;
+	}
+}
+
+void APlayerState_Real::OverrideWith(APlayerState* PS)
+{
+	Super::OverrideWith(PS);
+	if (auto* R = Cast<APlayerState_Real>(PS))
+	{
+		PlayerColor = R->PlayerColor;
+		AppearanceId = R->AppearanceId;
+		SubskillId = R->SubskillId;
+	}
+}
+
+void APlayerState_Real::SeamlessTravelTo(APlayerState* NewPS)
+{
+	Super::SeamlessTravelTo(NewPS);
+	CopyProperties(NewPS); // 보수적으로 한 번 더 보장
+}
+
+///
+

@@ -21,6 +21,7 @@ class UCameraComponent;
 class URewardSystemComponent;
 class UInputAction;
 class UInputMappingContext;
+class ULudensAppearanceData;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -84,7 +85,7 @@ public:
 private:
 	bool bPSRInitialized = false;
 private:
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
 	UPROPERTY()
 	class UPlayerAttackComponent* PlayerAttackComponent;
@@ -262,4 +263,11 @@ public:
 	void DeactivateDashEffect();
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+
+	// 외형 적용 추가
+	UPROPERTY(EditDefaultsOnly, Category = "Cosmetics")
+	ULudensAppearanceData* AppearanceDB = nullptr;
+
+	bool bCosmeticsApplied = false;     // 1회 적용 보증
+	int32 CachedSubskillId = -1;        // (표현은 안 해도) 선택 스킬 id만 캐시
 };

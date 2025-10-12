@@ -60,6 +60,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, ReplicatedUsing = OnRep_ActiveShields, Category="Shield")
 	TArray<FShieldLayer> ActiveShields;
 
+public:
 	// 각 쉴드의 기본 체력. 블루프린트에서 수정 가능
 	UPROPERTY(EditDefaultsOnly, Category="Shield Config")
 	float DefaultShieldHealth = 10.f;

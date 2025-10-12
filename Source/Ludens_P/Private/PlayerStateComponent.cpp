@@ -55,6 +55,17 @@ void UPlayerStateComponent::TickComponent(float DeltaTime, enum ELevelTick TickT
 				Character->GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
 			}
 			
+			///
+
+			if (GetOwnerRole() == ROLE_Authority && PSR)
+			{
+				PlayerColor = PSR->PlayerColor; 
+			}
+
+			///
+
+
+
 			bPSRInitialized = true;  // 한 번만 실행되도록
 		}
 	}
@@ -296,5 +307,10 @@ void UPlayerStateComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UPlayerStateComponent, IsKnocked);
 	DOREPLIFETIME(UPlayerStateComponent, IsDead);
 	DOREPLIFETIME(UPlayerStateComponent, MoveSpeed);
+
+	// 상성 색 복제 추가
+
+	DOREPLIFETIME(UPlayerStateComponent, PlayerColor);
+	DOREPLIFETIME(UPlayerStateComponent, bCanRegenShield); // 경고 해소
 }
 

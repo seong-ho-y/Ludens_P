@@ -5,7 +5,6 @@
 #include "Net/UnrealNetwork.h"
 #include "EnemyDescriptor.h"
 #include "EnemyHealthBarBase.h"
-#include "EnemyPoolManager.h"
 #include "PlayerStateComponent.h"
 #include "ShieldComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -17,9 +16,11 @@
 #include "HitFeedbackComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "StealthComponent.h"
-#include "BehaviorTree/BlackboardComponent.h"
 #include "Blueprint/UserWidget.h"
-#include "Kismet/KismetMathLibrary.h"
+#include "Ludens_PGameMode.h"
+#include "EnemyPoolManager.h"
+
+struct FEnemySpawnProfile;
 
 AEnemyBase::AEnemyBase()
 {
@@ -50,19 +51,14 @@ AEnemyBase::AEnemyBase()
 	{
 		UE_LOG(LogTemp, Error, TEXT("FATAL ERROR: Could not find WBP_EnemyHealthBar at the specified path!"));
 	}
+	GetMesh()->SetIsReplicated(true);
+	// 복제될 ColorType의 기본값을 '초기화 안됨' 상태로 지정
+	ColorType = EEnemyColor::Uninitialized; 
+	
 }
 void AEnemyBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	/*
-	if (!HasAuthority())
-	{
-		if (CCC)
-		{
-			UE_LOG(LogTemp, Log, TEXT("[CLIENT TICK] Enemy: %s, CCC->CurrentHP: %f"), *GetName(), CCC->GetCurrentHP());
-		}
-	}
-	*/
 }
 
 void AEnemyBase::EngageStealth_Implementation()
@@ -85,47 +81,24 @@ void AEnemyBase::DisengageStealth_Implementation()
 	}
 }
 
+void AEnemyBase::SetStealthAmount(float X)
+{
+	if (HasAuthority()) // 값 변경은 서버에서만!
+	{
+		StealthAmount = X;
+		// 서버에서도 바로 적용되게 하려면 수동 호출
+		OnRep_StealthAmount(); 
+	}
+}
+
 void AEnemyBase::BeginPlay()
 {
 	Super::BeginPlay();
-	/*
-	// 서버에서만 이 테스트를 실행합니다.
-	if (HasAuthority())
-	{
-		
-		// HitFeedbackComponent 클래스의 '설계도 원본(CDO)'을 직접 가져옵니다.
-		UHitFeedbackComponent* DefaultComponent = UHitFeedbackComponent::StaticClass()->GetDefaultObject<UHitFeedbackComponent>();
-        
-		if (DefaultComponent && DefaultComponent->HitVFX)
-		{
-			// CDO에는 HitVFX가 유효하게 할당되어 있을 경우
-			UE_LOG(LogTemp, Warning, TEXT("CDO CHECK: HitVFX is VALID on the Class Default Object."));
-		}
-		else
-		{
-			// CDO에서조차 HitVFX가 nullptr일 경우
-			UE_LOG(LogTemp, Error, TEXT("CDO CHECK: HitVFX is NULL on the Class Default Object!"));
-		}
 
-		// 현재 이 액터 인스턴스가 가진 컴포넌트의 값도 확인합니다.
-		if (HitFeedbackComponent && HitFeedbackComponent->HitVFX)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("INSTANCE CHECK: HitVFX is VALID on this spawned actor instance."));
-		}
-		else
-		{
-			UE_LOG(LogTemp, Error, TEXT("INSTANCE CHECK: HitVFX is NULL on this spawned actor instance!"));
-		}
-	}
-	*/
-	
-	// 3. "핵심 보험 코드": 현재 ColorType 값으로 색상을 한번 더 설정합니다.
-	// OnRep이 먼저 실행되어 색 변경을 놓쳤더라도, BeginPlay가 끝나는 시점에
-	// 최종적으로 올바른 색상을 보장해주는 매우 중요한 코드입니다.
-	//SetBodyColor(ColorType);
 	if (CCC)
 	{
 		CCC->OnHealthChanged.AddDynamic(this, &AEnemyBase::OnHealthUpdated);
+		CCC->OnDied.AddDynamic(this, &AEnemyBase::HandleDied);
 	}
 	if (ShieldComponent)
 	{
@@ -135,21 +108,63 @@ void AEnemyBase::BeginPlay()
 	{
 		HealthBarUI = Cast<UEnemyHealthBarBase>(HealthBarWidget->GetUserWidgetObject());
 	}
-	// Descriptor와 CCC가 모두 유효할 때만 초기화 로직을 실행합니다.
-	if (Descriptor && CCC)
-	{
-		// 이동속도 적용
-		GetCharacterMovement()->MaxWalkSpeed = Descriptor->WalkSpeed;
-		// HP 적용
-		CCC->InitStats(Descriptor->MaxHP);
-	}
-	if (CCC)
-	{
-		CCC->OnDied.AddDynamic(this, &AEnemyBase::HandleDied);
-	}
 
 }
 
+void AEnemyBase::InitializeEnemy(const FEnemySpawnProfile& Profile)
+{
+	PlaySpawnVFX();
+
+	if (!HasAuthority()) return;
+	if (!Descriptor || !CCC) return;
+
+	// 1. 기본 스탯을 항상 Descriptor에서 먼저 가져옵니다. (스탯 리셋 효과)
+	float FinalMaxHP = Descriptor->MaxHP;
+	float FinalWalkSpeed = Descriptor->WalkSpeed;
+	float FinalMaxShield = Descriptor->MaxShield;
+
+	// 2. 프로필에 강화형 스탯(StatDataAsset)이 있다면 보정치를 적용합니다.
+	if (Profile.StatDataAsset)
+	{
+		FinalMaxHP *= Profile.StatDataAsset->HealthMultiplier;
+		FinalWalkSpeed *= Profile.StatDataAsset->SpeedMultiplier;
+		FinalMaxShield *= Profile.StatDataAsset->ShieldMultiplier;
+	}
+
+	// 3. 최종 계산된 스탯을 각 컴포넌트에 적용합니다.
+	GetCharacterMovement()->MaxWalkSpeed = FinalWalkSpeed;
+	CCC->InitStats(FinalMaxHP); // CCC의 InitStats가 최대 체력과 현재 체력을 모두 설정해준다고 가정
+	ShieldComponent->DefaultShieldHealth = FinalMaxShield;
+
+	// 4. 색깔 등 외형을 변경합니다.
+	// 2. 색깔에 맞춰 머티리얼을 바꿉니다.
+	// 메시 컴포넌트의 다이내믹 머티리얼 인스턴스를 생성하고,
+	// "BodyColor" 같은 벡터 파라미터의 값을 바꿔주면 됩니다.
+	ChangeColorType(Profile.Color);
+	
+
+	// [가져온 로직 2] AI 및 움직임 지연 활성화 (서버에서만 타이머 설정)
+	if (HasAuthority())
+	{
+		// 처음엔 AI와 움직임을 끈 상태로 시작
+		GetCharacterMovement()->Deactivate();
+		if (AController* AIController = GetController())
+		{
+			if (UBrainComponent* Brain = Cast<AEnemyAIController>(AIController)->BrainComponent)
+			{
+				Brain->StopLogic("Initial Spawn Delay");
+			}
+		}
+
+		// 타이머를 설정하여 2초 뒤에 AI와 움직임을 활성화
+		GetWorld()->GetTimerManager().SetTimer(
+			  SpawnDelayTimerHandle, 
+			  this, 
+			  &AEnemyBase::ActivateMovementAndAI, 
+			  2.0f, // 2초 지연 (원하는 시간으로 조절)
+			  false);
+	}
+}
 void AEnemyBase::OnHealthUpdated(float NewCurrentHP, float NewMaxHP)
 {
 	// 위젯에 업데이트 명령을 내립니다.
@@ -183,70 +198,26 @@ void AEnemyBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifeti
 	DOREPLIFETIME(AEnemyBase, bIsActiveInPool);
 	DOREPLIFETIME(AEnemyBase, ColorType);
 	DOREPLIFETIME(AEnemyBase, bShouldShowUI);
+	// StealthAmount 변수를 복제 리스트에 추가
+	DOREPLIFETIME(AEnemyBase, StealthAmount);
 }
 
-
-// 1. 서버에서 호출되는 활성화 함수
-void AEnemyBase::Activate(const FVector& Location, const FRotator& Rotation)
+void AEnemyBase::OnRep_StealthAmount()
 {
-	if (!HasAuthority()) return; // 서버에서만 실행
-	
-	SetActorLocation(Location);
-	SetActorRotation(Rotation);
-	SetActorHiddenInGame(true);
-	SetActorEnableCollision(false);
-	bIsActiveInPool = true;
-
-	if (SpawnVFX)
-	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), SpawnVFX, Location-FVector(0,0,150), Rotation, FVector(3));
-	}
-	GetWorld()->GetTimerManager().SetTimer(
-		FinalizeSpawnTimerHandle,
-		this,
-		&AEnemyBase::FinalizeSpawn,
-		2.0f,
-		false);
-	/*
-	// --- 디버깅 코드 추가 ---
-	if (USkeletalMeshComponent* MyMesh = GetMesh())
-	{
-		// 1. 액터의 최종 위치 (파란색 구)
-		DrawDebugSphere(GetWorld(), GetActorLocation(), 30.f, 12, FColor::Blue, false, 5.0f);
-
-		// 2. 소켓의 실제 월드 위치 (초록색 구)
-		FVector SocketLocation = MyMesh->GetSocketLocation(TEXT("VFX"));
-		DrawDebugSphere(GetWorld(), SocketLocation, 30.f, 12, FColor::Green, false, 5.0f);
-	}
-	// --- 디버깅 코드 끝 ---
-	*/
+	// 실제 머티리얼 업데이트 로직 호출
+	UpdateStealthMaterial();
 }
-void AEnemyBase::FinalizeSpawn()
+
+// 실제 머티리얼 파라미터를 변경하는 함수
+void AEnemyBase::UpdateStealthMaterial()
 {
-	if (!HasAuthority()) return;
-
-	// 모든 클라이언트에게 Mesh를 보여주라는 명령을 내립니다.
-	Multicast_FinalizeSpawn();
-}
-void AEnemyBase::Multicast_FinalizeSpawn_Implementation()
-{
-	// ✨ Mesh를 보이게 하고 충돌을 켭니다.
-	SetActorHiddenInGame(false);
-	SetActorEnableCollision(true);
-
-	bIsActiveInPool = true;
-	// 기존의 활성화 로직을 여기서 호출하여 AI, 움직임 타이머 등을 시작시킵니다.
-	UpdateActiveState(true); 
-
-	// 서버라면 스탯 초기화 같은 게임 로직을 처리합니다.
-	if (HasAuthority())
+	if (StealthMID)
 	{
-		if (CCC && Descriptor)
-		{
-			CCC->InitStats(Descriptor->MaxHP);
-		}
+		// 복제된 StealthAmount 값을 사용해 파라미터 설정
+		StealthMID->SetScalarParameterValue(TEXT("StealthAmount"), StealthAmount);
 	}
 }
+
 
 // 2. 서버에서 호출되는 비활성화 함수
 void AEnemyBase::Deactivate()
@@ -254,6 +225,14 @@ void AEnemyBase::Deactivate()
 	if (!HasAuthority()) return; // 서버에서만 실행
 
 	GetWorld()->GetTimerManager().ClearTimer(FinalizeSpawnTimerHandle);
+	// 1. AnimInstance를 가져와서 변수에 저장합니다.
+
+	// 2. AnimInstance가 유효한 포인터인지(nullptr이 아닌지) 확인합니다.
+    if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+    {
+        // 3. 유효할 때만 Montage_Stop을 호출합니다.
+        AnimInstance->Montage_Stop(0.1f);
+    }
 
 	bIsActiveInPool = false;
 	UpdateActiveState(false); // 서버에서도 직접 호출
@@ -268,13 +247,13 @@ void AEnemyBase::Deactivate()
 	UpdateActiveState(false);
 }
 
-// 3. 클라이언트에서 bIsActiveInPool 값이 복제 완료되면 자동으로 호출됨
+
 void AEnemyBase::OnRep_IsActive()
 {
 	UpdateActiveState(bIsActiveInPool);
 }
 
-// 4. 실제 활성/비활성 로직 (서버와 클라이언트 모두에서 실행됨)
+
 void AEnemyBase::UpdateActiveState(bool bNewIsActive)
 {
 	if (bNewIsActive)
@@ -375,6 +354,91 @@ void AEnemyBase::ActivateMovementAndAI()
 		}
 	}
 }
+
+void AEnemyBase::PlaySpawnVFX_Implementation()
+{
+	if (SpawnVFX)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), SpawnVFX, GetActorLocation());
+	}
+}
+
+FLinearColor AEnemyBase::GetColorValue(EEnemyColor Color) const
+{
+	switch (Color)
+	{
+	case EEnemyColor::Red:
+		return FLinearColor::Red;
+	case EEnemyColor::Green:
+		return FLinearColor::Green;
+	case EEnemyColor::Blue:
+		return FLinearColor::Blue;
+	case EEnemyColor::Yellow:
+		return FLinearColor::Yellow;
+	case EEnemyColor::Magenta:
+			return FLinearColor(1.0f, 0.0f, 1.0f); // R=1, G=0, B=1
+	case EEnemyColor::Cyan:
+		return FLinearColor(0.0f, 1.0f, 1.0f); // R=0, G=1, B=1
+	case EEnemyColor::Black:
+		return FLinearColor::Black;
+	default:
+		// 혹시 모를 예외 상황을 대비해 기본값(흰색)을 반환합니다.
+			UE_LOG(LogTemp, Error, TEXT("GetColorValue return White!!"))
+			return FLinearColor::White;
+	}
+}
+
+void AEnemyBase::PlayCastMontage_Implementation()
+{
+	if (!HasAuthority()) return;
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && CastMontage)
+	{
+		AnimInstance->Montage_Play(CastMontage);
+	}
+}
+
+void AEnemyBase::PlayShootMontage_Implementation()
+{
+	if (!HasAuthority()) return;
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && ShootMontage)
+	{
+		AnimInstance->Montage_Play(ShootMontage);
+	}
+}
+
+void AEnemyBase::PlayDashEffects_Implementation()
+{
+	// ✨ 이 함수는 서버와 모든 클라이언트에서 직접 실행됩니다.
+    
+	// 1. 몽타주 재생
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && DashMontage)
+	{
+		if (!AnimInstance->IsAnyMontagePlaying())
+		AnimInstance->Montage_Play(DashMontage);
+	}
+
+	// 2. VFX 재생
+	if (DashVFX)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DashVFX, GetActorLocation());
+	}
+}
+
+// '공격' Multicast 함수의 실제 내용
+void AEnemyBase::PlayAttackMontage_Implementation()
+{
+	// ✨ 이 함수도 서버와 모든 클라이언트에서 직접 실행됩니다.
+
+	UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+	if (AnimInstance && MeleeAttackMontage)
+	{
+		if (!AnimInstance->IsAnyMontagePlaying())
+		AnimInstance->Montage_Play(MeleeAttackMontage);
+	}
+}
 // 이 함수는 서버에서만 호출되어야 합니다.
 void AEnemyBase::ChangeColorType(EEnemyColor NewColor)
 {
@@ -420,7 +484,12 @@ void AEnemyBase::OnRep_ShouldShowUI()
 // ColorType 변수가 서버로부터 복제 완료되면 클라이언트에서 자동으로 호출됩니다.
 void AEnemyBase::OnRep_ColorType()
 {
-
+	if (ColorType == EEnemyColor::Uninitialized)
+	{
+		UE_LOG(LogTemp, Error, TEXT("OnRep_ColorType : White"));
+		return;
+	}
+	InitializeMID();
 	// SetBodyColor 함수를 호출하여 MID의 색상을 실제로 변경
 	SetBodyColor(ColorType);
 
@@ -486,6 +555,7 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 	// ----------------------------쉴드 체크 로직-----------------------------------
 	if (ShieldComponent && !ShieldComponent->AreAllShieldsBroken())
 	{
+		UE_LOG(LogTemp, Warning, TEXT("ShieldComponent damageStart"));
 		EEnemyColor DamageColor = EEnemyColor::Black;
 
 		// 1. 공격자 컨트롤러가 있는지 확인
@@ -535,9 +605,8 @@ void AEnemyBase::HandleDied()
 	}
     
 	// 1. 레벨에 있는 PoolManager를 찾기
-	AEnemyPoolManager* PoolManager = Cast<AEnemyPoolManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AEnemyPoolManager::StaticClass()));
 
-	if (PoolManager)
+	if (AEnemyPoolManager* PoolManager = Cast<AEnemyPoolManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AEnemyPoolManager::StaticClass())))
 	{
 		// 2. 자기 자신을 풀로 반환을 요청
 		PoolManager->ReturnEnemy(this);
