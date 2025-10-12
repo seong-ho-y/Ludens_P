@@ -82,7 +82,7 @@ public:
 	void OnRep_IsAttacked(); // 피격 당한 상태(무적 시간)일 때 UI 또는 이펙트를 적용하는 함수
 	UFUNCTION()
 	void OnRep_Dead(); // 죽은 상태일 때 UI 또는 이펙트를 적용하는 함수
-	UFUNCTION(BlueprintCallable)
+	UFUNCTION()
 	void OnRep_Knocked();
 	UFUNCTION()
 	void OnRep_MoveSpeed();
@@ -109,8 +109,12 @@ public:
 	// UI 애니메이션 재생을 위한 Multicast 함수
 	UFUNCTION(NetMulticast, Reliable)
 	void Multicast_PlayDamageUI();
-
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayKnockedUI();
 protected:
+	UFUNCTION(Server, Reliable)
+	void Server_RequestDamageUI();
+	
 	// 데미지 비네트 UI의 현재 Opacity 값 (복제 필요 없음)
 	UPROPERTY(BlueprintReadOnly, Category = "UI")
 	float DamageVignetteOpacity = 0.0f;

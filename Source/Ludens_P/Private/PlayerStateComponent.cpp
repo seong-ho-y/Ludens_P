@@ -81,6 +81,20 @@ void UPlayerStateComponent::OnRep_PlayerColor()
 	//
 }
 
+
+void UPlayerStateComponent::Multicast_PlayKnockedUI_Implementation()
+{
+	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
+	{
+		if (Char->IsLocallyControlled())
+		{
+			DamageVignetteOpacity = 1.0f; 
+			// 💥 일반 데미지 타이머가 실행 중이더라도 멈춥니다.
+			GetWorld()->GetTimerManager().ClearTimer(VignetteTimerHandle); 
+		}
+	}
+}
+
 void UPlayerStateComponent::UpdateVignetteOpacity()
 {
 	// 틱마다 Opacity를 감소시킵니다.
@@ -100,8 +114,23 @@ void UPlayerStateComponent::Multicast_PlayDamageUI_Implementation()
     
 	// 폰을 현재 로컬 플레이어가 제어하는지 확인합니다.
 	// 리스닝 서버 호스트와 모든 클라이언트의 플레이어 폰에서만 실행되어야 합니다.
+	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
+	{
+		if (Char->IsLocallyControlled()) // 로컬 플레이어 폰일 때만 UI를 띄움
+		{
+			// 1. Opacity를 최대치(1.0)로 설정
+			DamageVignetteOpacity = 1.0f; 
 
-	// 3D UI 띄우는 용도..? 로 쓸 수 있을 거 같긴함.
+			// 2. 틱 없이 타이머로 Opacity를 부드럽게 감소시키는 함수 호출을 시작합니다.
+			GetWorld()->GetTimerManager().SetTimer(
+			   VignetteTimerHandle,
+			   this,
+			   &UPlayerStateComponent::UpdateVignetteOpacity,
+			   0.016f, // 대략 60FPS의 델타 타임
+			   true // 루프 설정
+			);
+		}
+	}
 }
 
 void UPlayerStateComponent::TakeDamage(float Amount)
@@ -117,23 +146,11 @@ void UPlayerStateComponent::TakeDamage(float Amount)
 	// 이펙트를 재생하기 전에 현재 캐릭터가 Authority를 가졌는지 확인
 	if (GetOwner()->HasAuthority())
 	{
-		if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
-		{
-			if (Char->IsLocallyControlled())
-			{
-				// 1. Opacity를 최대치(1.0)로 설정
-				DamageVignetteOpacity = 1.0f; 
-
-				// 2. 틱 없이 타이머로 Opacity를 부드럽게 감소시키는 함수 호출을 시작합니다.
-				GetWorld()->GetTimerManager().SetTimer(
-				   VignetteTimerHandle,
-				   this,
-				   &UPlayerStateComponent::UpdateVignetteOpacity,
-				   0.016f, // 대략 60FPS의 델타 타임
-				   true // 루프 설정
-				);
-			}
-		}
+		Multicast_PlayDamageUI(); // 모든 클라이언트에게 UI 재생을 명령
+	}
+	else
+	{
+		Server_RequestDamageUI(); // 클라의 경우 서버에 UI 재생 요청
 	}
 	
 	// 쉴드가 남아 있을 경우 쉴드가 먼저 데미지를 받음.
@@ -149,7 +166,7 @@ void UPlayerStateComponent::TakeDamage(float Amount)
 		UE_LOG(LogTemp, Warning, TEXT("HP: %f"), CurrentHP);
 	}
 
-	GetWorld()->GetTimerManager().SetTimer(bCanRegenShieldTimer, this, &UPlayerStateComponent::EnableShieldRegen, 5.0f, false);
+	GetWorld()->GetTimerManager().SetTimer(bCanRegenShieldTimer, this, &UPlayerStateComponent::EnableShieldRegen, 3.0f, false);
 	
 	if (CurrentHP <= 0.f) Knocked();
 	else
@@ -161,6 +178,11 @@ void UPlayerStateComponent::TakeDamage(float Amount)
 		const float InvincibilityDuration = 1.0f;
 		GetWorld()->GetTimerManager().SetTimer(InvincibilityTimerHandle, this, &UPlayerStateComponent::ResetInvincibility, InvincibilityDuration, false);
 	}
+}
+
+void UPlayerStateComponent::Server_RequestDamageUI_Implementation()
+{
+	Multicast_PlayDamageUI();
 }
 
 void UPlayerStateComponent::EnableShieldRegen()
@@ -177,7 +199,7 @@ void UPlayerStateComponent::RegenShieldHandle()
 		return;
 	}
 	CurrentShield += 1.f;
-	UE_LOG(LogTemp, Log, TEXT("Shield Regen: %f"), CurrentShield);
+	//UE_LOG(LogTemp, Log, TEXT("Shield Regen: %f"), CurrentShield);
 }
 
 void UPlayerStateComponent::Knocked()
@@ -194,9 +216,16 @@ void UPlayerStateComponent::Knocked()
 
 	// 서버는 UI를 띄워야 하므로 Multicast 호출
 	// Multicast_PlayDamageUI(); // Knocked가 되었을 때도 UI를 띄웁니다.
+
+	if (GetOwner()->HasAuthority())
+	{
+		UE_LOG(LogTemp, Error, TEXT("Player Knocked UI"));
+		// 일반 데미지 UI와 동일한 Multicast를 호출하여 Opacity를 1.0으로 만듭니다.
+		Multicast_PlayKnockedUI(); 
+	}
 	
 	// OnRep 함수를 수동으로 호출하여 서버 자신에게도 로직을 적용합니다.
-	OnRep_Knocked();
+	// OnRep_Knocked();
 	
 	// 5초 뒤 Dead 함수를 호출하는 타이머를 설정
 	GetWorld()->GetTimerManager().SetTimer(KnockedTimer, this, &UPlayerStateComponent::Dead, 15.0f, false);
@@ -252,10 +281,10 @@ void UPlayerStateComponent::OnRep_Knocked()
 		{
 			if (IsKnocked) // 💥 기절 상태 시작 (True)
 			{
+				UE_LOG(LogTemp, Warning, TEXT("Player Knocked UI Play!!!!!"));
 				// 1. Opacity를 최대 불투명도(1.0)로 강제 설정
 				DamageVignetteOpacity = 1.0f; 
-
-				// 2. 혹시 실행 중일지 모르는 1초 데미지 타이머를 해제하고 중단
+				// 혹시 실행 중일지 모르는 1초 데미지 타이머를 해제하고 중단
 				GetWorld()->GetTimerManager().ClearTimer(VignetteTimerHandle);
 
 				// 3. UI 바인딩이 즉시 업데이트되도록 강제 알림 (옵션, DOREPLIFETIME이 아니므로 강제하지 않아도 틱마다 업데이트됨)
