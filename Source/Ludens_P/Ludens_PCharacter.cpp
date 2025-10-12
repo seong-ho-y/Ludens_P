@@ -65,6 +65,16 @@ ALudens_PCharacter::ALudens_PCharacter()
 
 	// 이동 컴포넌트 복제 설정
 	GetCharacterMovement()->SetIsReplicated(true);
+
+	// 나이아가라 컴포넌트 생성 및 설정
+	DashNiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("DashNiagaraComponent"));
+    
+	// 메시 컴포넌트에 부착
+	DashNiagaraComponent->SetupAttachment(GetMesh()); 
+    
+	// **가장 중요: 자동 활성화 비활성화**
+	// 블루프린트에서 Set Active로 제어하기 위해 기본적으로 꺼둡니다.
+	DashNiagaraComponent->bAutoActivate = false;
 }
 
 void ALudens_PCharacter::BeginPlay()
@@ -144,7 +154,8 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 		PSR = Cast<APlayerState_Real>(GetPlayerState());
 		if (PSR) // 115 번째 줄
 		{
-			CurrentDashCount = PSR->MaxDashCount;
+			MaxDashCount = PSR->MaxDashCount;
+			CurrentDashCount = MaxDashCount;
 			CurrentAmmo = PSR->MaxAmmo;
 			MaxSavedAmmo = PSR->MaxSavedAmmo;
 			SavedAmmo = MaxSavedAmmo / 2;
@@ -268,7 +279,7 @@ void ALudens_PCharacter::TestAttack(const FInputActionValue& Value)
 {
 	if (PlayerStateComponent)
 	{
-		PlayerStateComponent->TakeDamage(100.0f);
+		PlayerStateComponent->TakeDamage(30.0f);
 	}
 }
 
@@ -356,11 +367,12 @@ void ALudens_PCharacter::Dash(const FInputActionValue& Value)
 
 		// 서버에서 강제 실행
 		LaunchCharacter(DashDirection * DashSpeed, true, true);
-
-		MulticastPlayDashEffect();
+		// Multicast로 이펙트 활성화 명령 전달**
+		// 서버에서 이 함수를 호출하면, 모든 클라이언트(서버 포함)에서 MulticastControlDashEffect_Implementation이 실행됩니다.
+		MulticastControlDashEffect(true); 
 		CurrentDashCount--;
 		bCanDash = false;
-	
+		
 		// 5. 0.2초 후 원래 값 복원 (대시 지속시간에 맞게 조절)
 		GetWorld()->GetTimerManager().SetTimer(
 			DashPhysicsTimerHandle,
@@ -375,13 +387,22 @@ void ALudens_PCharacter::Dash(const FInputActionValue& Value)
 			0.2f,
 			false
 		);
+		
+		// 1. 서버 시간 복제
+		// 현재 서버 시간을 복제 변수에 저장합니다.
+		ReplicatedDashCooldownStartTime = GetWorld()->GetTimeSeconds(); 
+        
+		// 2. OnRep 함수가 서버에서도 실행되도록 수동 호출
+		// 서버의 UI도 업데이트해야 하므로 필수
+		OnRep_DashCooldownTime(); 
 
-		// 1초 후 다음 대쉬 가능
+		// 3. 쿨타임 종료 로직은 서버 타이머로 유지
+		// bCanDash를 True로 바꾸는 로직은 서버에서만 결정해야 합니다.
 		GetWorld()->GetTimerManager().SetTimer(
-			DashCooldownTimerHandle,
-			[this]() { bCanDash = true; },
-			DashCooldown,
-			false
+		   DashCooldownTimerHandle,
+		   [this]() { bCanDash = true; },
+		   DashCooldown,
+		   false
 		);
 
 		//3초마다 대쉬 충전
@@ -413,6 +434,15 @@ void ALudens_PCharacter::RechargeDash()
 	{
 		GetWorld()->GetTimerManager().ClearTimer(DashRechargeTimerHandle);
 	}
+}
+
+void ALudens_PCharacter::OnRep_DashCooldownTime()
+{
+	// 이 함수는 클라이언트와 서버에서 모두 실행됩니다.
+	// **클라이언트 UI**가 쿨타임 시작을 알 수 있게 됩니다.
+    
+	// 이 로직은 UI 바인딩에 필요한 정보를 제공하는 역할을 합니다.
+	// UI 바인딩 로직에서 이 변수를 사용하게 됩니다.
 }
 
 void ALudens_PCharacter::ResetMovementParams() const
@@ -457,7 +487,7 @@ void ALudens_PCharacter::Interact(const FInputActionValue& Value) // 앞에 있�
 	
 
 	// 맞은 액터가 어떤 컴포넌트를 가지고 있는지 검사
-	if (bHit && Hit.GetActor() && Hit.GetActor()->FindComponentByClass<UPlayerStateComponent>())
+	if (bHit && Hit.GetActor()->FindComponentByClass<UPlayerStateComponent>())
 	{
 		Revive(Value);
 	}
@@ -491,7 +521,6 @@ void ALudens_PCharacter::Fire(const FInputActionValue& Value)
 		return;
 	}
 	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked || WeaponComponent->bIsWeaponAttacking || bIsReloading) return;
-
 	if (CurrentAmmo > 0)
 	{
 		// 서버: 실제 발사 처리
@@ -647,9 +676,53 @@ void ALudens_PCharacter::Server_AbsorbComplete_Implementation(const FInputAction
 	AbsorbComplete(Value);
 }
 
-void ALudens_PCharacter::MulticastPlayDashEffect_Implementation()
+void ALudens_PCharacter::MulticastControlDashEffect_Implementation(bool bActivate)
 {
-	if (DashNiagara) UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DashNiagara, GetActorLocation(), GetActorRotation());
+	if (DashNiagaraComponent)
+	{
+		if (bActivate)
+		{
+			// 모든 클라이언트에서 활성화 명령
+			// 이미 활성화된 경우에도 Reset 옵션으로 재시작 (Set Active는 Reset 옵션을 포함합니다)
+			DashNiagaraComponent->SetActive(true, true); 
+            
+			// 0.3초 후 DeactivateDashEffect 함수 호출하도록 타이머 설정
+			GetWorld()->GetTimerManager().SetTimer(
+				DashEffectTimerHandle,
+				this,
+				&ALudens_PCharacter::DeactivateDashEffect,
+				0.3f, // 대시 이펙트 지속 시간
+				false
+			);
+		}
+		else
+		{
+			// 비활성화 명령 (0.3초 타이머에 의해 호출됨)
+			DashNiagaraComponent->Deactivate();
+            
+			// 타이머 해제 (안전 장치)
+			GetWorld()->GetTimerManager().ClearTimer(DashEffectTimerHandle);
+		}
+	}
+}
+
+void ALudens_PCharacter::DeactivateDashEffect()
+{
+	// MulticastControlDashEffect_Implementation(false)를 직접 호출
+	// 서버에서 호출하면 Multicast로 동작하지 않으므로, 이펙트 비활성화는
+	// 이미 클라이언트와 서버 모두에서 실행되고 있는 Deactivate 함수를 직접 호출하는 방식이 더 간단합니다.
+	// 하지만 네트워크 안정성을 위해 Multicast 함수에 통합하는 것이 가장 좋습니다.
+    
+	// 여기서는 MulticastControlDashEffect_Implementation(false)를 대신 호출하는 로직을 가정합니다.
+	// **다만, Multicast 함수의 Implementation을 직접 호출하는 것은 권장되지 않습니다.**
+	// 가장 안전한 방법은 아래 Dash() 로직처럼, 
+	// 서버에서만 SetTimer를 설정하고, 이 타이머 완료 시 Deactivate()를 호출하는 것입니다.
+
+	// 🌟 안전한 방법: 클라이언트마다 타이머를 실행하고 로컬에서 비활성화
+	if (DashNiagaraComponent)
+	{
+		DashNiagaraComponent->Deactivate();
+	}
 }
 
 void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -658,6 +731,7 @@ void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 	DOREPLIFETIME(ALudens_PCharacter, JumpCount);
 	DOREPLIFETIME(ALudens_PCharacter, CurrentDashCount);
 	DOREPLIFETIME(ALudens_PCharacter, bCanDash);
+	DOREPLIFETIME(ALudens_PCharacter, ReplicatedDashCooldownStartTime);
 	DOREPLIFETIME(ALudens_PCharacter, SavedAmmo);
 	DOREPLIFETIME(ALudens_PCharacter, CurrentAmmo);
 }
