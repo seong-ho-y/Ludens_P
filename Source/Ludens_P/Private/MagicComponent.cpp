@@ -4,6 +4,7 @@
 #include "MagicComponent.h"
 
 #include "NiagaraFunctionLibrary.h"
+#include "ShaderPrintParameters.h"
 #include "Kismet/GameplayStatics.h"
 
 // Sets default values for this component's properties
@@ -26,17 +27,18 @@ void UMagicComponent::BeginPlay()
 	
 }
 
-void UMagicComponent::CastSpellAtLocation(const FVector TargetLocation)
+void UMagicComponent::CastSpellAtLocation(const FVector& TargetLocation)
 {
-	Multicast_SpawnWarningDecal(TargetLocation);
+	FVector SpellLocation = TargetLocation;
+	Multicast_SpawnWarningDecal(SpellLocation);
+	
 
 	FTimerHandle SpellTimerHandle;
-	FTimerDelegate SpellDelegate = FTimerDelegate::CreateUObject(this, &UMagicComponent::ExecuteSpell, TargetLocation);
+	FTimerDelegate SpellDelegate = FTimerDelegate::CreateUObject(this, &UMagicComponent::ExecuteSpell, SpellLocation);
 	GetWorld()->GetTimerManager().SetTimer(SpellTimerHandle, SpellDelegate, CastingTime, false);
 }
 
-
-void UMagicComponent::Multicast_SpawnWarningDecal_Implementation(const FVector TargetLocation)
+void UMagicComponent::Multicast_SpawnWarningDecal_Implementation(FVector TargetLocation)
 {
 	if (WarningDecalMaterial)
 	{

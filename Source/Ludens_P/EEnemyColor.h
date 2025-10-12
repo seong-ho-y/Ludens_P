@@ -12,6 +12,7 @@
 UENUM(BlueprintType)
 enum class EEnemyColor : uint8
 {
+	Uninitialized   UMETA(DisplayName = "초기화 안됨"),
 	// 기본색 (Primary)
 	Red     UMETA(DisplayName = "Red"),
 	Green   UMETA(DisplayName = "Green"),

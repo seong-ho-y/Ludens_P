@@ -2,15 +2,17 @@
 
 #pragma once
 
+
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerState.h"
 #include "Components/ActorComponent.h"
 #include "Ludens_P/EEnemyColor.h"
 #include "Net/UnrealNetwork.h"
+#include "LobbyTypes.h"
 #include "PlayerState_Real.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class LUDENS_P_API APlayerState_Real : public APlayerState
@@ -53,10 +55,10 @@ public:
 	float WeaponAttackCoolTime = 0.3f; // 공격속도 ✅
 
 	UPROPERTY(Replicated)
-	float CriticalRate = 0.1f; // ❌
+	float CriticalRate = 0.1f; // ✅
 
 	UPROPERTY(Replicated)
-	float CriticalDamage = 1.5f; // ❌
+	float CriticalDamage = 1.5f; // ✅
 
 	UPROPERTY(Replicated)
 	float AbsorbDelay = 0.5f; // 젤루 흡수 딜레이 ✅
@@ -67,8 +69,57 @@ public:
 	UPROPERTY(Replicated)
 	int MaxAmmo = 15; // 최대 재장전 가능한 탈알(젤루) ✅
 
+	/// 로비 관련 수정
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLobbyFieldChanged);
+
+	UPROPERTY(ReplicatedUsing = OnRep_AppearanceId, BlueprintReadOnly, Category = "Lobby")
+	int32 AppearanceId = -1;              // 로비에서 고른 외형(A0~A3 등)
+
+	UPROPERTY(ReplicatedUsing = OnRep_PreviewColor, BlueprintReadOnly, Category = "Lobby")
+	ELobbyColor PreviewColor = ELobbyColor::None;  // 편집 중 미리보기 색
+
+	UPROPERTY(ReplicatedUsing = OnRep_SelectedColor, BlueprintReadOnly, Category = "Lobby")
+	ELobbyColor SelectedColor = ELobbyColor::None; // Ready 시점에 확정된 색(잠금)
+
+	UPROPERTY(ReplicatedUsing = OnRep_SubskillId, BlueprintReadOnly, Category = "Lobby")
+	int32 SubskillId = -1;                // 보조 스킬(인덱스)
+
+	// Ready 토글(잠금 여부)
+	UPROPERTY(ReplicatedUsing = OnRep_Ready, BlueprintReadOnly, Category = "Lobby")
+	bool bReady = false;
+
+	// 로비 선택값 중 하나라도 바뀌면 브로드캐스트(UMG 갱신용)
+	UPROPERTY(BlueprintAssignable, Category = "Lobby")
+	FOnLobbyFieldChanged OnAnyLobbyFieldChanged;
+
+	UFUNCTION(BlueprintCallable, Category = "Lobby")
+	void NotifyAnyLobbyFieldChanged(); // 로비 즉시 반영용 이벤트 트리거
+
+	virtual void CopyProperties(APlayerState* PlayerState) override;
+	virtual void OverrideWith(APlayerState* PlayerState) override;
+	virtual void SeamlessTravelTo(APlayerState* NewPlayerState) override;
+
+		
+	///
+
+
+
 protected:
 	UFUNCTION()
 	void OnRep_PlayerColor();
-	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+
+	/// 로비 관련 수정
+
+	UFUNCTION() void OnRep_AppearanceId();
+	UFUNCTION() void OnRep_PreviewColor();
+	UFUNCTION() void OnRep_SelectedColor();
+	UFUNCTION() void OnRep_SubskillId();
+	UFUNCTION() void OnRep_Ready();
+
+
+
+	///
 };

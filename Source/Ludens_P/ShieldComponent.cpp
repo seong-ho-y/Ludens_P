@@ -19,15 +19,27 @@ void UShieldComponent::TakeShieldDamage(float DamageAmount, EEnemyColor DamageCo
 	// 클라이언트에 쉴드 상태 변경을 알리기
 
 
+	UE_LOG(LogTemp, Log, TEXT("ShieldComponent::TakeShieldDamage"));
+
+	// ✨ 디버그 로그 추가 (1단계)
+	UE_LOG(LogTemp, Warning, TEXT("Checking shields... ActiveShields Count: %d"), ActiveShields.Num());
+
+	
 	for (FShieldLayer& Shield: ActiveShields)
 	{
+		// ✨ 디버그 로그 추가 (2단계) - 각 쉴드의 상태와 들어온 데미지 색상을 비교
+		// UEnum::GetValueAsString으로 Enum 값을 문자열로 볼 수 있어 편리합니다.
+		UE_LOG(LogTemp, Log, TEXT("Checking Shield -> ShieldColor: %s, Health: %.1f | Incoming DamageColor: %s"), 
+			*UEnum::GetValueAsString(Shield.ShieldColor), 
+			Shield.CurrentHealth, 
+			*UEnum::GetValueAsString(DamageColor));
 		if (Shield.ShieldColor == DamageColor && Shield.CurrentHealth > 0)
 		{
 			float AbsorbedDamage = FMath::Min(Shield.CurrentHealth, DamageAmount);
 			Shield.CurrentHealth -= AbsorbedDamage;
 
-			//UE_LOG(LogTemp, Log, TEXT("%s Shield took %.1f damage. Current Health: %.1f"), 
-			//	*UEnum::GetValueAsString(DamageColor), AbsorbedDamage, Shield.CurrentHealth);
+			UE_LOG(LogTemp, Log, TEXT("SUCCESS: Shield took %.1f damage. Current Health: %.1f"), 
+		  AbsorbedDamage, Shield.CurrentHealth);
 			OnRep_ActiveShields();
 		}
 	}

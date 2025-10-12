@@ -18,20 +18,5 @@ class LUDENS_P_API UBTT_Attack : public UBTTaskNode
 	
 public:
 	UBTT_Attack();
-
-protected:
-	virtual EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& Comp, uint8* NodeMemory) override;
-	void OnAttackMontageEnded(UAnimMontage* Montage, bool bInterrupted, UBehaviorTreeComponent* OwnerComp);
-
-	virtual void OnTaskFinished(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, EBTNodeResult::Type TaskResult) override;
-public:	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Blackboard")
-	float DamageAmount;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Blackboard")
-	float AttackRadius;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Blackboard")
-	UNiagaraSystem* AttackVFX;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Blackboard")
-	UAnimMontage* AttackAnim;
-
+	EBTNodeResult::Type ExecuteTask(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory);
 };

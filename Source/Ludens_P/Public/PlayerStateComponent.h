@@ -32,13 +32,13 @@ public:
 	// 플레이어 체력
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,  Category = "Player", Replicated)
 	float MaxHP = 100.0f;
-	UPROPERTY(VisibleAnywhere, Category = "Player", Replicated)
+	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category = "Player", Replicated)
 	float CurrentHP;
 
 	// 플레이어 쉴드
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", Replicated)
 	float MaxShield = 100.0f;
-	UPROPERTY(VisibleAnywhere, Category = "Player", Replicated)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player", Replicated)
 	float CurrentShield;
 
 	// 플레이어 이동 속도
@@ -82,7 +82,7 @@ public:
 	void OnRep_IsAttacked(); // 피격 당한 상태(무적 시간)일 때 UI 또는 이펙트를 적용하는 함수
 	UFUNCTION()
 	void OnRep_Dead(); // 죽은 상태일 때 UI 또는 이펙트를 적용하는 함수
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 	void OnRep_Knocked();
 	UFUNCTION()
 	void OnRep_MoveSpeed();
@@ -98,4 +98,24 @@ protected:
 	void OnRep_PlayerColor();
 public:
 	FTimerHandle KnockedTimer; // 기절 한 뒤 죽을 때까지 작동하는 타이머
+
+	// UI 업데이트를 위한 델리게이트 선언 (데미지 입는 시점)
+	// 이 델리게이트에 블루프린트 UI 함수를 바인딩합니다.
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDamageTakenUI);
+    
+	UPROPERTY(BlueprintAssignable, Category = "UI")
+	FOnDamageTakenUI OnDamageTakenUI; 
+    
+	// UI 애니메이션 재생을 위한 Multicast 함수
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayDamageUI();
+
+protected:
+	// 데미지 비네트 UI의 현재 Opacity 값 (복제 필요 없음)
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
+	float DamageVignetteOpacity = 0.0f;
+
+	FTimerHandle VignetteTimerHandle;
+
+	void UpdateVignetteOpacity(); 
 };

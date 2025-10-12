@@ -3,7 +3,12 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
+
+#include "Ludens_P/EEnemyColor.h"
+#include "LobbyTypes.h"
 #include "LobbyGameMode.generated.h"
+
+class APlayerState_Real;
 
 UCLASS()
 class LUDENS_P_API ALobbyGameMode : public AGameModeBase

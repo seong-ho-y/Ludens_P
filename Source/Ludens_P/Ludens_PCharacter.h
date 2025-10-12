@@ -21,6 +21,7 @@ class UCameraComponent;
 class URewardSystemComponent;
 class UInputAction;
 class UInputMappingContext;
+class ULudensAppearanceData;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -79,23 +80,29 @@ private:
 	class UInputAction* AbsorbAction;
 	
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Niagara")
-	UNiagaraSystem* DashNiagara;
 	UPROPERTY()
 	class APlayerState_Real* PSR = nullptr;
 private:
 	bool bPSRInitialized = false;
 private:
-	UPROPERTY()
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
 	UPROPERTY()
 	class UPlayerAttackComponent* PlayerAttackComponent;
-	UPROPERTY()
+protected:
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	class UPlayerStateComponent* PlayerStateComponent;
+private:
 	UPROPERTY()
 	class UTP_WeaponComponent* WeaponComponent;
 	UPROPERTY()
 	class UReviveComponent* ReviveComponent;
+	
+protected:
+	// **1. 나이아가라 컴포넌트 선언**
+	// Static Mesh 등 다른 컴포넌트처럼 캐릭터에 부착되어 사용됩니다.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dash")
+	TObjectPtr<UNiagaraComponent> DashNiagaraComponent; // 'DashNiagara' 대신 컴포넌트 사용
 	
 public:
 	ALudens_PCharacter();
@@ -166,22 +173,32 @@ protected:
 	void RechargeDash(); // 대쉬 충전 함수 선언
 	
 	// 대시 시스템 변수
-	UPROPERTY(EditDefaultsOnly, Category = "Dash")
-	int MaxDashCount = 3;
-	UPROPERTY(VisibleAnywhere, Category = "Dash", Replicated)
-	int CurrentDashCount = 3;
-	UPROPERTY(EditDefaultsOnly, Category = "Dash")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dash")
+	int MaxDashCount;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dash", Replicated)
+	int CurrentDashCount;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Dash")
 	float DashCooldown = 0.5f;
 	UPROPERTY(EditDefaultsOnly, Category = "Dash")
 	float DashRechargeTime = 3.0f;
+	// 1. 쿨타임 시작 시간 복제 변수 추가
+	// RepNotify를 사용하여 이 값이 클라이언트에게 전달될 때마다 특정 함수를 호출합니다.
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, ReplicatedUsing=OnRep_DashCooldownTime, Category = "Dash")
+	float ReplicatedDashCooldownStartTime = 0.0f;
 
+	// 2. RepNotify 함수 선언
+	UFUNCTION()
+	void OnRep_DashCooldownTime();
+
+	
 	FTimerHandle DashPhysicsTimerHandle; // 물리 설정 복원 전용
 	FTimerHandle DashCooldownTimerHandle; // 대쉬 쿨타임
 	FTimerHandle DashRechargeTimerHandle; // 대쉬 차지
-
-	UPROPERTY(EditDefaultsOnly, Category = "Dash", Replicated)
+	FTimerHandle DashEffectTimerHandle; // **2. 대쉬 이펙트 비활성화 타이머 핸들**
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Dash", Replicated)
 	bool bCanDash = true;
-
+	
 	// 근접 공격인지 부활인지 판단하는 함수 선언
 	void Interact(const FInputActionValue& Value);
 	
@@ -210,12 +227,12 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Reload")
 	int MaxSavedAmmo; // 최대로 저장할 수 있는 탄알 수
 public:
-	UPROPERTY(EditDefaultsOnly, Category = "Reload", ReplicatedUsing = OnRep_SavedAmmo)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Reload", ReplicatedUsing = OnRep_SavedAmmo)
 	int SavedAmmo; // 저장되어 있는 탄알
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Reload")
 	int MaxAmmo; // 최대로 장전 할 수 있는 탄알 수
-	UPROPERTY(EditDefaultsOnly, Category = "Reload", ReplicatedUsing = OnRep_CurrentAmmo)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Reload", ReplicatedUsing = OnRep_CurrentAmmo)
 	int CurrentAmmo; // 장전 완료 된 탄알
 	
 	UFUNCTION()
@@ -237,10 +254,20 @@ protected:
 	UFUNCTION(Server, Reliable)
 	void Server_AbsorbComplete(const FInputActionValue& Value);
 	FTimerHandle AbsorbCompleteTimerHandle;
-
-	UFUNCTION(NetMulticast, Reliable)
-	void MulticastPlayDashEffect();
 	
 public:
+	// **3. 컴포넌트 활성화/비활성화용 Multicast 함수**
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastControlDashEffect(bool bActivate);
+	// **4. 이펙트를 비활성화할 함수**
+	void DeactivateDashEffect();
+public:
 	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+
+	// 외형 적용 추가
+	UPROPERTY(EditDefaultsOnly, Category = "Cosmetics")
+	ULudensAppearanceData* AppearanceDB = nullptr;
+
+	bool bCosmeticsApplied = false;     // 1회 적용 보증
+	int32 CachedSubskillId = -1;        // (표현은 안 해도) 선택 스킬 id만 캐시
 };
