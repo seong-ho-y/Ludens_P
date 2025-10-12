@@ -89,35 +89,52 @@ void ALudens_PGameMode::OnPostLogin(AController* NewPlayer)
 	Super::OnPostLogin(NewPlayer);
 }
 
+// Ludens_PGameMode.cpp
+
 void ALudens_PGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
 {
+	// 엔진의 PlayerState 할당은 SeamlessTravel 중에 일관성이 없을 수 있습니다.
+	// 가장 확실한 데이터 전송 방법은 수동으로 확인하고 복사하는 것입니다.
+
+	// ⭐ 1단계: 기존 레벨의 PlayerState를 가져옵니다.
+	//    Super()가 호출되기 전에 NewPlayer에 임시로 할당될 수 있습니다.
+	APlayerState* OldPS = NewPlayer ? NewPlayer->PlayerState : nullptr;
+
+	// ⭐ 2단계: 부모 함수를 호출하여 엔진이 할당을 처리하도록 합니다.
+	//    이 단계에서 새로운 PlayerState가 생성될 수 있습니다.
 	Super::HandleStartingNewPlayer_Implementation(NewPlayer);
 
-	const ENetMode NM = GetNetMode();
+	// ⭐ 3단계: 엔진이 새로 할당한 PlayerState를 가져옵니다.
+	APlayerState_Real* NewPSR = NewPlayer ? NewPlayer->GetPlayerState<APlayerState_Real>() : nullptr;
 
-	APawn* P = NewPlayer ? NewPlayer->GetPawn() : nullptr;
-	APlayerState_Real* PSR = NewPlayer ? NewPlayer->GetPlayerState<APlayerState_Real>() : nullptr;
-
-	UE_LOG(LogTemp, Display, TEXT("[InGameGM] StartNewPlayer NetMode=%d  GMClass=%s  PCClass=%s  PawnClass=%s  PSR=%p"),
-		(int32)NM,
-		*GetClass()->GetName(),
-		NewPlayer ? *NewPlayer->GetClass()->GetName() : TEXT("None"),
-		P ? *P->GetClass()->GetName() : TEXT("None"),
-		PSR);
-
-	if (PSR)
+	// ⭐ 4단계: 새로운 PlayerState가 생성되었다면, 기존 PlayerState의 데이터를 복사합니다.
+	if (OldPS && NewPSR && NewPSR != OldPS)
 	{
-		UE_LOG(LogTemp, Display, TEXT("[InGameGM] PSR Values: Ap=%d Sel=%d Ply=%d Ready=%d  (Name=%s)"),
-			PSR->AppearanceId, (int)PSR->SelectedColor, (int)PSR->PlayerColor, (int)PSR->bReady,
-			*PSR->GetPlayerName());
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("[InGameGM] PSR is NULL at StartNewPlayer (PC=%s)"),
-			*GetNameSafe(NewPlayer));
+		UE_LOG(LogTemp, Warning, TEXT("Seamless travel failed. Manually copying data from old PlayerState to new one."));
+		if (APlayerState_Real* OldRealPS = Cast<APlayerState_Real>(OldPS))
+		{
+			NewPSR->AppearanceId = OldRealPS->AppearanceId;
+			NewPSR->SelectedColor = OldRealPS->SelectedColor;
+			NewPSR->PlayerColor = OldRealPS->PlayerColor;
+			NewPSR->SubskillId = OldRealPS->SubskillId;
+			NewPSR->bReady = OldRealPS->bReady;
+
+			UE_LOG(LogTemp, Display, TEXT("Data copied: Ap=%d, Color=%s"),
+				NewPSR->AppearanceId, *UEnum::GetValueAsString(NewPSR->PlayerColor));
+		}
 	}
 
-	// 색은 '유지'만 함 (덮어쓰기 금지)
+	// ⭐ 5단계: 최종 값을 로그로 출력하여 확인합니다.
+	if (NewPSR)
+	{
+		UE_LOG(LogTemp, Display, TEXT("[InGameGM] FINAL PSR Values: Ap=%d Sel=%s Ply=%s Ready=%d  (Name=%s)"),
+			NewPSR->AppearanceId,
+			*UEnum::GetValueAsString(NewPSR->SelectedColor),
+			*UEnum::GetValueAsString(NewPSR->PlayerColor),
+			(int)NewPSR->bReady,
+			*NewPSR->GetPlayerName());
+	}
+
 	AssignColorToPlayer(NewPlayer);
 }
 
@@ -125,61 +142,40 @@ void ALudens_PGameMode::HandleStartingNewPlayer_Implementation(APlayerController
 //  새로 추가된 함수의 전체 내용입니다.
 void ALudens_PGameMode::AssignColorToPlayer(AController* NewPlayer)
 {
-
 	APlayerState_Real* PSR = NewPlayer ? NewPlayer->GetPlayerState<APlayerState_Real>() : nullptr;
 
 	if (PSR)
 	{
-		UE_LOG(LogTemp, Display, TEXT("[InGameGM] Keep lobby color (No-Op): Ap=%d Sel=%d Ply=%d Ready=%d  PSR=%p"),
-			PSR->AppearanceId, (int)PSR->SelectedColor, (int)PSR->PlayerColor, (int)PSR->bReady, PSR);
-		return; // 덮어쓰기 금지
+		// PSR이 존재하면, 로비에서 가져온 PlayerColor를 사용합니다.
+		UE_LOG(LogTemp, Display, TEXT("[InGameGM] Final Color from Lobby: %s for player %s"),
+			*UEnum::GetValueAsString(PSR->PlayerColor), *GetNameSafe(NewPlayer));
 	}
-
-	// (PSR이 null일 때만) 예외 경로 - 거의 안 타야 정상
-	UE_LOG(LogTemp, Warning, TEXT("[InGameGM] PSR is NULL in AssignColorToPlayer; fallback branch entered"));
-
-	AGameStateBase* CurrentGameState = GetGameState<AGameStateBase>();
-	if (!CurrentGameState)
+	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("!!! CRITICAL ERROR: GameState is NULL. Cannot assign color. !!!"));
-		return;
-	}
-    
-	int32 PlayerCount = CurrentGameState->PlayerArray.Num();
-	//UE_LOG(LogTemp, Warning, TEXT("Current Player Count from GameState->PlayerArray.Num(): %d"), PlayerCount);
+		// PSR이 null일 때의 폴백 로직 (거의 실행되지 않아야 정상)
+		UE_LOG(LogTemp, Warning, TEXT("[InGameGM] AssignColorToPlayer: PSR is NULL. Falling back to default color rotation."));
 
-	int32 PlayerIndex = PlayerCount - 1;
-	//UE_LOG(LogTemp, Warning, TEXT("Calculated Player Index: %d"), PlayerIndex);
-	// --- 진단 로그 끝 ---	
+		AGameStateBase* CurrentGameState = GetGameState<AGameStateBase>();
+		if (!CurrentGameState) return;
 
-	if (!ColorRotation.IsValidIndex(PlayerIndex))
-	{
-		UE_LOG(LogTemp, Error, TEXT("!!! ERROR: Player Index %d is not valid for ColorRotation array!"), PlayerIndex);
-		return;
-	}
+		int32 PlayerIndex = CurrentGameState->PlayerArray.Num() - 1;
+		if (!ColorRotation.IsValidIndex(PlayerIndex)) return;
 
-	APawn* PlayerPawn = NewPlayer->GetPawn();
-	if (PlayerPawn)
-	{
-		UPlayerStateComponent* StateComp = PlayerPawn->FindComponentByClass<UPlayerStateComponent>();
-		if (StateComp)
+		EEnemyColor NewColor = ColorRotation[PlayerIndex];
+
+		APawn* PlayerPawn = NewPlayer->GetPawn();
+		if (PlayerPawn)
 		{
-			EEnemyColor NewColor = ColorRotation[PlayerIndex];
-
-			// --- ✨ 안전장치 추가 ✨ ---
-			if (NewColor == EEnemyColor::Uninitialized)
+			UPlayerStateComponent* StateComp = PlayerPawn->FindComponentByClass<UPlayerStateComponent>();
+			if (StateComp)
 			{
-				UE_LOG(LogTemp, Error, TEXT("CRITICAL WARNING: Attempted to assign Uninitialized color to Player %s. Check the ColorRotation array in GameMode Blueprint!"), *NewPlayer->GetName());
-				// 여기서 함수를 종료하여 '색 없음' 상태의 플레이어가 생기는 것을 막습니다.
-				// 혹은 임시로 기본 색상을 할당할 수도 있습니다. ex) NewColor = EEnemyColor::Red;
-				return; 
+				StateComp->PlayerColor = NewColor;
+				UE_LOG(LogTemp, Warning, TEXT("SUCCESS: Assigned default Color %s to Player with Index %d."), *UEnum::GetValueAsString(NewColor), PlayerIndex);
 			}
-			// --- ✨ 여기까지 ---
-			StateComp->PlayerColor = NewColor;
-			UE_LOG(LogTemp, Warning, TEXT("SUCCESS: Assigned Color %s to Player with Index %d."), *UEnum::GetValueAsString(NewColor), PlayerIndex);
 		}
 	}
 }
+
 void ALudens_PGameMode::StartSpawningEnemies()
 {
 	if (!PoolManager)

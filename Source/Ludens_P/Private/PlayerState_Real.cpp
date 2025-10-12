@@ -66,18 +66,39 @@ void APlayerState_Real::NotifyAnyLobbyFieldChanged()
 	OnAnyLobbyFieldChanged.Broadcast(); // [PS-UNIFY] 서버에서 수동 트리거
 }
 
-// PlayerState_Real.cpp
-void APlayerState_Real::CopyProperties(APlayerState* PS){
-    Super::CopyProperties(PS);
-    if (auto* P = Cast<APlayerState_Real>(PS)){
-        P->AppearanceId = AppearanceId;
-        P->SelectedColor = SelectedColor;
-        P->PlayerColor   = PlayerColor;
-        P->SubskillId    = SubskillId;
-        P->bReady        = bReady;
 
-    }
+void APlayerState_Real::CopyProperties(APlayerState* PS)
+{
+	Super::CopyProperties(PS);
+
+	// ? 복사 전 원본 데이터 로그
+	UE_LOG(LogTemp, Warning, TEXT("CopyProperties: SOURCE -> Ap: %d, Sel: %d, Ply: %d"),
+		AppearanceId, (int)SelectedColor, (int)PlayerColor);
+
+	if (auto* P = Cast<APlayerState_Real>(PS))
+	{
+		// ? 복사될 대상(새로운 PlayerState)의 초기 상태 로그
+		UE_LOG(LogTemp, Warning, TEXT("CopyProperties: TARGET (Before) -> Ap: %d, Sel: %d, Ply: %d"),
+			P->AppearanceId, (int)P->SelectedColor, (int)P->PlayerColor);
+
+		// 데이터 복사
+		P->AppearanceId = AppearanceId;
+		P->SelectedColor = SelectedColor;
+		P->PlayerColor = PlayerColor;
+		P->SubskillId = SubskillId;
+		P->bReady = bReady;
+
+		// ? 복사 후 대상의 최종 상태 로그
+		UE_LOG(LogTemp, Warning, TEXT("CopyProperties: TARGET (After) -> Ap: %d, Sel: %d, Ply: %d"),
+			P->AppearanceId, (int)P->SelectedColor, (int)P->PlayerColor);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("CopyProperties: Failed to cast PlayerState to APlayerState_Real."));
+	}
 }
+
+/*
 
 void APlayerState_Real::OverrideWith(APlayerState* PS)
 {
@@ -89,15 +110,21 @@ void APlayerState_Real::OverrideWith(APlayerState* PS)
 		SubskillId = R->SubskillId;
 	}
 }
+*/
 
-void APlayerState_Real::SeamlessTravelTo(APlayerState* PS) {
-	Super::SeamlessTravelTo(PS);
-	if (auto* P = Cast<APlayerState_Real>(PS)) {
-		P->AppearanceId = AppearanceId;
-		P->SelectedColor = SelectedColor;
-		P->PlayerColor = PlayerColor;
-		P->SubskillId = SubskillId;
-		P->bReady = bReady;
+void APlayerState_Real::SeamlessTravelTo(APlayerState* NewPlayerState)
+{
+	Super::SeamlessTravelTo(NewPlayerState);
+	if (APlayerState_Real* NewRealPS = Cast<APlayerState_Real>(NewPlayerState))
+	{
+		// 로비에서 인게임으로 정보를 안전하게 복사
+		NewRealPS->AppearanceId = AppearanceId;
+		NewRealPS->SelectedColor = SelectedColor;
+		NewRealPS->PlayerColor = PlayerColor;
+		NewRealPS->SubskillId = SubskillId;
+		NewRealPS->bReady = bReady;
+
+		NewRealPS->NotifyAnyLobbyFieldChanged();
 	}
 }
 

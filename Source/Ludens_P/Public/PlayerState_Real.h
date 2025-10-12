@@ -96,8 +96,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Lobby")
 	void NotifyAnyLobbyFieldChanged(); // 로비 즉시 반영용 이벤트 트리거
 
+	
 	virtual void CopyProperties(APlayerState* PlayerState) override;
+	/*
 	virtual void OverrideWith(APlayerState* PlayerState) override;
+	*/
+
 	virtual void SeamlessTravelTo(APlayerState* NewPlayerState) override;
 
 	///

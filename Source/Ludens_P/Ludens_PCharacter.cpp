@@ -153,8 +153,6 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 			MaxAmmo = PSR->MaxAmmo;
 			CurrentAmmo = MaxAmmo;
 
-			// 스킬 선택값 캐시(스킬 자체 로직은 아직 미구현이므로 보관만)
-			CachedSubskillId = PSR->SubskillId;
 
 			bPSRInitialized = true;  // 한 번만 실행되도록
 			UE_LOG(LogTemplateCharacter, Log, TEXT("PSR Completed in Ludens_PCharacter!"));

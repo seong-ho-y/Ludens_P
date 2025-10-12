@@ -28,6 +28,7 @@ static FString ColorToStr(EEnemyColor C)
     return TEXT("Unknown");
 }
 
+// LobbyGameMode.cpp의 StartGameIfAllReady() 함수 전체를 아래 코드로 교체하세요.
 void ALobbyGameMode::StartGameIfAllReady()
 {
     if (!HasAuthority()) return;
@@ -49,24 +50,22 @@ void ALobbyGameMode::StartGameIfAllReady()
         return;
     }
 
-    // ? 여기서 '단 1회'만 커밋. 그 외 색 배정 로직(재배정/로테이션 등)은 전부 제거!
     for (APlayerState* PSBase : GS->PlayerArray)
     {
         if (APlayerState_Real* PSR = Cast<APlayerState_Real>(PSBase))
         {
-            PSR->PlayerColor = PSR->SelectedColor;   // ?? 1회 커밋
+            PSR->PlayerColor = PSR->SelectedColor;
             PSR->ForceNetUpdate();
 
             UE_LOG(LogTemp, Display, TEXT("[PreTravel] PS=%p Ap=%d Sel=%s -> PlayerColor=%s Name=%s"),
                 PSR, PSR->AppearanceId, *ColorToStr(PSR->SelectedColor), *ColorToStr(PSR->PlayerColor), *PSR->GetPlayerName());
-
         }
     }
 
-    // ? Seamless ServerTravel
     const FString MapPath = StageMap.GetLongPackageName();
-    const FString URL = MapPath + TEXT("?listen");
+    const FString NextGameModePath = TEXT("/Game/FirstPerson/Blueprints/BP_FirstPersonGameMode.BP_FirstPersonGameMode_C");
+    const FString URL = FString::Printf(TEXT("%s?listen?game=%s"), *MapPath, *NextGameModePath);
+
     UE_LOG(LogTemp, Display, TEXT("All ready -> ServerTravel to %s"), *URL);
     GetWorld()->ServerTravel(URL);
 }
-
