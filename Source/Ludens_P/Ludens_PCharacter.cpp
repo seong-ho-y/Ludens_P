@@ -132,7 +132,7 @@ void ALudens_PCharacter::BeginPlay()
 		PC->SetInputMode(FInputModeGameOnly{});
 		PC->bShowMouseCursor = false;
 
-		ApplyCosmeticsFromPSROnce();
+		ApplyCosmeticsFromPSROnce(); // 조기 시도(PSR/DB 준비 전이면 미적용 + 로그만 남고 재시도 가능)
 	}
 }
 
@@ -157,7 +157,7 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 			CachedSubskillId = PSR->SubskillId;
 
 			bPSRInitialized = true;  // 한 번만 실행되도록
-			UE_LOG(LogTemplateCharacter, Log, TEXT("PSR Completed in Ludens_PCharacter!"))
+			UE_LOG(LogTemplateCharacter, Log, TEXT("PSR Completed in Ludens_PCharacter!"));
 		}
 	}
 	// 다른 Tick 로직에서도 PSR을 접근하는 경우
@@ -639,42 +639,55 @@ void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 void ALudens_PCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
+	UE_LOG(LogTemp, Log, TEXT("[Char] OnRep PS Pawn=%s Local=%d"), *GetName(), (int)IsLocallyControlled());	
 	ApplyCosmeticsFromPSROnce(); // 클라: PSR 복제 완료 직후 1회 더 시도
 }
 
 void ALudens_PCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
+	UE_LOG(LogTemp, Log, TEXT("[Char] Possessed Pawn=%s Auth=%d"), *GetName(), (int)HasAuthority());
 	ApplyCosmeticsFromPSROnce(); // 서버: 폰 소유 확정 시 1회 시도
 }
 
 void ALudens_PCharacter::ApplyCosmeticsFromPSROnce()
 {
-	if (bCosmeticsApplied) return;
+	if (bCosmeticsApplied) { UE_LOG(LogTemp, Verbose, TEXT("[Cosmetics] Skip: already applied")); return; }
 
 	APlayerState_Real* PSRLocal = GetPlayerState<APlayerState_Real>();
-	if (!PSRLocal || !AppearanceDB) return;
+	if (!PSRLocal) { UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] PSR not ready on %s"), *GetName()); return; }
+	if (!AppearanceDB) { UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] AppearanceDB is NULL on %s"), *GetName()); return; }
 
-	// 3인칭 바디 메시(월드 표시)는 '서버'가 적용해야 다른 클라에도 복제됨
+	// ✅ 폴백 준비
+
+	int32 ApId = PSRLocal->AppearanceId;
+	bool bUsedFallback = false;
+	if (ApId < 0)
+	{
+		bUsedFallback = true;
+		ApId = 0; // 임시로 Appearance 0 사용
+		UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] AppearanceId was -1 -> fallback to 0 (Pawn=%s)"), *GetName());
+	}
+
 	if (HasAuthority())
 	{
 		if (USkeletalMeshComponent* Mesh3P = GetMesh())
 		{
-			AppearanceDB->ApplyToByEnemyColor(Mesh3P, PSRLocal->AppearanceId, PSRLocal->PlayerColor);
+			AppearanceDB->ApplyToByEnemyColor(Mesh3P, ApId, PSRLocal->PlayerColor);
+
+			if (!bUsedFallback)
+			{
+				// 정상 값으로 성공 적용한 경우에만 잠금
+				bCosmeticsApplied = true;
+				UE_LOG(LogTemp, Display, TEXT("[Cosmetics] Server-applied Ap=%d, Color=%d, Pawn=%s"),
+					ApId, (int32)PSRLocal->PlayerColor, *GetName());
+			}
+			else
+			{
+				// 폴백으로 적용했으면 잠그지 않음 → 이후 정상 값 들어오면 재적용 가능
+				UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] Applied with fallback Ap=0; NOT locking (Pawn=%s)"), *GetName());
+			}
 		}
 	}
-
-	// 1인칭 팔은 소유 클라 화면 전용(서버가 바꿀 필요 없음)
-	if (IsLocallyControlled())
-	{
-		if (USkeletalMeshComponent* Arms = Mesh1P)
-		{
-			AppearanceDB->ApplyToByEnemyColor(Arms, PSRLocal->AppearanceId, PSRLocal->PlayerColor);
-		}
-	}
-
-	UE_LOG(LogTemp, Display, TEXT("[Cosmetics] Applied Ap=%d, EnemyColor=%d, Owner=%d, Auth=%d"),
-		PSRLocal->AppearanceId, (int)PSRLocal->PlayerColor, (int)IsLocallyControlled(), (int)HasAuthority());
-
-	bCosmeticsApplied = true; // 중복 방지
 }
+

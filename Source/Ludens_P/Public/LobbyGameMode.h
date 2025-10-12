@@ -21,9 +21,6 @@ public:
     UFUNCTION(BlueprintCallable, Category = "Lobby")
     void StartGameIfAllReady();
 
-    // (선택) 맵 전환용 변수
-    UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Lobby")
-    FName StageMapName = FName(TEXT("TestMap")); // 실제 스테이지 맵 이름으로 교체 예정
 
     UPROPERTY(EditDefaultsOnly, Category = "Travel")
     TSoftObjectPtr<UWorld> StageMap;

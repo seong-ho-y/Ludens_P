@@ -91,35 +91,52 @@ void ALudens_PGameMode::OnPostLogin(AController* NewPlayer)
 
 void ALudens_PGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
 {
-	Super::HandleStartingNewPlayer_Implementation(NewPlayer); // Super 호출도 _Implementation으로 변경
+	Super::HandleStartingNewPlayer_Implementation(NewPlayer);
 
-	// (디버그)현재 GM / PC / PS / PAWN이 무엇인지 1회 찍어 확인
-	UE_LOG(LogTemp, Log, TEXT("[InGameGM] GM=%s, PC=%s, Pawn=%s, PS=%s"),
+	const ENetMode NM = GetNetMode();
+
+	APawn* P = NewPlayer ? NewPlayer->GetPawn() : nullptr;
+	APlayerState_Real* PSR = NewPlayer ? NewPlayer->GetPlayerState<APlayerState_Real>() : nullptr;
+
+	UE_LOG(LogTemp, Display, TEXT("[InGameGM] StartNewPlayer NetMode=%d  GMClass=%s  PCClass=%s  PawnClass=%s  PSR=%p"),
+		(int32)NM,
 		*GetClass()->GetName(),
-		*GetNameSafe(PlayerControllerClass),
-		*GetNameSafe(DefaultPawnClass),
-		*GetNameSafe(PlayerStateClass));
-	 
+		NewPlayer ? *NewPlayer->GetClass()->GetName() : TEXT("None"),
+		P ? *P->GetClass()->GetName() : TEXT("None"),
+		PSR);
 
-	// 이제 이 안에서 AssignColorToPlayer를 호출하면 됩니다.
+	if (PSR)
+	{
+		UE_LOG(LogTemp, Display, TEXT("[InGameGM] PSR Values: Ap=%d Sel=%d Ply=%d Ready=%d  (Name=%s)"),
+			PSR->AppearanceId, (int)PSR->SelectedColor, (int)PSR->PlayerColor, (int)PSR->bReady,
+			*PSR->GetPlayerName());
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[InGameGM] PSR is NULL at StartNewPlayer (PC=%s)"),
+			*GetNameSafe(NewPlayer));
+	}
+
+	// 색은 '유지'만 함 (덮어쓰기 금지)
 	AssignColorToPlayer(NewPlayer);
-
 }
+
 
 //  새로 추가된 함수의 전체 내용입니다.
 void ALudens_PGameMode::AssignColorToPlayer(AController* NewPlayer)
 {
 
-	if (APlayerState_Real* PSR = NewPlayer ? NewPlayer->GetPlayerState<APlayerState_Real>() : nullptr)
+	APlayerState_Real* PSR = NewPlayer ? NewPlayer->GetPlayerState<APlayerState_Real>() : nullptr;
+
+	if (PSR)
 	{
-		// 로비에서 Start 직전에 PSR->PlayerColor가 커밋되어 넘어옴 - 그대로 유지
-		UE_LOG(LogTemp, Log, TEXT("[InGameGM] Keep lobby color: PlayerColor=%d Selected=%d Ready=%d"),
-			(int32)PSR->PlayerColor, (int32)PSR->SelectedColor, PSR->bReady);
-		return; //  덮어쓰기 금지
+		UE_LOG(LogTemp, Display, TEXT("[InGameGM] Keep lobby color (No-Op): Ap=%d Sel=%d Ply=%d Ready=%d  PSR=%p"),
+			PSR->AppearanceId, (int)PSR->SelectedColor, (int)PSR->PlayerColor, (int)PSR->bReady, PSR);
+		return; // 덮어쓰기 금지
 	}
 
-	// --- 진단 로그 시작 ---
-	//UE_LOG(LogTemp, Error, TEXT("--- AssignColorToPlayer CALLED for %s ---"), *NewPlayer->GetName());
+	// (PSR이 null일 때만) 예외 경로 - 거의 안 타야 정상
+	UE_LOG(LogTemp, Warning, TEXT("[InGameGM] PSR is NULL in AssignColorToPlayer; fallback branch entered"));
 
 	AGameStateBase* CurrentGameState = GetGameState<AGameStateBase>();
 	if (!CurrentGameState)

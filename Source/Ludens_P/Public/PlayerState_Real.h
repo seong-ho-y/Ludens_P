@@ -100,7 +100,6 @@ public:
 	virtual void OverrideWith(APlayerState* PlayerState) override;
 	virtual void SeamlessTravelTo(APlayerState* NewPlayerState) override;
 
-		
 	///
 
 

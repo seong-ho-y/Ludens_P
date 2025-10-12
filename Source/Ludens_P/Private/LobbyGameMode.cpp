@@ -21,59 +21,52 @@ ALobbyGameMode::ALobbyGameMode()
 }
 
 
+static FString ColorToStr(EEnemyColor C)
+{
+    if (const UEnum* E = StaticEnum<EEnemyColor>())
+        return E->GetNameStringByValue((int64)C);
+    return TEXT("Unknown");
+}
 
 void ALobbyGameMode::StartGameIfAllReady()
 {
     if (!HasAuthority()) return;
 
-    // 1) 로비 상태 검사
     ALobbyGameState* GS = GetWorld() ? GetWorld()->GetGameState<ALobbyGameState>() : nullptr;
-    if (!GS)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("StartGameIfAllReady: No LobbyGameState"));
-        return;
-    }
+    if (!GS) { UE_LOG(LogTemp, Warning, TEXT("StartGameIfAllReady: No LobbyGameState")); return; }
 
     const int32 Total = GS->PlayerArray.Num();
     const int32 Ready = GS->ReadyCount;
-    const bool  bAllReady = (Total > 0 && Ready == Total);
-
-    if (!bAllReady)
+    if (!(Total > 0 && Ready == Total))
     {
         UE_LOG(LogTemp, Warning, TEXT("StartGameIfAllReady: Not all ready (%d/%d)"), Ready, Total);
         return;
     }
 
-    // 2) 목적지 맵 유효성
     if (!(StageMap.IsValid() || StageMap.ToSoftObjectPath().IsValid()))
     {
-        UE_LOG(LogTemp, Error, TEXT("StageMap is not set or invalid."));
+        UE_LOG(LogTemp, Error, TEXT("StageMap is not set/invalid."));
         return;
     }
 
-    
-
+    // ? 여기서 '단 1회'만 커밋. 그 외 색 배정 로직(재배정/로테이션 등)은 전부 제거!
     for (APlayerState* PSBase : GS->PlayerArray)
     {
-        if (auto* PS = Cast<APlayerState_Real>(PSBase))
+        if (APlayerState_Real* PSR = Cast<APlayerState_Real>(PSBase))
         {
-            // 최종 1회 커밋
-            PS->PlayerColor = PS->SelectedColor;
+            PSR->PlayerColor = PSR->SelectedColor;   // ?? 1회 커밋
+            PSR->ForceNetUpdate();
 
-            // (선택) 복제 즉시화를 원하면 유지, 아니면 주석처리 가능
-            PS->ForceNetUpdate();
+            UE_LOG(LogTemp, Display, TEXT("[PreTravel] PS=%p Ap=%d Sel=%s -> PlayerColor=%s Name=%s"),
+                PSR, PSR->AppearanceId, *ColorToStr(PSR->SelectedColor), *ColorToStr(PSR->PlayerColor), *PSR->GetPlayerName());
 
-            UE_LOG(LogTemp, Display, TEXT("[PreTravel] %s Appear=%d Selected(ELobby)=%d -> PlayerColor(Enemy)=%d Skill=%d Ready=%d"),
-                *GetNameSafe(PS), PS->AppearanceId, (int)PS->SelectedColor, (int)PS->PlayerColor, PS->SubskillId, (int)PS->bReady);
         }
     }
 
-    // 4) 맵 전환 (Seamless)
+    // ? Seamless ServerTravel
     const FString MapPath = StageMap.GetLongPackageName();
-    const FString Url = MapPath + TEXT("?listen");
-    UE_LOG(LogTemp, Display, TEXT("All ready -> ServerTravel to %s"), *Url);
-
-    GetWorld()->ServerTravel(Url);
+    const FString URL = MapPath + TEXT("?listen");
+    UE_LOG(LogTemp, Display, TEXT("All ready -> ServerTravel to %s"), *URL);
+    GetWorld()->ServerTravel(URL);
 }
-
 
