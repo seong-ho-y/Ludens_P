@@ -51,16 +51,9 @@ void ALudens_PPlayerController::Server_RequestSpawnEnemy_Implementation()
 
 void ALudens_PPlayerController::OnPossess(APawn* InPawn)
 {
-	// ✨ 부모 클래스의 OnPossess를 먼저 호출해주는 것이 매우 중요합니다.
+	// 부모 호출 필수
 	Super::OnPossess(InPawn);
 
-	// OnPossess는 서버에서만 호출됩니다.
-	// 이 시점은 컨트롤러와 폰이 완벽하게 연결된 직후이므로, GetPawn()이 절대 실패하지 않습니다.
-	// 이제 GameMode에 색상 할당을 요청합니다.
-	ALudens_PGameMode* GM = GetWorld()->GetAuthGameMode<ALudens_PGameMode>();
-	if (GM)
-	{
-		// GameMode의 함수를 호출하여 '나 자신(this)'에게 색을 할당해달라고 요청합니다.
-		GM->AssignColorToPlayer(this);
-	}
+	// 로비에서 이미 커밋된 PlayerColor를 그대로 사용합니다.
+	// 인게임에서 재배정(AssignColorToPlayer)하지 않습니다.
 }

@@ -4,6 +4,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameStateBase.h"
 #include "LobbyTypes.h"
+#include "Ludens_P/EEnemyColor.h"
 #include "LobbyGameState.generated.h"
 
 // 모든 클라이언트(및 호스트 로컬 UI)에서 ReadyCount 변경 이벤트를 수신하기 위한 멀티캐스트
@@ -42,8 +43,8 @@ public:
     // 서버가 ReadyCount를 변경한 "즉시" 호스트 로컬 UI도 갱신되게 브로드캐스트(서버 전용 호출 권장)
     void NotifyReadyCountChanged();
 
-    bool TryLockColor(int32 InPlayerId, ELobbyColor Color);
-    void UnlockColor(int32 InPlayerId, ELobbyColor Color);
+    bool TryLockColor(int32 InPlayerId, EEnemyColor Color);
+    void UnlockColor(int32 InPlayerId, EEnemyColor Color);
 
 protected:
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;

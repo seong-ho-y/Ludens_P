@@ -11,13 +11,13 @@ ALobbyGameState::ALobbyGameState()
 
 
 // 파일-전역(static) 헬퍼
-static int32& SlotRefByColor(FLobbyColorSlots& Slots, ELobbyColor Color)
+static int32& SlotRefByColor(FLobbyColorSlots& Slots, EEnemyColor Color)
 {
     switch (Color)
     {
-    case ELobbyColor::Red:   return Slots.RedOwnerPlayerId;
-    case ELobbyColor::Green: return Slots.GreenOwnerPlayerId;
-    case ELobbyColor::Blue:  return Slots.BlueOwnerPlayerId;
+    case EEnemyColor::Red:   return Slots.RedOwnerPlayerId;
+    case EEnemyColor::Green: return Slots.GreenOwnerPlayerId;
+    case EEnemyColor::Blue:  return Slots.BlueOwnerPlayerId;
     default:                 return Slots.RedOwnerPlayerId; // fallback
     }
 }
@@ -30,9 +30,9 @@ void ALobbyGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
     DOREPLIFETIME(ALobbyGameState, MaxPlayers);
 }
 
-bool ALobbyGameState::TryLockColor(int32 InPlayerId, ELobbyColor Color)
+bool ALobbyGameState::TryLockColor(int32 InPlayerId, EEnemyColor Color)
 {
-    if (Color == ELobbyColor::None) return false;
+    // Enemy에는 None이 없으므로 유효성은 RGB 체크(또는 enum range 검사)
     int32& SlotOwner = SlotRefByColor(ColorSlots, Color);
     if (SlotOwner == INDEX_NONE)
     {
@@ -42,9 +42,9 @@ bool ALobbyGameState::TryLockColor(int32 InPlayerId, ELobbyColor Color)
     return false;
 }
 
-void ALobbyGameState::UnlockColor(int32 InPlayerId, ELobbyColor Color)
+void ALobbyGameState::UnlockColor(int32 InPlayerId, EEnemyColor Color)
 {
-    if (Color == ELobbyColor::None) return;
+
     int32& SlotOwner = SlotRefByColor(ColorSlots, Color);
     if (SlotOwner == InPlayerId) SlotOwner = INDEX_NONE;
 }
