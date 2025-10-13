@@ -17,6 +17,7 @@
 #include "TP_WeaponComponent.h"
 #include "WeaponAttackHandler.h"
 #include "CreatureCombatComponent.h"
+#include "DecolorComp.h"
 #include "GrenadeComp.h"
 #include "JellooComponent.h"
 #include "PlayerState_Real.h"
@@ -781,8 +782,9 @@ void ALudens_PCharacter::PossessedBy(AController* NewController)
 
 void ALudens_PCharacter::OnInteract()
 {
-	ToolComponent = FindComponentByClass<UGrenadeComp>();
+	//ToolComponent = FindComponentByClass<UGrenadeComp>();
 	// 현재 활성화된 도구 컴포넌트가 있는지 확인
+	ToolComponent = FindComponentByClass<UDecolorComp>();
 	if (ToolComponent)
 	{
 		// 컴포넌트가 ToolInterface를 구현했는지 확인
