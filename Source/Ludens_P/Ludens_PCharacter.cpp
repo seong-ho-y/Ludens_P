@@ -809,3 +809,10 @@ void ALudens_PCharacter::ApplyCosmeticsFromPSROnce()
 	}
 
 }
+
+void ALudens_PCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	UE_LOG(LogTemp, Log, TEXT("[Char] OnRep PS Pawn=%s Local=%d"), *GetName(), (int)IsLocallyControlled());
+	ApplyCosmeticsFromPSROnce(); // 클라: PSR 복제 완료 직후 1회 더 시도
+}
