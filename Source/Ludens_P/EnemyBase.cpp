@@ -19,6 +19,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Ludens_PGameMode.h"
 #include "EnemyPoolManager.h"
+#include "GrenadeProjectile.h"
 
 struct FEnemySpawnProfile;
 
@@ -558,8 +559,14 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 		UE_LOG(LogTemp, Warning, TEXT("ShieldComponent damageStart"));
 		EEnemyColor DamageColor = EEnemyColor::Black;
 
-		// 1. 공격자 컨트롤러가 있는지 확인
-		if (EventInstigator)
+		// 1-1. 공격자가 수류탄인지 확인
+		if (DamageCauser && DamageCauser->IsA<AGrenadeProjectile>())
+		{
+			// 수류탄이라면 DamageColor Black으로 유지
+			UE_LOG(LogTemp, Warning, TEXT("Damage from Grenade detected! Setting color to Black."));
+		}
+		// 1-2. 공격자 컨트롤러가 있는지 확인
+		else if (EventInstigator)
 		{
 			// 2. 컨트롤러가 조종하는 폰(캐릭터)이 있는지 확인
 			APawn* InstigatorPawn = EventInstigator->GetPawn();

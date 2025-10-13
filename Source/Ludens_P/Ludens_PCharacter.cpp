@@ -17,10 +17,12 @@
 #include "TP_WeaponComponent.h"
 #include "WeaponAttackHandler.h"
 #include "CreatureCombatComponent.h"
+#include "GrenadeComp.h"
 #include "JellooComponent.h"
 #include "PlayerState_Real.h"
 #include "ReviveComponent.h"
 #include "LudensAppearanceData.h"
+#include "ToolInterface.h"
 
 #include "Engine/LocalPlayer.h"
 #include "Net/UnrealNetwork.h"
@@ -239,6 +241,8 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		// Absorb
 		EnhancedInputComponent->BindAction(AbsorbAction, ETriggerEvent::Ongoing, this, &ALudens_PCharacter::Absorb);
 		EnhancedInputComponent->BindAction(AbsorbAction, ETriggerEvent::Completed, this, &ALudens_PCharacter::AbsorbComplete);
+
+		PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ALudens_PCharacter::OnInteract);
 	}
 }
 
@@ -734,4 +738,58 @@ void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 	DOREPLIFETIME(ALudens_PCharacter, ReplicatedDashCooldownStartTime);
 	DOREPLIFETIME(ALudens_PCharacter, SavedAmmo);
 	DOREPLIFETIME(ALudens_PCharacter, CurrentAmmo);
+}
+
+void ALudens_PCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	if (HasAuthority())
+	{
+		
+	}
+	/*{
+		APlayerState_Real* PS = GetPlayerState<APlayerState_Real>();
+		if (PS && PS->) // PlayerState에서 선택한 도구 클래스 정보를 가져옵니다.
+		{
+			// 기존에 컴포넌트가 있다면 파괴합니다 (재스폰 등의 경우를 위해).
+			if (ActiveToolComponent)
+			{
+				ActiveToolComponent->DestroyComponent();
+			}
+
+			// 새로운 컴포넌트를 생성하고, 소유자를 이 캐릭터로 설정합니다.
+			ActiveToolComponent = NewObject<UActorComponent>(this, PS->SelectedToolClass);
+			if (ActiveToolComponent)
+			{
+				// 컴포넌트를 등록하여 월드에서 활성화합니다.
+				ActiveToolComponent->RegisterComponent();
+
+				// 만약 컴포넌트가 특정 액터에 부착되어야 한다면, 여기서 처리합니다.
+				// 예: USceneComponent인 경우
+				// USceneComponent* SceneComp = Cast<USceneComponent>(ActiveToolComponent);
+				// if (SceneComp)
+				// {
+				//    SceneComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("ToolSocket"));
+				// }
+
+				UE_LOG(LogTemp, Warning, TEXT("ToolComponent has been successfully assigned on Server."));
+			}
+		}
+	}
+	*/
+}
+
+void ALudens_PCharacter::OnInteract()
+{
+	ToolComponent = FindComponentByClass<UGrenadeComp>();
+	// 현재 활성화된 도구 컴포넌트가 있는지 확인
+	if (ToolComponent)
+	{
+		// 컴포넌트가 ToolInterface를 구현했는지 확인
+		if (ToolComponent->GetClass()->ImplementsInterface(UToolInterface::StaticClass()))
+		{
+			// 인터페이스 함수를 호출
+			IToolInterface::Execute_Interact(ToolComponent, this);
+		}
+	}
 }
