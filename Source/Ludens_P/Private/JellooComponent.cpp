@@ -3,6 +3,8 @@
 
 #include "JellooComponent.h"
 
+#include "NiagaraFunctionLibrary.h"
+
 // Sets default values for this component's properties
 UJellooComponent::UJellooComponent()
 {
@@ -38,8 +40,18 @@ void UJellooComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 
 void UJellooComponent::OnRep_JellooHP()
 {
-	// CurrentJellooHP 값이 바뀌었을 때 처리 UI 처리
+	// CurrentJellooHP 값이 바뀌었을 때 처리 UI 처리 필요
+	
+	// 나이아가라 이펙트가 있다면 액터 위치에 스폰
+	if (JellooHit) // UNiagaraSystem* 타입 멤버 변수로 선언해야 함
+	{
+		FVector Location = GetOwner()->GetActorLocation();
+		FRotator Rotation = GetOwner()->GetActorRotation();
+		
+		MulticastSpawnEffect(JellooHit,Location, Rotation);
+	}
 }
+
 
 void UJellooComponent::JellooTakeDamage(float Amount)
 {
@@ -64,6 +76,16 @@ void UJellooComponent::DestroyJelloo()
 		return;
 	}
 	bIsDead = true;
+
+	// 나이아가라 이펙트가 있다면 액터 위치에 스폰
+	if (JellooDestroy) // UNiagaraSystem* 타입 멤버 변수로 선언해야 함
+	{
+		FVector Location = GetOwner()->GetActorLocation();
+		FRotator Rotation = GetOwner()->GetActorRotation();
+		
+		MulticastSpawnEffect(JellooDestroy,Location, Rotation);
+	}
+	
 	AActor* OwnerChar = Cast<AActor>(GetOwner());
 	if (!OwnerChar)
 	{
@@ -76,6 +98,12 @@ void UJellooComponent::DestroyJelloo()
 void UJellooComponent::Server_DestroyJelloo_Implementation()
 {
 	DestroyJelloo();
+}
+
+void UJellooComponent::MulticastSpawnEffect_Implementation(UNiagaraSystem* NiagaraEffect, FVector Location, FRotator Rotation)
+{
+	// 서버에서 젤루 파괴시 나이아가라 재생
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraEffect, Location, Rotation);
 }
 
 void UJellooComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const

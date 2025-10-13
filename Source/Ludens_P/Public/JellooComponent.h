@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/Actor.h"
+#include "NiagaraSystem.h"
 #include "JellooComponent.generated.h"
 
 
@@ -14,7 +15,11 @@ class LUDENS_P_API UJellooComponent : public UActorComponent
 {
 	GENERATED_BODY()
 
-public:	
+public:
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UNiagaraSystem* JellooDestroy;
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UNiagaraSystem* JellooHit;
 	// Sets default values for this component's properties
 	UJellooComponent();
 
@@ -35,7 +40,7 @@ public:
 	
 protected:
 	UPROPERTY(EditAnywhere, Replicated, Category = "Jelloo")
-	int16 MaxJellooHP = 30;
+	int16 MaxJellooHP;
 	UPROPERTY(EditAnywhere, Category = "Jelloo", ReplicatedUsing = OnRep_JellooHP)
 	int16 CurrentJellooHP;
 	
@@ -49,7 +54,8 @@ protected:
 	void Server_DestroyJelloo();
 	UFUNCTION()
 	void OnRep_JellooHP();
-	
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSpawnEffect(UNiagaraSystem* NiagaraEffect,FVector Location, FRotator Rotation); // 서버에서 젤루 파괴시 나이아가라 재생
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 
