@@ -1,6 +1,7 @@
 #include "EnemyBase.h"
 
 #include "BrainComponent.h"
+#include "DeColorProjec.h"
 #include "EnemyAIController.h"
 #include "Net/UnrealNetwork.h"
 #include "EnemyDescriptor.h"
@@ -579,10 +580,12 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 				{
 					// 모든 것이 유효할 때만 PlayerColor에 접근
 					DamageColor = InstigatorStateComp->PlayerColor;
+					// 임시로 Red 넣고 테스트해볼거임 <- 탈색제 테스트
+					//DamageColor = EEnemyColor::Red;
 				}
 			}
 		}
-        
+		UE_LOG(LogTemp,Error, TEXT("DamageAmount  %f"), DamageAmount)
 		ShieldComponent->TakeShieldDamage(DamageAmount, DamageColor);
 	}
 	//활성화된 쉴드 없으면 직접 데미지 주기
