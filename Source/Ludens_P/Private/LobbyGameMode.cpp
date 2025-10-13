@@ -4,7 +4,7 @@
 #include "LobbyGameMode.h"
 #include "LobbyGameState.h" 
 #include "Kismet/GameplayStatics.h"
-
+#include "LobbyPlayerController.h"
 #include "PlayerState_Real.h" // 수정 완료
 #include "Ludens_P/EEnemyColor.h"
 #include "LobbyTypes.h"

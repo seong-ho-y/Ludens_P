@@ -9,6 +9,7 @@
 #include "LobbyGameMode.generated.h"
 
 class APlayerState_Real;
+class ALobbyPlayerController;
 
 UCLASS()
 class LUDENS_P_API ALobbyGameMode : public AGameModeBase

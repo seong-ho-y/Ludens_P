@@ -667,8 +667,7 @@ void ALudens_PCharacter::ApplyCosmeticsFromPSROnce()
 		UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] AppearanceId was -1 -> fallback to 0 (Pawn=%s)"), *GetName());
 	}
 
-	if (HasAuthority())
-	{
+	
 		if (USkeletalMeshComponent* Mesh3P = GetMesh())
 		{
 			AppearanceDB->ApplyToByEnemyColor(Mesh3P, ApId, PSRLocal->PlayerColor);
@@ -683,9 +682,9 @@ void ALudens_PCharacter::ApplyCosmeticsFromPSROnce()
 			else
 			{
 				// 폴백으로 적용했으면 잠그지 않음 → 이후 정상 값 들어오면 재적용 가능
-				UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] Applied with fallback Ap=0; NOT locking (Pawn=%s)"), *GetName());
+				UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] Applied with fallback; NOT locking (Auth=%d Pawn=%s)"), (int32)HasAuthority(), *GetName());
 			}
 		}
-	}
+	
 }
 
