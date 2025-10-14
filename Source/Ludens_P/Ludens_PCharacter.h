@@ -277,4 +277,9 @@ public:
 	UActorComponent* ToolComponent;
 
 	void OnInteract();
+
+	// 외형 적용 1회 함수
+	UFUNCTION()
+	void ApplyCosmeticsFromPSROnce();
+	virtual void OnRep_PlayerState() override;   // 클라: PS 세팅 복제 시
 };

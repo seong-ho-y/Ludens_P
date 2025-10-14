@@ -144,6 +144,8 @@ void ALudens_PCharacter::BeginPlay()
 		// 로비 UI 모드 잔상이 있으면 입력이 막힐 수 있음 → 게임 전용으로 전환
 		PC->SetInputMode(FInputModeGameOnly{});
 		PC->bShowMouseCursor = false;
+
+		ApplyCosmeticsFromPSROnce(); // 조기 시도(PSR/DB 준비 전이면 미적용 + 로그만 남고 재시도 가능)
 	}
 }
 
@@ -165,39 +167,9 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 			MaxAmmo = PSR->MaxAmmo;
 			CurrentAmmo = MaxAmmo;
 
-			// 외형/색 1회 적용
-			if (!bCosmeticsApplied && AppearanceDB && Mesh1P)
-			{
-				// 로비에서 선택한 외형/색을 1회 반영
-
-				// 변경: EEnemyColor → ELobbyColor 매핑 1줄 추가
-				auto ToLobbyColor = [](EEnemyColor C)->ELobbyColor
-					{
-						switch (C)
-						{
-						case EEnemyColor::Red:   return ELobbyColor::Red;
-						case EEnemyColor::Green: return ELobbyColor::Green;
-						case EEnemyColor::Blue:  return ELobbyColor::Blue;
-						default:                 return ELobbyColor::Red;
-						}
-					};
-
-				if (AppearanceDB && GetMesh() && PSR)
-				{
-					AppearanceDB->ApplyToByEnemyColor(GetMesh(), PSR->AppearanceId, PSR->PlayerColor);
-					UE_LOG(LogTemp, Display, TEXT("[Cosmetics] Body applied Ap=%d, EnemyColor=%d, Mesh=%s"),
-						PSR->AppearanceId, (int)PSR->PlayerColor, *GetNameSafe(GetMesh()));
-				}
-
-
-				bCosmeticsApplied = true;
-			}
-
-			// 스킬 선택값 캐시(스킬 자체 로직은 아직 미구현이므로 보관만)
-			CachedSubskillId = PSR->SubskillId;
 
 			bPSRInitialized = true;  // 한 번만 실행되도록
-			UE_LOG(LogTemplateCharacter, Log, TEXT("PSR Completed in Ludens_PCharacter!"))
+			UE_LOG(LogTemplateCharacter, Log, TEXT("PSR Completed in Ludens_PCharacter!"));
 		}
 	}
 	// 다른 Tick 로직에서도 PSR을 접근하는 경우
@@ -744,6 +716,8 @@ void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 void ALudens_PCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
+	UE_LOG(LogTemp, Log, TEXT("[Char] Possessed Pawn=%s Auth=%d"), *GetName(), (int)HasAuthority());
+	ApplyCosmeticsFromPSROnce(); // 서버: 폰 소유 확정 시 1회 시도
 	if (HasAuthority())
 	{
 		
@@ -794,4 +768,51 @@ void ALudens_PCharacter::OnInteract()
 			IToolInterface::Execute_Interact(ToolComponent, this);
 		}
 	}
+}
+
+void ALudens_PCharacter::ApplyCosmeticsFromPSROnce()
+{
+	if (bCosmeticsApplied) { UE_LOG(LogTemp, Verbose, TEXT("[Cosmetics] Skip: already applied")); return; }
+
+	APlayerState_Real* PSRLocal = GetPlayerState<APlayerState_Real>();
+	if (!PSRLocal) { UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] PSR not ready on %s"), *GetName()); return; }
+	if (!AppearanceDB) { UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] AppearanceDB is NULL on %s"), *GetName()); return; }
+
+	// ✅ 폴백 준비
+
+	int32 ApId = PSRLocal->AppearanceId;
+	bool bUsedFallback = false;
+	if (ApId < 0)
+	{
+		bUsedFallback = true;
+		ApId = 0; // 임시로 Appearance 0 사용
+		UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] AppearanceId was -1 -> fallback to 0 (Pawn=%s)"), *GetName());
+	}
+
+
+	if (USkeletalMeshComponent* Mesh3P = GetMesh())
+	{
+		AppearanceDB->ApplyToByEnemyColor(Mesh3P, ApId, PSRLocal->PlayerColor);
+
+		if (!bUsedFallback)
+		{
+			// 정상 값으로 성공 적용한 경우에만 잠금
+			bCosmeticsApplied = true;
+			UE_LOG(LogTemp, Display, TEXT("[Cosmetics] Server-applied Ap=%d, Color=%d, Pawn=%s"),
+				ApId, (int32)PSRLocal->PlayerColor, *GetName());
+		}
+		else
+		{
+			// 폴백으로 적용했으면 잠그지 않음 → 이후 정상 값 들어오면 재적용 가능
+			UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] Applied with fallback; NOT locking (Auth=%d Pawn=%s)"), (int32)HasAuthority(), *GetName());
+		}
+	}
+
+}
+
+void ALudens_PCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	UE_LOG(LogTemp, Log, TEXT("[Char] OnRep PS Pawn=%s Local=%d"), *GetName(), (int)IsLocallyControlled());
+	ApplyCosmeticsFromPSROnce(); // 클라: PSR 복제 완료 직후 1회 더 시도
 }

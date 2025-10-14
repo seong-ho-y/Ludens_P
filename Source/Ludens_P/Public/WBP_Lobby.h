@@ -118,8 +118,8 @@ protected:
 
     int32       LastAppearanceId = -1;                 // 유효한 외형이 0 이상이므로, -1로 초기화
     bool        bLastReady = false;              // 직전 Ready 상태
-    ELobbyColor LastPreviewColor = ELobbyColor::None;  // 직전 미리보기 색
-    ELobbyColor LastSelectedColor = ELobbyColor::None;  // 직전 확정 색
+    EEnemyColor LastPreviewColor = EEnemyColor::Red;  // 직전 미리보기 색
+    EEnemyColor LastSelectedColor = EEnemyColor::Red;  // 직전 확정 색
 
 
 private:
