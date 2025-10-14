@@ -6,11 +6,14 @@
 #include "Components/ActorComponent.h"
 #include "Ludens_P/EEnemyColor.h"
 #include "Net/UnrealNetwork.h"
-
+#include "Ludens_P/RewardData.h"
 #include "PlayerStateComponent.generated.h"
 
 // 플레이어의 상태를 체크하는 컴포넌트
 // 쉴드, 체력, 이동속도, 피격 상태, 생존 상태 확인
+
+UENUM(BlueprintType)
+enum class ECurrentHPPolicy : uint8 { KeepRatio, KeepCurrent, HealToFull };
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LUDENS_P_API UPlayerStateComponent : public UActorComponent
@@ -87,7 +90,14 @@ public:
 	UFUNCTION()
 	void OnRep_MoveSpeed();
 
-	void UpdateMoveSpeed();
+	// 현재치 동반 보정/즉시 반영 계열
+	UFUNCTION() void ApplyMaxHP(ERewardOpType Op, float V, ECurrentHPPolicy Policy = ECurrentHPPolicy::KeepRatio);
+	UFUNCTION() void ApplyMaxShield(ERewardOpType Op, float V, ECurrentHPPolicy Policy = ECurrentHPPolicy::KeepRatio);
+	UFUNCTION() void ApplyShieldRegenSpeed(ERewardOpType Op, float V);
+
+	// PSR→PSC 동기화 편의 함수
+	UFUNCTION() void SyncMoveSpeedFromPSR(class APlayerState_Real* PS_R);
+	UFUNCTION() void UpdateMoveSpeed(); // CharacterMovement->MaxWalkSpeed 반영
 	
 protected:
 	// Called when the game starts
