@@ -122,7 +122,18 @@ protected:
 	UFUNCTION() void OnRep_SubskillId();
 	UFUNCTION() void OnRep_Ready();
 
+public:
+	// ---- PSR: 영속/공유 스탯 변경 메서드들
+	UFUNCTION() void ApplyMoveSpeed(ERewardOpType Op, float V);
+	UFUNCTION() void ApplyDashRechargeTime(ERewardOpType Op, float V);
+	UFUNCTION() void ApplyMaxDashCount(ERewardOpType Op, float V);     // 내부에서 정수화
 
+	UFUNCTION() void ApplyAttackDamage(ERewardOpType Op, float V);
+	UFUNCTION() void ApplyWeaponAttackCoolTime(ERewardOpType Op, float V); // 낮을수록 빠름(곱 권장)
+	UFUNCTION() void ApplyCriticalRate(ERewardOpType Op, float V);         // 0~1 클램프
+	UFUNCTION() void ApplyCriticalDamage(ERewardOpType Op, float V);       // 하한 클램프(예: 1.0)
 
-	///
+	UFUNCTION() void ApplyAbsorbDelay(ERewardOpType Op, float V);
+	UFUNCTION() void ApplyMaxSavedAmmo(ERewardOpType Op, float V);    // 내부에서 정수화
+	UFUNCTION() void ApplyMaxAmmo(ERewardOpType Op, float V);         // 내부에서 정수화
 };
