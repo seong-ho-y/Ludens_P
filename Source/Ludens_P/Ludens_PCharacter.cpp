@@ -147,6 +147,7 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 			SavedAmmo = MaxSavedAmmo / 2;
 			MaxAmmo = PSR->MaxAmmo;
 			CurrentAmmo = MaxAmmo;
+			
 
 
 			bPSRInitialized = true;  // 한 번만 실행되도록
@@ -177,7 +178,7 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 		{
 			GEngine->AddOnScreenDebugMessage(SlotBase + 70, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxHP: %f"), SlotBase, PSR->MaxHP));
 			GEngine->AddOnScreenDebugMessage(SlotBase + 71, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxShield: %f"), SlotBase, PSR->MaxShield));
-			GEngine->AddOnScreenDebugMessage(SlotBase + 72, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MoveSpeed: %f"), SlotBase, PSR->MoveSpeed));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 72, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MoveSpeed: %f |||||| %f"), SlotBase, PSR->MoveSpeed, GetCharacterMovement()->MaxWalkSpeed));
 			GEngine->AddOnScreenDebugMessage(SlotBase + 73, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] ShieldRegenSpeed: %f"), SlotBase, PSR->ShieldRegenSpeed));
 			GEngine->AddOnScreenDebugMessage(SlotBase + 74, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] DashRechargeTime: %f"), SlotBase, PSR->DashRechargeTime));
 			GEngine->AddOnScreenDebugMessage(SlotBase + 75, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxDashCount: %d"), SlotBase, PSR->MaxDashCount));

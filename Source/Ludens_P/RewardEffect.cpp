@@ -32,7 +32,7 @@ void URewardEffect_Stat::ApplyReward_Implementation(ACharacter* Player, const FR
         break;
 
         // --- �̵�/�뽬 �� PSR ���� ����
-    case EPlayerReward::MoveSpeed:             if (PSR) PSR->ApplyMoveSpeed(Op, V); break;
+    case EPlayerReward::MoveSpeed:             if (PSR) PSR->ApplyMoveSpeed(Op, V); if (PSC) PSC->SyncMoveSpeedFromPSR(PSR); break;
     case EPlayerReward::DashRechargeTime:      if (PSR) PSR->ApplyDashRechargeTime(Op, V); break;
     case EPlayerReward::MaxDashCount:          if (PSR) PSR->ApplyMaxDashCount(Op, V); break;
 
