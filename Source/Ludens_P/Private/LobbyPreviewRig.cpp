@@ -109,13 +109,13 @@ void ALobbyPreviewRig::SetAppearance(int32 InAp)
     ApplyPreviewFromDB();
 }
 
-void ALobbyPreviewRig::SetPreviewColor(ELobbyColor InColor)
+void ALobbyPreviewRig::SetPreviewColor(EEnemyColor InColor)
 {
     CurrentPreviewColor = InColor;
     if (!bReadyView) ApplyPreviewFromDB();
 }
 
-void ALobbyPreviewRig::SetSelectedColor(ELobbyColor InColor)
+void ALobbyPreviewRig::SetSelectedColor(EEnemyColor InColor)
 {
     CurrentSelectedColor = InColor;
     if (bReadyView) ApplyPreviewFromDB();
@@ -131,9 +131,9 @@ void ALobbyPreviewRig::ApplyPreviewFromDB()
 {
     if (!AppearanceDB || !PreviewMesh) return;
 
-    const ELobbyColor ColorToShow = bReadyView ? CurrentSelectedColor : CurrentPreviewColor;
+    const EEnemyColor ColorToShow = bReadyView ? CurrentSelectedColor : CurrentPreviewColor;
     const int32 Ap = FMath::Max(0, CurrentAppearanceId);
 
-    AppearanceDB->ApplyTo(PreviewMesh, Ap, ColorToShow);
+    AppearanceDB->ApplyToByEnemyColor(PreviewMesh, Ap, ColorToShow);
     RequestCapture();
 }

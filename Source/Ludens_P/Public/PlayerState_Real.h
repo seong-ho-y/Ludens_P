@@ -77,10 +77,10 @@ public:
 	int32 AppearanceId = -1;              // 로비에서 고른 외형(A0~A3 등)
 
 	UPROPERTY(ReplicatedUsing = OnRep_PreviewColor, BlueprintReadOnly, Category = "Lobby")
-	ELobbyColor PreviewColor = ELobbyColor::None;  // 편집 중 미리보기 색
+	EEnemyColor PreviewColor = EEnemyColor::Red;   // 폴백(초기값, 편한 값으로)
 
 	UPROPERTY(ReplicatedUsing = OnRep_SelectedColor, BlueprintReadOnly, Category = "Lobby")
-	ELobbyColor SelectedColor = ELobbyColor::None; // Ready 시점에 확정된 색(잠금)
+	EEnemyColor SelectedColor = EEnemyColor::Red;
 
 	UPROPERTY(ReplicatedUsing = OnRep_SubskillId, BlueprintReadOnly, Category = "Lobby")
 	int32 SubskillId = -1;                // 보조 스킬(인덱스)
@@ -96,11 +96,14 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Lobby")
 	void NotifyAnyLobbyFieldChanged(); // 로비 즉시 반영용 이벤트 트리거
 
+	
 	virtual void CopyProperties(APlayerState* PlayerState) override;
+	/*
 	virtual void OverrideWith(APlayerState* PlayerState) override;
+	*/
+
 	virtual void SeamlessTravelTo(APlayerState* NewPlayerState) override;
 
-		
 	///
 
 
@@ -119,7 +122,18 @@ protected:
 	UFUNCTION() void OnRep_SubskillId();
 	UFUNCTION() void OnRep_Ready();
 
+public:
+	// ---- PSR: 영속/공유 스탯 변경 메서드들
+	UFUNCTION() void ApplyMoveSpeed(ERewardOpType Op, float V);
+	UFUNCTION() void ApplyDashRechargeTime(ERewardOpType Op, float V);
+	UFUNCTION() void ApplyMaxDashCount(ERewardOpType Op, float V);     // 내부에서 정수화
 
+	UFUNCTION() void ApplyAttackDamage(ERewardOpType Op, float V);
+	UFUNCTION() void ApplyWeaponAttackCoolTime(ERewardOpType Op, float V); // 낮을수록 빠름(곱 권장)
+	UFUNCTION() void ApplyCriticalRate(ERewardOpType Op, float V);         // 0~1 클램프
+	UFUNCTION() void ApplyCriticalDamage(ERewardOpType Op, float V);       // 하한 클램프(예: 1.0)
 
-	///
+	UFUNCTION() void ApplyAbsorbDelay(ERewardOpType Op, float V);
+	UFUNCTION() void ApplyMaxSavedAmmo(ERewardOpType Op, float V);    // 내부에서 정수화
+	UFUNCTION() void ApplyMaxAmmo(ERewardOpType Op, float V);         // 내부에서 정수화
 };

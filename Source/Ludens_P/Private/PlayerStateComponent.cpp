@@ -314,14 +314,13 @@ void UPlayerStateComponent::OnRep_MoveSpeed()
 
 void UPlayerStateComponent::UpdateMoveSpeed()
 {
-	// 반드시 서버에서 실행
-	if (GetOwner()->HasAuthority())
+	if (ACharacter* Char = Cast<ACharacter>(GetOwner()))
 	{
-		MoveSpeed = CalculateMoveSpeed;
-
-		// 만약 클라이언트가 호스트(리스닝 서버)인 경우, OnRep 함수가 자동으로 호출되지 않으므로 수동으로 호출해줍니다.
-		OnRep_MoveSpeed();
-	}
+		if (UCharacterMovementComponent* Move = Char->GetCharacterMovement())
+		{
+			Move->MaxWalkSpeed = MoveSpeed;
+		}
+	}	
 }
 
 void UPlayerStateComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -343,3 +342,100 @@ void UPlayerStateComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UPlayerStateComponent, bCanRegenShield); // 경고 해소
 }
 
+static FORCEINLINE void OpApplyF(float& S, ERewardOpType Op, float V)
+{
+	if (Op == ERewardOpType::Multiply) S *= V; else S += V;
+}
+
+void UPlayerStateComponent::ApplyMaxHP(ERewardOpType Op, float V, ECurrentHPPolicy Policy)
+{
+	AActor* Owner = GetOwner();
+	if (!(Owner && Owner->HasAuthority())) return;
+
+	const float OldMax = MaxHP;
+	const float OldCur = CurrentHP;
+
+	OpApplyF(MaxHP, Op, V);
+	MaxHP = FMath::Max(1.f, MaxHP);
+
+	switch (Policy)
+	{
+	case ECurrentHPPolicy::KeepRatio: {
+		const float Ratio = (OldMax > 0.f) ? (OldCur / OldMax) : 1.f;
+		CurrentHP = FMath::Clamp(Ratio * MaxHP, 0.f, MaxHP);
+	} break;
+	case ECurrentHPPolicy::KeepCurrent: {
+		CurrentHP = FMath::Clamp(CurrentHP, 0.f, MaxHP);
+	} break;
+	case ECurrentHPPolicy::HealToFull: {
+		CurrentHP = MaxHP;
+	} break;
+	default: break;
+	}
+
+	// ★ PSR 백업 동기화(로그/위젯에서 PSR을 봐도 일치)
+	if (PSR)
+	{
+		PSR->MaxHP = MaxHP;
+		PSR->ForceNetUpdate();
+	}
+
+	// TODO: HP 변경 이벤트/HUD 알림 필요 시 브로드캐스트
+}
+
+void UPlayerStateComponent::ApplyMaxShield(ERewardOpType Op, float V, ECurrentHPPolicy Policy)
+{
+	AActor* Owner = GetOwner();
+	if (!(Owner && Owner->HasAuthority())) return;
+
+	const float OldMax = MaxShield;
+	const float OldCur = CurrentShield;
+
+	OpApplyF(MaxShield, Op, V);
+	MaxShield = FMath::Max(0.f, MaxShield);
+
+	switch (Policy)
+	{
+	case ECurrentHPPolicy::KeepRatio: {
+		const float Ratio = (OldMax > 0.f) ? (OldCur / OldMax) : 1.f;
+		CurrentShield = FMath::Clamp(Ratio * MaxShield, 0.f, MaxShield);
+	} break;
+	case ECurrentHPPolicy::KeepCurrent: {
+		CurrentShield = FMath::Clamp(CurrentShield, 0.f, MaxShield);
+	} break;
+	case ECurrentHPPolicy::HealToFull: {
+		CurrentShield = MaxShield;
+	} break;
+	default: break;
+	}
+
+	// ★ PSR 백업 동기화
+	if (PSR)
+	{
+		PSR->MaxShield = MaxShield;
+		PSR->ForceNetUpdate();
+	}
+}
+
+void UPlayerStateComponent::ApplyShieldRegenSpeed(ERewardOpType Op, float V)
+{
+	AActor* Owner = GetOwner();
+	if (!(Owner && Owner->HasAuthority())) return;
+
+	OpApplyF(PSR->ShieldRegenSpeed, Op, V);
+	PSR->ShieldRegenSpeed = FMath::Clamp(PSR->ShieldRegenSpeed, 0.f, 10000.f);
+
+	// 현재 타이머/틱 로직이 재생률을 사용한다면, 다음 틱부터 반영되도록 여기서 리셋/갱신
+	// ResetShieldRegenTimer();
+}
+
+void UPlayerStateComponent::SyncMoveSpeedFromPSR(APlayerState_Real* PS_R)
+{
+	if (!PSR) return;
+	MoveSpeed = PSR->MoveSpeed;
+
+	// 프로젝트 구조상 CalculateMoveSpeed가 소스로 쓰이면 같이 맞춰줍니다.
+	CalculateMoveSpeed = MoveSpeed;
+
+	UpdateMoveSpeed();
+}

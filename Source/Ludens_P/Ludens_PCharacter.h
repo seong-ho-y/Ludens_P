@@ -270,4 +270,16 @@ public:
 
 	bool bCosmeticsApplied = false;     // 1회 적용 보증
 	int32 CachedSubskillId = -1;        // (표현은 안 해도) 선택 스킬 id만 캐시
+
+	virtual void PossessedBy(AController* NewController) override;
+	
+	UPROPERTY(EditAnywhere, Category = "Tool")
+	UActorComponent* ToolComponent;
+
+	void OnInteract();
+
+	// 외형 적용 1회 함수
+	UFUNCTION()
+	void ApplyCosmeticsFromPSROnce();
+	virtual void OnRep_PlayerState() override;   // 클라: PS 세팅 복제 시
 };

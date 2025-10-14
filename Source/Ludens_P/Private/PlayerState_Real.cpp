@@ -2,6 +2,7 @@
 
 
 #include "PlayerState_Real.h"
+#include "Ludens_P/RewardData.h"
 
 APlayerState_Real::APlayerState_Real()
 {
@@ -66,18 +67,55 @@ void APlayerState_Real::NotifyAnyLobbyFieldChanged()
 	OnAnyLobbyFieldChanged.Broadcast(); // [PS-UNIFY] 서버에서 수동 트리거
 }
 
-// PlayerState_Real.cpp
+
 void APlayerState_Real::CopyProperties(APlayerState* PS)
 {
 	Super::CopyProperties(PS);
-	if (auto* R = Cast<APlayerState_Real>(PS))
+
+	// ? 복사 전 원본 데이터 로그
+	UE_LOG(LogTemp, Warning, TEXT("CopyProperties: SOURCE -> Ap: %d, Sel: %d, Ply: %d"),
+		AppearanceId, (int)SelectedColor, (int)PlayerColor);
+
+	if (auto* P = Cast<APlayerState_Real>(PS))
 	{
-		// 인게임에 필요한 최소 선택값만 보존
-		R->PlayerColor = PlayerColor;
-		R->AppearanceId = AppearanceId;
-		R->SubskillId = SubskillId;
+		// ? 복사될 대상(새로운 PlayerState)의 초기 상태 로그
+		UE_LOG(LogTemp, Warning, TEXT("CopyProperties: TARGET (Before) -> Ap: %d, Sel: %d, Ply: %d"),
+			P->AppearanceId, (int)P->SelectedColor, (int)P->PlayerColor);
+
+		// 데이터 복사
+		P->AppearanceId = AppearanceId;
+		P->SelectedColor = SelectedColor;
+		P->PlayerColor = PlayerColor;
+		P->SubskillId = SubskillId;
+		P->bReady = bReady;
+
+		/*
+		P->MaxHP = MaxHP;
+		P->MaxShield = MaxShield;
+		P->MoveSpeed = MoveSpeed;
+		P->ShieldRegenSpeed = ShieldRegenSpeed;
+		P->DashRechargeTime = DashRechargeTime;
+		P->MaxDashCount = MaxDashCount;
+		P->AttackDamage = AttackDamage;
+		P->WeaponAttackCoolTime = WeaponAttackCoolTime;
+		P->CriticalRate = CriticalRate;
+		P->CriticalDamage = CriticalDamage;
+		P->AbsorbDelay = AbsorbDelay;
+		P->MaxSavedAmmo = MaxSavedAmmo;
+		P->MaxAmmo = MaxAmmo;
+		*/
+
+		// ? 복사 후 대상의 최종 상태 로그
+		UE_LOG(LogTemp, Warning, TEXT("CopyProperties: TARGET (After) -> Ap: %d, Sel: %d, Ply: %d"),
+			P->AppearanceId, (int)P->SelectedColor, (int)P->PlayerColor);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("CopyProperties: Failed to cast PlayerState to APlayerState_Real."));
 	}
 }
+
+/*
 
 void APlayerState_Real::OverrideWith(APlayerState* PS)
 {
@@ -89,12 +127,131 @@ void APlayerState_Real::OverrideWith(APlayerState* PS)
 		SubskillId = R->SubskillId;
 	}
 }
+*/
 
-void APlayerState_Real::SeamlessTravelTo(APlayerState* NewPS)
+void APlayerState_Real::SeamlessTravelTo(APlayerState* NewPlayerState)
 {
-	Super::SeamlessTravelTo(NewPS);
-	CopyProperties(NewPS); // 보수적으로 한 번 더 보장
+	Super::SeamlessTravelTo(NewPlayerState);
+	if (APlayerState_Real* NewRealPS = Cast<APlayerState_Real>(NewPlayerState))
+	{
+		// 로비에서 인게임으로 정보를 안전하게 복사
+		NewRealPS->AppearanceId = AppearanceId;
+		NewRealPS->SelectedColor = SelectedColor;
+		NewRealPS->PlayerColor = PlayerColor;
+		NewRealPS->SubskillId = SubskillId;
+		NewRealPS->bReady = bReady;
+
+		/*
+		NewRealPS->MaxHP = MaxHP;
+		NewRealPS->MaxShield = MaxShield;
+		NewRealPS->MoveSpeed = MoveSpeed;
+		NewRealPS->ShieldRegenSpeed = ShieldRegenSpeed;
+		NewRealPS->DashRechargeTime = DashRechargeTime;
+		NewRealPS->MaxDashCount = MaxDashCount;
+		NewRealPS->AttackDamage = AttackDamage;
+		NewRealPS->WeaponAttackCoolTime = WeaponAttackCoolTime;
+		NewRealPS->CriticalRate = CriticalRate;
+		NewRealPS->CriticalDamage = CriticalDamage;
+		NewRealPS->AbsorbDelay = AbsorbDelay;
+		NewRealPS->MaxSavedAmmo = MaxSavedAmmo;
+		NewRealPS->MaxAmmo = MaxAmmo;
+		*/
+
+		NewRealPS->NotifyAnyLobbyFieldChanged();
+	}
 }
 
-///
 
+///
+static FORCEINLINE void OpApply(float& S, ERewardOpType Op, float V)
+{
+	if (Op == ERewardOpType::Multiply) S *= V; else S += V;
+}
+
+
+static FORCEINLINE int32 ToIntNonNeg(float V) { return FMath::Max(0, FMath::RoundToInt(V)); }
+
+void APlayerState_Real::ApplyMoveSpeed(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	OpApply(MoveSpeed, Op, V);
+	MoveSpeed = FMath::Clamp(MoveSpeed, 50.f, 20000.f);
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyDashRechargeTime(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+
+	OpApply(DashRechargeTime, Op, V);
+	DashRechargeTime = FMath::Clamp(DashRechargeTime, 0.05f, 60.f);
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyMaxDashCount(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	float Temp = (float)MaxDashCount;
+	OpApply(Temp, Op, V);
+	MaxDashCount = FMath::Clamp(ToIntNonNeg(Temp), 0, 10);
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyAttackDamage(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	OpApply(AttackDamage, Op, V);
+	AttackDamage = FMath::Max(0.f, AttackDamage);
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyWeaponAttackCoolTime(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	
+	OpApply(WeaponAttackCoolTime, Op, V);
+	WeaponAttackCoolTime = FMath::Clamp(WeaponAttackCoolTime, 0.03f, 10.f);
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyCriticalRate(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	OpApply(CriticalRate, Op, V);
+	CriticalRate = FMath::Clamp(CriticalRate, 0.f, 1.f);
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyCriticalDamage(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	OpApply(CriticalDamage, Op, V);
+	CriticalDamage = FMath::Max(1.0f, CriticalDamage); 
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyAbsorbDelay(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	OpApply(AbsorbDelay, Op, V);
+	AbsorbDelay = FMath::Clamp(AbsorbDelay, 0.f, 10.f);
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyMaxSavedAmmo(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	float Temp = (float)MaxSavedAmmo;
+	OpApply(Temp, Op, V);
+	MaxSavedAmmo = FMath::Clamp(ToIntNonNeg(Temp), 0, 9999);
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyMaxAmmo(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	float Temp = (float)MaxAmmo;
+	OpApply(Temp, Op, V);
+	MaxAmmo = FMath::Clamp(ToIntNonNeg(Temp), 0, 999);
+	ForceNetUpdate();
+}

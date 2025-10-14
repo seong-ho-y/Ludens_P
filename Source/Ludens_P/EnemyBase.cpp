@@ -1,6 +1,7 @@
 #include "EnemyBase.h"
 
 #include "BrainComponent.h"
+#include "DeColorProjec.h"
 #include "EnemyAIController.h"
 #include "Net/UnrealNetwork.h"
 #include "EnemyDescriptor.h"
@@ -19,6 +20,7 @@
 #include "Blueprint/UserWidget.h"
 #include "Ludens_PGameMode.h"
 #include "EnemyPoolManager.h"
+#include "GrenadeProjectile.h"
 
 struct FEnemySpawnProfile;
 
@@ -558,8 +560,14 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 		UE_LOG(LogTemp, Warning, TEXT("ShieldComponent damageStart"));
 		EEnemyColor DamageColor = EEnemyColor::Black;
 
-		// 1. 공격자 컨트롤러가 있는지 확인
-		if (EventInstigator)
+		// 1-1. 공격자가 수류탄인지 확인
+		if (DamageCauser && DamageCauser->IsA<AGrenadeProjectile>())
+		{
+			// 수류탄이라면 DamageColor Black으로 유지
+			UE_LOG(LogTemp, Warning, TEXT("Damage from Grenade detected! Setting color to Black."));
+		}
+		// 1-2. 공격자 컨트롤러가 있는지 확인
+		else if (EventInstigator)
 		{
 			// 2. 컨트롤러가 조종하는 폰(캐릭터)이 있는지 확인
 			APawn* InstigatorPawn = EventInstigator->GetPawn();
@@ -572,10 +580,12 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 				{
 					// 모든 것이 유효할 때만 PlayerColor에 접근
 					DamageColor = InstigatorStateComp->PlayerColor;
+					// 임시로 Red 넣고 테스트해볼거임 <- 탈색제 테스트
+					//DamageColor = EEnemyColor::Red;
 				}
 			}
 		}
-        
+		UE_LOG(LogTemp,Error, TEXT("DamageAmount  %f"), DamageAmount)
 		ShieldComponent->TakeShieldDamage(DamageAmount, DamageColor);
 	}
 	//활성화된 쉴드 없으면 직접 데미지 주기

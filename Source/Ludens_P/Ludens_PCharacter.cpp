@@ -17,10 +17,13 @@
 #include "TP_WeaponComponent.h"
 #include "WeaponAttackHandler.h"
 #include "CreatureCombatComponent.h"
+#include "DecolorComp.h"
+#include "GrenadeComp.h"
 #include "JellooComponent.h"
 #include "PlayerState_Real.h"
 #include "ReviveComponent.h"
 #include "LudensAppearanceData.h"
+#include "ToolInterface.h"
 
 #include "Engine/LocalPlayer.h"
 #include "Net/UnrealNetwork.h"
@@ -52,6 +55,10 @@ ALudens_PCharacter::ALudens_PCharacter()
 	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
 
 	RewardSystem = CreateDefaultSubobject<URewardSystemComponent>(TEXT("RewardSystem"));
+	PlayerAttackComponent = CreateDefaultSubobject<UPlayerAttackComponent>(TEXT("PlayerAttack"));
+	PlayerStateComponent = CreateDefaultSubobject<UPlayerStateComponent>(TEXT("PlayerState"));
+	WeaponComponent = CreateDefaultSubobject<UTP_WeaponComponent>(TEXT("Weapon"));
+	ReviveComponent = CreateDefaultSubobject<UReviveComponent>(TEXT("Revive"));
 	
 	// GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->GravityScale = 2.0f;
@@ -82,13 +89,6 @@ void ALudens_PCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
-
-	//컴포넌트 할당
-	PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
-	PlayerStateComponent = FindComponentByClass<UPlayerStateComponent>();
-	WeaponComponent = FindComponentByClass<UTP_WeaponComponent>();
-	ReviveComponent = FindComponentByClass<UReviveComponent>();
-
 	if (PlayerAttackComponent && PlayerAttackComponent->WeaponAttackHandler && WeaponComponent)
 	{
 		PlayerAttackComponent->WeaponAttackHandler->WeaponComp = WeaponComponent;
@@ -118,29 +118,15 @@ void ALudens_PCharacter::BeginPlay()
 			}
 		}
 
-		/*
-		//컴포넌트 할당
-		PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
-		PlayerStateComponent = FindComponentByClass<UPlayerStateComponent>();
-		WeaponComponent = FindComponentByClass<UTP_WeaponComponent>();
-		ReviveComponent = FindComponentByClass<UReviveComponent>();
-
-		if (PlayerAttackComponent && WeaponComponent)
-		{
-			PlayerAttackComponent->WeaponAttackHandler->WeaponComp = WeaponComponent;
-		}
-
-		*/
-
 		// --- 널 체크 ---
 		if (!DashAction) { UE_LOG(LogTemplateCharacter, Error, TEXT("DashAction is null!")); }
 		if (!MeleeAttackAction) { UE_LOG(LogTemplateCharacter, Error, TEXT("MeleeAttackAction is null!")); }
-		
-
 
 		// 로비 UI 모드 잔상이 있으면 입력이 막힐 수 있음 → 게임 전용으로 전환
 		PC->SetInputMode(FInputModeGameOnly{});
 		PC->bShowMouseCursor = false;
+
+		ApplyCosmeticsFromPSROnce(); // 조기 시도(PSR/DB 준비 전이면 미적용 + 로그만 남고 재시도 가능)
 	}
 }
 
@@ -162,45 +148,48 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 			MaxAmmo = PSR->MaxAmmo;
 			CurrentAmmo = MaxAmmo;
 
-			// 외형/색 1회 적용
-			if (!bCosmeticsApplied && AppearanceDB && Mesh1P)
-			{
-				// 로비에서 선택한 외형/색을 1회 반영
-
-				// 변경: EEnemyColor → ELobbyColor 매핑 1줄 추가
-				auto ToLobbyColor = [](EEnemyColor C)->ELobbyColor
-					{
-						switch (C)
-						{
-						case EEnemyColor::Red:   return ELobbyColor::Red;
-						case EEnemyColor::Green: return ELobbyColor::Green;
-						case EEnemyColor::Blue:  return ELobbyColor::Blue;
-						default:                 return ELobbyColor::Red;
-						}
-					};
-
-				if (AppearanceDB && GetMesh() && PSR)
-				{
-					AppearanceDB->ApplyToByEnemyColor(GetMesh(), PSR->AppearanceId, PSR->PlayerColor);
-					UE_LOG(LogTemp, Display, TEXT("[Cosmetics] Body applied Ap=%d, EnemyColor=%d, Mesh=%s"),
-						PSR->AppearanceId, (int)PSR->PlayerColor, *GetNameSafe(GetMesh()));
-				}
-
-
-				bCosmeticsApplied = true;
-			}
-
-			// 스킬 선택값 캐시(스킬 자체 로직은 아직 미구현이므로 보관만)
-			CachedSubskillId = PSR->SubskillId;
 
 			bPSRInitialized = true;  // 한 번만 실행되도록
-			UE_LOG(LogTemplateCharacter, Log, TEXT("PSR Completed in Ludens_PCharacter!"))
+			UE_LOG(LogTemplateCharacter, Log, TEXT("PSR Completed in Ludens_PCharacter!"));
 		}
 	}
 	// 다른 Tick 로직에서도 PSR을 접근하는 경우
 	if (!PSR) return;
     
 	// 이후 안전하게 PSR 멤버 사용 가능
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		int32 SlotBase = 0;
+
+		if (APlayerState* PS = PC->PlayerState)
+		{
+			SlotBase = PS->GetPlayerId();        // 권장: 매치 내 고유 ID
+		}
+		else if (UPlayer* P = PC->Player)
+		{
+			SlotBase = P->GetUniqueID();         // 대안: 에디터 런타임 고유
+		}
+
+		SlotBase = (SlotBase % 10000) * 100;
+
+		if (PC->IsLocalController() && GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(SlotBase + 70, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxHP: %f"), SlotBase, PSR->MaxHP));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 71, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxShield: %f"), SlotBase, PSR->MaxShield));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 72, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MoveSpeed: %f"), SlotBase, PSR->MoveSpeed));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 73, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] ShieldRegenSpeed: %f"), SlotBase, PSR->ShieldRegenSpeed));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 74, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] DashRechargeTime: %f"), SlotBase, PSR->DashRechargeTime));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 75, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxDashCount: %d"), SlotBase, PSR->MaxDashCount));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 76, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] AttackDamage: %f"), SlotBase, PSR->AttackDamage));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 77, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] WeaponAttackCoolTime: %f"), SlotBase, PSR->WeaponAttackCoolTime));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 78, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] CriticalRate: %f"), SlotBase, PSR->CriticalRate));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 79, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] CriticalDamage: %f"), SlotBase, PSR->CriticalDamage));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 80, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] AbsorbDelay: %f"), SlotBase, PSR->AbsorbDelay));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 81, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxSavedAmmo: %d"), SlotBase, PSR->MaxSavedAmmo));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 82, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxAmmo: %d"), SlotBase, PSR->MaxAmmo));
+		}
+	}
 }
 
 void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -239,6 +228,8 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		// Absorb
 		EnhancedInputComponent->BindAction(AbsorbAction, ETriggerEvent::Ongoing, this, &ALudens_PCharacter::Absorb);
 		EnhancedInputComponent->BindAction(AbsorbAction, ETriggerEvent::Completed, this, &ALudens_PCharacter::AbsorbComplete);
+
+		PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ALudens_PCharacter::OnInteract);
 	}
 }
 
@@ -734,4 +725,108 @@ void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 	DOREPLIFETIME(ALudens_PCharacter, ReplicatedDashCooldownStartTime);
 	DOREPLIFETIME(ALudens_PCharacter, SavedAmmo);
 	DOREPLIFETIME(ALudens_PCharacter, CurrentAmmo);
+}
+
+void ALudens_PCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	UE_LOG(LogTemp, Log, TEXT("[Char] Possessed Pawn=%s Auth=%d"), *GetName(), (int)HasAuthority());
+	ApplyCosmeticsFromPSROnce(); // 서버: 폰 소유 확정 시 1회 시도
+	if (HasAuthority())
+	{
+		
+	}
+	/*{
+		APlayerState_Real* PS = GetPlayerState<APlayerState_Real>();
+		if (PS && PS->) // PlayerState에서 선택한 도구 클래스 정보를 가져옵니다.
+		{
+			// 기존에 컴포넌트가 있다면 파괴합니다 (재스폰 등의 경우를 위해).
+			if (ActiveToolComponent)
+			{
+				ActiveToolComponent->DestroyComponent();
+			}
+
+			// 새로운 컴포넌트를 생성하고, 소유자를 이 캐릭터로 설정합니다.
+			ActiveToolComponent = NewObject<UActorComponent>(this, PS->SelectedToolClass);
+			if (ActiveToolComponent)
+			{
+				// 컴포넌트를 등록하여 월드에서 활성화합니다.
+				ActiveToolComponent->RegisterComponent();
+
+				// 만약 컴포넌트가 특정 액터에 부착되어야 한다면, 여기서 처리합니다.
+				// 예: USceneComponent인 경우
+				// USceneComponent* SceneComp = Cast<USceneComponent>(ActiveToolComponent);
+				// if (SceneComp)
+				// {
+				//    SceneComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("ToolSocket"));
+				// }
+
+				UE_LOG(LogTemp, Warning, TEXT("ToolComponent has been successfully assigned on Server."));
+			}
+		}
+	}
+	*/
+}
+
+void ALudens_PCharacter::OnInteract()
+{
+	//ToolComponent = FindComponentByClass<UGrenadeComp>();
+	// 현재 활성화된 도구 컴포넌트가 있는지 확인
+	ToolComponent = FindComponentByClass<UDecolorComp>();
+	if (ToolComponent)
+	{
+		// 컴포넌트가 ToolInterface를 구현했는지 확인
+		if (ToolComponent->GetClass()->ImplementsInterface(UToolInterface::StaticClass()))
+		{
+			// 인터페이스 함수를 호출
+			IToolInterface::Execute_Interact(ToolComponent, this);
+		}
+	}
+}
+
+void ALudens_PCharacter::ApplyCosmeticsFromPSROnce()
+{
+	if (bCosmeticsApplied) { UE_LOG(LogTemp, Verbose, TEXT("[Cosmetics] Skip: already applied")); return; }
+
+	APlayerState_Real* PSRLocal = GetPlayerState<APlayerState_Real>();
+	if (!PSRLocal) { UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] PSR not ready on %s"), *GetName()); return; }
+	if (!AppearanceDB) { UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] AppearanceDB is NULL on %s"), *GetName()); return; }
+
+	// ✅ 폴백 준비
+
+	int32 ApId = PSRLocal->AppearanceId;
+	bool bUsedFallback = false;
+	if (ApId < 0)
+	{
+		bUsedFallback = true;
+		ApId = 0; // 임시로 Appearance 0 사용
+		UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] AppearanceId was -1 -> fallback to 0 (Pawn=%s)"), *GetName());
+	}
+
+
+	if (USkeletalMeshComponent* Mesh3P = GetMesh())
+	{
+		AppearanceDB->ApplyToByEnemyColor(Mesh3P, ApId, PSRLocal->PlayerColor);
+
+		if (!bUsedFallback)
+		{
+			// 정상 값으로 성공 적용한 경우에만 잠금
+			bCosmeticsApplied = true;
+			UE_LOG(LogTemp, Display, TEXT("[Cosmetics] Server-applied Ap=%d, Color=%d, Pawn=%s"),
+				ApId, (int32)PSRLocal->PlayerColor, *GetName());
+		}
+		else
+		{
+			// 폴백으로 적용했으면 잠그지 않음 → 이후 정상 값 들어오면 재적용 가능
+			UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] Applied with fallback; NOT locking (Auth=%d Pawn=%s)"), (int32)HasAuthority(), *GetName());
+		}
+	}
+
+}
+
+void ALudens_PCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	UE_LOG(LogTemp, Log, TEXT("[Char] OnRep PS Pawn=%s Local=%d"), *GetName(), (int)IsLocallyControlled());
+	ApplyCosmeticsFromPSROnce(); // 클라: PSR 복제 완료 직후 1회 더 시도
 }

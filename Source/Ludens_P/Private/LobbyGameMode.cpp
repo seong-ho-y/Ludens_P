@@ -4,24 +4,11 @@
 #include "LobbyGameMode.h"
 #include "LobbyGameState.h" 
 #include "Kismet/GameplayStatics.h"
-
+#include "LobbyPlayerController.h"
 #include "PlayerState_Real.h" // 수정 완료
 #include "Ludens_P/EEnemyColor.h"
 #include "LobbyTypes.h"
 
-namespace
-{
-    static EEnemyColor ToEnemyColor(ELobbyColor C)
-    {
-        switch (C)
-        {
-        case ELobbyColor::Red:   return EEnemyColor::Red;
-        case ELobbyColor::Green: return EEnemyColor::Green;
-        case ELobbyColor::Blue:  return EEnemyColor::Blue;
-        default:                 return EEnemyColor::Red; // 폴백
-        }
-    }
-}
 
 ALobbyGameMode::ALobbyGameMode()
 {
@@ -34,69 +21,51 @@ ALobbyGameMode::ALobbyGameMode()
 }
 
 
+static FString ColorToStr(EEnemyColor C)
+{
+    if (const UEnum* E = StaticEnum<EEnemyColor>())
+        return E->GetNameStringByValue((int64)C);
+    return TEXT("Unknown");
+}
 
+// LobbyGameMode.cpp의 StartGameIfAllReady() 함수 전체를 아래 코드로 교체하세요.
 void ALobbyGameMode::StartGameIfAllReady()
 {
     if (!HasAuthority()) return;
 
-    // 1) 로비 상태 검사
     ALobbyGameState* GS = GetWorld() ? GetWorld()->GetGameState<ALobbyGameState>() : nullptr;
-    if (!GS)
-    {
-        UE_LOG(LogTemp, Warning, TEXT("StartGameIfAllReady: No LobbyGameState"));
-        return;
-    }
+    if (!GS) { UE_LOG(LogTemp, Warning, TEXT("StartGameIfAllReady: No LobbyGameState")); return; }
 
     const int32 Total = GS->PlayerArray.Num();
     const int32 Ready = GS->ReadyCount;
-    const bool  bAllReady = (Total > 0 && Ready == Total);
-
-    if (!bAllReady)
+    if (!(Total > 0 && Ready == Total))
     {
         UE_LOG(LogTemp, Warning, TEXT("StartGameIfAllReady: Not all ready (%d/%d)"), Ready, Total);
         return;
     }
 
-    // 2) 목적지 맵 유효성
     if (!(StageMap.IsValid() || StageMap.ToSoftObjectPath().IsValid()))
     {
-        UE_LOG(LogTemp, Error, TEXT("StageMap is not set or invalid."));
+        UE_LOG(LogTemp, Error, TEXT("StageMap is not set/invalid."));
         return;
     }
 
-    // 3) ★ 여기서 '단 한 번만' 색 확정 (ELobbyColor -> EEnemyColor)
-    auto ToEnemyColor = [](ELobbyColor C)
-        {
-            switch (C)
-            {
-            case ELobbyColor::Red:   return EEnemyColor::Red;
-            case ELobbyColor::Green: return EEnemyColor::Green;
-            case ELobbyColor::Blue:  return EEnemyColor::Blue;
-            default:                 return EEnemyColor::Red; // 폴백(프로젝트 규칙에 맞게)
-            }
-        };
-
     for (APlayerState* PSBase : GS->PlayerArray)
     {
-        if (auto* PS = Cast<APlayerState_Real>(PSBase))
+        if (APlayerState_Real* PSR = Cast<APlayerState_Real>(PSBase))
         {
-            // 최종 1회 커밋
-            PS->PlayerColor = ToEnemyColor(PS->SelectedColor);
+            PSR->PlayerColor = PSR->SelectedColor;
+            PSR->ForceNetUpdate();
 
-            // (선택) 복제 즉시화를 원하면 유지, 아니면 주석처리 가능
-            PS->ForceNetUpdate();
-
-            UE_LOG(LogTemp, Display, TEXT("[PreTravel] %s Appear=%d Selected(ELobby)=%d -> PlayerColor(Enemy)=%d Skill=%d Ready=%d"),
-                *GetNameSafe(PS), PS->AppearanceId, (int)PS->SelectedColor, (int)PS->PlayerColor, PS->SubskillId, (int)PS->bReady);
+            UE_LOG(LogTemp, Display, TEXT("[PreTravel] PS=%p Ap=%d Sel=%s -> PlayerColor=%s Name=%s"),
+                PSR, PSR->AppearanceId, *ColorToStr(PSR->SelectedColor), *ColorToStr(PSR->PlayerColor), *PSR->GetPlayerName());
         }
     }
 
-    // 4) 맵 전환 (Seamless)
     const FString MapPath = StageMap.GetLongPackageName();
-    const FString Url = MapPath + TEXT("?listen");
-    UE_LOG(LogTemp, Display, TEXT("All ready -> ServerTravel to %s"), *Url);
+    const FString NextGameModePath = TEXT("/Game/FirstPerson/Blueprints/BP_FirstPersonGameMode.BP_FirstPersonGameMode_C");
+    const FString URL = FString::Printf(TEXT("%s?listen?game=%s"), *MapPath, *NextGameModePath);
 
-    GetWorld()->ServerTravel(Url);
+    UE_LOG(LogTemp, Display, TEXT("All ready -> ServerTravel to %s"), *URL);
+    GetWorld()->ServerTravel(URL);
 }
-
-
