@@ -39,23 +39,18 @@ void ARoom::BeginPlay()
 
         if (DoorClass)
         {
-            // 문 위치 설정 (원하는 위치로 조정)
-            if (EntryDoorLoc && ExitDoorLoc)
-            {
-                FVector EntryLocation = GetActorLocation() + FVector(EntryDoorLoc, 0.f, 0.f);
-                FVector ExitLocation = GetActorLocation() + FVector(ExitDoorLoc, 0.f, 0.f);
+            const FVector EntryLocation = GetEntryDoorWorldPos();
+            const FVector ExitLocation = GetExitDoorWorldPos();
+            const FRotator DoorRotation = FRotator::ZeroRotator;
 
-                FRotator DoorRotation = FRotator::ZeroRotator;
+            FActorSpawnParameters SpawnParams;
+            SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-                FActorSpawnParameters SpawnParams;
-                SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+            EntryDoor = GetWorld()->SpawnActor<ADoor>(DoorClass, EntryLocation, DoorRotation, SpawnParams);
+            ExitDoor = GetWorld()->SpawnActor<ADoor>(DoorClass, ExitLocation, DoorRotation, SpawnParams);
 
-                // EntryDoor 생성
-                EntryDoor = GetWorld()->SpawnActor<ADoor>(DoorClass, EntryLocation, DoorRotation, SpawnParams);
-
-                // ExitDoor 생성
-                ExitDoor = GetWorld()->SpawnActor<ADoor>(DoorClass, ExitLocation, DoorRotation, SpawnParams);
-            }
+            if (EntryDoor) { EntryDoor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform); }
+            if (ExitDoor) { ExitDoor->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform); }
         }
     }
 }
@@ -77,7 +72,7 @@ void ARoom::StartRoom()
     if (GEngine)
     {
         FString Msg = FString::Printf(TEXT("Room %d Start"), RoomIndex);
-        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, Msg);
+        GEngine->AddOnScreenDebugMessage(3, 5.f, FColor::Yellow, Msg);
     }
 
     // 5초 후 자동 클리어
@@ -98,7 +93,7 @@ void ARoom::AutoClear()
     if (GEngine && HasAuthority())
     {
         FString Msg = FString::Printf(TEXT("Room %d Cleared"), RoomIndex);
-        GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, Msg);
+        GEngine->AddOnScreenDebugMessage(3, 5.f, FColor::Cyan, Msg);
     }
 
     if (Manager)
@@ -140,11 +135,11 @@ void ARoom::OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* Oth
     {
         if (GEngine)
         {
-            FString Msg = FString::Printf(TEXT("[Room] Waiting: %d / 3"), EnteredPlayers.Num());
-            GEngine->AddOnScreenDebugMessage(-1, 4.f, FColor::White, Msg);
+            FString Msg = FString::Printf(TEXT("[Room] Waiting: %d / %d"), EnteredPlayers.Num(), RequiredPlayers);
+            GEngine->AddOnScreenDebugMessage(4, 4.f, FColor::White, Msg);
         }
 
-        if (EnteredPlayers.Num() == 3)
+        if (EnteredPlayers.Num() == RequiredPlayers)
         {
             if (EntryDoor) EntryDoor->Close();      // 문 닫고
             if (Manager) Manager->StartNextRoom();  // 다음 방 시작

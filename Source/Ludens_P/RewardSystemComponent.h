@@ -15,33 +15,26 @@ class LUDENS_P_API URewardSystemComponent : public UActorComponent
 public:
 	URewardSystemComponent();
 
-    /** ���� ��ü ��� */
     UPROPERTY(EditDefaultsOnly, Category = "Reward")
     TSoftObjectPtr<UDataTable> RewardTable;
 
     UPROPERTY()
     TArray<FName> LastOfferedRowNames;
 
-    /** UI Ŭ���� (���� ����) */
     UPROPERTY(EditDefaultsOnly, Category = "Reward")
     TSubclassOf<class URewardUIWidget> RewardUIClass;
 
 public:
-    /** ���� ���� �Լ� */
     void ApplyReward(const FRewardRow& Row);
-
     bool GetRowData(FName RowName, FRewardRow& Out) const;
 
 public:
-    /* ������ ���� 3���� �̾� �ش� �÷��̾� Ŭ�󿡸� UI ���� */
     UFUNCTION(Server, Reliable)
     void Server_ShowRewardOptions();
 
-    /* �������ش� �÷��̾�Ը� �����ϴ� Client RPC(�ε����� ����) */
     UFUNCTION(Client, Reliable)
     void Client_ShowRewardUI(const TArray<FName>& OptionRowNames);
 
-    /* (���� ����) �÷��̾ ���� ���� �ε���(0~2)�� ������ */
     UFUNCTION(Server, Reliable)
     void Server_SelectReward(FName PickedRowName);
 
@@ -49,5 +42,5 @@ public:
     void Client_EnableInputAfterReward();
 
 private:
-    URewardUIWidget* ActiveRewardWidget = nullptr;  // ���� ����� ���� ���� ����
+    URewardUIWidget* ActiveRewardWidget = nullptr;
 };
