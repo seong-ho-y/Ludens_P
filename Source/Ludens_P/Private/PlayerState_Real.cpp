@@ -46,7 +46,7 @@ void APlayerState_Real::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(APlayerState_Real, SubskillId);
 	DOREPLIFETIME(APlayerState_Real, bReady);
 
-	// [Áß¿ä] »ó¼º »ö (¼­¹ö°¡ Ready¿¡¼­ È®Á¤ÇØ ÁÖÀÔ ¡æ Àü Å¬¶ó º¹Á¦)
+	// [ï¿½ß¿ï¿½] ï¿½ï¿½ ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Readyï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ Å¬ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 	DOREPLIFETIME(APlayerState_Real, PlayerColor);
 
 	///
@@ -55,7 +55,7 @@ void APlayerState_Real::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 
 ///
 
-// --- OnRepµé: UI/Ç¥Çö °»½Å Æ®¸®°Å ---
+// --- OnRepï¿½ï¿½: UI/Ç¥ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½ï¿½ ---
 void APlayerState_Real::OnRep_AppearanceId() { OnAnyLobbyFieldChanged.Broadcast(); }
 void APlayerState_Real::OnRep_PreviewColor() { OnAnyLobbyFieldChanged.Broadcast(); }
 void APlayerState_Real::OnRep_SelectedColor() { OnAnyLobbyFieldChanged.Broadcast(); }
@@ -64,7 +64,7 @@ void APlayerState_Real::OnRep_Ready() { OnAnyLobbyFieldChanged.Broadcast(); }
 
 void APlayerState_Real::NotifyAnyLobbyFieldChanged()
 {
-	OnAnyLobbyFieldChanged.Broadcast(); // [PS-UNIFY] ¼­¹ö¿¡¼­ ¼öµ¿ Æ®¸®°Å
+	OnAnyLobbyFieldChanged.Broadcast(); // [PS-UNIFY] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½ï¿½
 }
 
 
@@ -72,24 +72,24 @@ void APlayerState_Real::CopyProperties(APlayerState* PS)
 {
 	Super::CopyProperties(PS);
 
-	// ? º¹»ç Àü ¿øº» µ¥ÀÌÅÍ ·Î±×
+	// ? ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Î±ï¿½
 	UE_LOG(LogTemp, Warning, TEXT("CopyProperties: SOURCE -> Ap: %d, Sel: %d, Ply: %d"),
 		AppearanceId, (int)SelectedColor, (int)PlayerColor);
 
 	if (auto* P = Cast<APlayerState_Real>(PS))
 	{
-		// ? º¹»çµÉ ´ë»ó(»õ·Î¿î PlayerState)ÀÇ ÃÊ±â »óÅÂ ·Î±×
+		// ? ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½Î¿ï¿½ PlayerState)ï¿½ï¿½ ï¿½Ê±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Î±ï¿½
 		UE_LOG(LogTemp, Warning, TEXT("CopyProperties: TARGET (Before) -> Ap: %d, Sel: %d, Ply: %d"),
 			P->AppearanceId, (int)P->SelectedColor, (int)P->PlayerColor);
 
-		// µ¥ÀÌÅÍ º¹»ç
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		P->AppearanceId = AppearanceId;
 		P->SelectedColor = SelectedColor;
 		P->PlayerColor = PlayerColor;
 		P->SubskillId = SubskillId;
 		P->bReady = bReady;
 
-		/*
+		
 		P->MaxHP = MaxHP;
 		P->MaxShield = MaxShield;
 		P->MoveSpeed = MoveSpeed;
@@ -103,9 +103,9 @@ void APlayerState_Real::CopyProperties(APlayerState* PS)
 		P->AbsorbDelay = AbsorbDelay;
 		P->MaxSavedAmmo = MaxSavedAmmo;
 		P->MaxAmmo = MaxAmmo;
-		*/
+		
 
-		// ? º¹»ç ÈÄ ´ë»óÀÇ ÃÖÁ¾ »óÅÂ ·Î±×
+		// ? ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Î±ï¿½
 		UE_LOG(LogTemp, Warning, TEXT("CopyProperties: TARGET (After) -> Ap: %d, Sel: %d, Ply: %d"),
 			P->AppearanceId, (int)P->SelectedColor, (int)P->PlayerColor);
 	}
@@ -134,14 +134,14 @@ void APlayerState_Real::SeamlessTravelTo(APlayerState* NewPlayerState)
 	Super::SeamlessTravelTo(NewPlayerState);
 	if (APlayerState_Real* NewRealPS = Cast<APlayerState_Real>(NewPlayerState))
 	{
-		// ·Îºñ¿¡¼­ ÀÎ°ÔÀÓÀ¸·Î Á¤º¸¸¦ ¾ÈÀüÇÏ°Ô º¹»ç
+		// ï¿½Îºñ¿¡¼ï¿½ ï¿½Î°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½
 		NewRealPS->AppearanceId = AppearanceId;
 		NewRealPS->SelectedColor = SelectedColor;
 		NewRealPS->PlayerColor = PlayerColor;
 		NewRealPS->SubskillId = SubskillId;
 		NewRealPS->bReady = bReady;
 
-		/*
+		
 		NewRealPS->MaxHP = MaxHP;
 		NewRealPS->MaxShield = MaxShield;
 		NewRealPS->MoveSpeed = MoveSpeed;
@@ -155,7 +155,7 @@ void APlayerState_Real::SeamlessTravelTo(APlayerState* NewPlayerState)
 		NewRealPS->AbsorbDelay = AbsorbDelay;
 		NewRealPS->MaxSavedAmmo = MaxSavedAmmo;
 		NewRealPS->MaxAmmo = MaxAmmo;
-		*/
+		
 
 		NewRealPS->NotifyAnyLobbyFieldChanged();
 	}

@@ -30,11 +30,11 @@ UCLASS(config=Game)
 class ALudens_PCharacter : public ACharacter
 {
 	GENERATED_BODY()
-
+public:
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Mesh, meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* Mesh1P;
-public:
+
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
@@ -87,15 +87,16 @@ private:
 private:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	class UInputMappingContext* DefaultMappingContext;
-	UPROPERTY()
+public:
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UPlayerAttackComponent* PlayerAttackComponent;
-protected:
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UPlayerStateComponent* PlayerStateComponent;
-private:
-	UPROPERTY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UTP_WeaponComponent* WeaponComponent;
-	UPROPERTY()
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UReviveComponent* ReviveComponent;
 	
 protected:
