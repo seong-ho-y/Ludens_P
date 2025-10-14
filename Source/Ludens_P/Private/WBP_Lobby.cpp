@@ -4,7 +4,7 @@
 #include "WBP_Lobby.h"
 #include "LobbyPreviewRig.h"
 #include "LobbyPlayerController.h"
-#include "LobbyPlayerState.h"
+#include "PlayerState_Real.h" // 수정 완료
 #include "LobbyGameState.h"  
 #include "Components/Button.h"
 #include "Components/Border.h"
@@ -17,6 +17,10 @@
 #include "Engine/TextureRenderTarget2D.h"
 #include "Kismet/GameplayStatics.h"
 #include "GameFramework/GameStateBase.h"
+#include "Ludens_P/EEnemyColor.h"
+#include "LobbyTypes.h"
+
+
 
 
 void UWBP_Lobby::InitPreviewRefs(ALobbyPreviewRig* InSelf, ALobbyPreviewRig* InOtherL, ALobbyPreviewRig* InOtherR)
@@ -32,22 +36,48 @@ void UWBP_Lobby::BP_SetAppearance(int32 Id)
     if (auto PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
         PC->ServerSetAppearance(Id);
 }
-void UWBP_Lobby::BP_SetPreviewColor(ELobbyColor InColor)
+void UWBP_Lobby::BP_SetPreviewColor(EEnemyColor InColor)
 {
-    if (auto PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
-        PC->ServerSetPreviewColor(InColor);
+    CurrentColorCache = InColor; // 위젯 내부 캐시 업데이트
+
+    if (auto* PC = Cast<ALobbyPlayerController>(GetWorld()->GetFirstPlayerController()))
+    {
+        PC->ServerSetPreviewColor(InColor); // 컨트롤러는 EnemyColor 버전 RPC로 수정해 둔 상태
+    }
 }
+
 void UWBP_Lobby::BP_SetSubskill(int32 Id)
 {
     if (auto PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
         PC->ServerSetSubskill(Id);
 }
+
+
 void UWBP_Lobby::BP_ReadyOn()
 {
-    if (auto PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
-        if (auto PS = PC->GetPlayerState<ALobbyPlayerState>())
-            PC->ServerReadyOn(PS->PreviewColor);
+    // 1) 기본은 캐시에 든 EnemyColor를 사용
+    EEnemyColor FinalColor = CurrentColorCache;
+
+    // 2) 안전망: 캐시가 초기값/유효하지 않다고 판단되면 PS의 PreviewColor를 읽어 변환
+    if (auto* PC = Cast<ALobbyPlayerController>(GetWorld()->GetFirstPlayerController()))
+    {
+        if (auto* PS = PC->GetLobbyPS())
+        {
+            if (PS->PreviewColor == EEnemyColor::Red
+                || PS->PreviewColor == EEnemyColor::Green
+                || PS->PreviewColor == EEnemyColor::Blue)
+            {
+                FinalColor = PS->PreviewColor;
+            }
+        }
+
+        // 3) 최종적으로 EnemyColor 하나만 넘긴다
+        PC->ServerReadyOn(FinalColor);
+    }
+
+    // UI 잠금/버튼 비활성 등 후처리…
 }
+
 void UWBP_Lobby::BP_ReadyOff()
 {
     if (auto PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
@@ -85,7 +115,7 @@ void UWBP_Lobby::NativeConstruct()
     // PlayerState 델리게이트 연결 (기존)
     if (auto PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
     {
-        PS_Cached = PC->GetPlayerState<ALobbyPlayerState>();
+        PS_Cached = PC->GetPlayerState<APlayerState_Real>();
         if (PS_Cached)
         {
             PS_Cached->OnAnyLobbyFieldChanged.AddDynamic(this, &UWBP_Lobby::OnPSChanged);
@@ -164,8 +194,6 @@ void UWBP_Lobby::OnA3Clicked() { if (!PS_Cached || PS_Cached->bReady) return; Se
 
 void UWBP_Lobby::OnPSChanged()
 {
-    UE_LOG(LogTemp, Log, TEXT("[LobbyUI] OnPSChanged: PreviewColor=%d"),
-        (int32)(PS_Cached ? PS_Cached->PreviewColor : ELobbyColor::None)); // 기존 로그
 
     // 기존 UI 갱신 루틴 유지
     UpdateAppearanceHighlight();
@@ -181,8 +209,8 @@ void UWBP_Lobby::OnPSChanged()
 
     const int32      NewAppearanceId = PS_Cached->AppearanceId;
     const bool       bReady = PS_Cached->bReady;
-    const ELobbyColor PreviewC = PS_Cached->PreviewColor;
-    const ELobbyColor SelectedC = PS_Cached->SelectedColor;
+    const EEnemyColor PreviewC = PS_Cached->PreviewColor;
+    const EEnemyColor SelectedC = PS_Cached->SelectedColor;
 
     // (a) 외형 변경 시에만 적용 + 정면 스냅
     if (NewAppearanceId >= 0 && NewAppearanceId != LastAppearanceId)
@@ -250,9 +278,9 @@ void UWBP_Lobby::BindColorButtons()
 }
 
 // 색
-void UWBP_Lobby::OnClick_ColorR() { if (!PS_Cached || PS_Cached->bReady) return; BP_SetPreviewColor(ELobbyColor::Red); }
-void UWBP_Lobby::OnClick_ColorG() { if (!PS_Cached || PS_Cached->bReady) return; BP_SetPreviewColor(ELobbyColor::Green); }
-void UWBP_Lobby::OnClick_ColorB() { if (!PS_Cached || PS_Cached->bReady) return; BP_SetPreviewColor(ELobbyColor::Blue); }
+void UWBP_Lobby::OnClick_ColorR() { if (!PS_Cached || PS_Cached->bReady) return; BP_SetPreviewColor(EEnemyColor::Red); }
+void UWBP_Lobby::OnClick_ColorG() { if (!PS_Cached || PS_Cached->bReady) return; BP_SetPreviewColor(EEnemyColor::Green); }
+void UWBP_Lobby::OnClick_ColorB() { if (!PS_Cached || PS_Cached->bReady) return; BP_SetPreviewColor(EEnemyColor::Blue); }
 
 void UWBP_Lobby::NativeDestruct()
 {
@@ -293,7 +321,7 @@ void UWBP_Lobby::TryBindPS()
 
     if (auto PC = Cast<ALobbyPlayerController>(GetOwningPlayer()))
     {
-        if (auto PS = PC->GetPlayerState<ALobbyPlayerState>())
+        if (auto PS = PC->GetPlayerState<APlayerState_Real>())
         {
             PS_Cached = PS;
             PS_Cached->OnAnyLobbyFieldChanged.AddDynamic(this, &UWBP_Lobby::OnPSChanged);
@@ -367,7 +395,7 @@ bool UWBP_Lobby::CanReadyNow() const
 {
     if (!PS_Cached) return false;
 
-    const bool bHasColor = (PS_Cached->PreviewColor != ELobbyColor::None);
+    const bool bHasColor = (PS_Cached->PreviewColor == EEnemyColor::Red || PS_Cached->PreviewColor == EEnemyColor::Green || PS_Cached->PreviewColor == EEnemyColor::Blue);
     const bool bHasAppearance = (PS_Cached->AppearanceId >= 0);
     const bool bHasSkill = (PS_Cached->SubskillId >= 0);
     return bHasColor && bHasAppearance && bHasSkill && !PS_Cached->bReady;
@@ -469,15 +497,15 @@ void UWBP_Lobby::OnGSReadyCountChanged(int32 /*NewReadyCount*/)
 }
 
 // ---- [Other mini slots] helpers ----
-static FLinearColor ColorForSlot(const ALobbyPlayerState* PS)
+static FLinearColor ColorForSlot(const APlayerState_Real* PS)
 {
     if (!PS) return FLinearColor(0, 0, 0, 0);
-    const ELobbyColor C = PS->bReady ? PS->SelectedColor : PS->PreviewColor;
+    const EEnemyColor C = PS->bReady ? PS->SelectedColor : PS->PreviewColor;
     switch (C)
     {
-    case ELobbyColor::Red:   return FLinearColor(1, 0, 0, 1);
-    case ELobbyColor::Green: return FLinearColor(0, 1, 0, 1);
-    case ELobbyColor::Blue:  return FLinearColor(0, 0, 1, 1);
+    case EEnemyColor::Red:   return FLinearColor(1, 0, 0, 1);
+    case EEnemyColor::Green: return FLinearColor(0, 1, 0, 1);
+    case EEnemyColor::Blue:  return FLinearColor(0, 0, 1, 1);
     default:                 return FLinearColor(0, 0, 0, 0);
     }
 }
@@ -490,34 +518,34 @@ void UWBP_Lobby::RefreshOtherSlots()
     if (!GS || !PC) return;
 
     // 내 PS
-    auto* SelfPS = PC->GetPlayerState<ALobbyPlayerState>();
+    auto* SelfPS = PC->GetPlayerState<APlayerState_Real>();
 
     // 타인 목록(최대 2명)
-    TArray<ALobbyPlayerState*> Others;
+    TArray<APlayerState_Real*> Others;
     Others.Reserve(2);
     for (APlayerState* Base : GS->PlayerArray)
     {
-        if (auto* LPS = Cast<ALobbyPlayerState>(Base))
+        if (auto* LPS = Cast<APlayerState_Real>(Base))
         {
             if (LPS != SelfPS) Others.Add(LPS);
         }
     }
 
     // 좌/우 고정용 정렬(작은 PlayerId가 왼쪽)
-    Others.Sort([](const ALobbyPlayerState& A, const ALobbyPlayerState& B)
+    Others.Sort([](const APlayerState_Real& A, const APlayerState_Real& B)
         {
             return A.GetPlayerId() < B.GetPlayerId();
         });
 
     // 색/READY 라벨 반영(기존 동작 유지)
-    auto FillMini = [](UBorder* Swatch, UTextBlock* TxtReady, const ALobbyPlayerState* PS)
+    auto FillMini = [](UBorder* Swatch, UTextBlock* TxtReady, const APlayerState_Real* PS)
         {
             if (Swatch)   Swatch->SetBrushColor(ColorForSlot(PS));
             if (TxtReady) TxtReady->SetText((PS && PS->bReady) ? FText::FromString(TEXT("READY")) : FText());
         };
 
-    ALobbyPlayerState* L = Others.IsValidIndex(0) ? Others[0] : nullptr;
-    ALobbyPlayerState* R = Others.IsValidIndex(1) ? Others[1] : nullptr;
+    APlayerState_Real* L = Others.IsValidIndex(0) ? Others[0] : nullptr;
+    APlayerState_Real* R = Others.IsValidIndex(1) ? Others[1] : nullptr;
 
     // 색/READY 라벨은 기존처럼
     FillMini(Swatch_Color_OtherL, Txt_Ready_OtherL, L);
@@ -539,7 +567,7 @@ void UWBP_Lobby::RebindOtherPSDelegates()
     auto* PC = GetOwningPlayer();
     if (!GS || !PC) return;
 
-    auto* SelfPS = PC->GetPlayerState<ALobbyPlayerState>();
+    auto* SelfPS = PC->GetPlayerState<APlayerState_Real>();
 
     // 기존 바인딩 해제
     for (auto& Weak : BoundOtherPS)
@@ -549,7 +577,7 @@ void UWBP_Lobby::RebindOtherPSDelegates()
 
     // 새 바인딩
     for (APlayerState* Base : GS->PlayerArray)
-        if (auto* LPS = Cast<ALobbyPlayerState>(Base))
+        if (auto* LPS = Cast<APlayerState_Real>(Base))
             if (LPS != SelfPS)
             {
                 LPS->OnAnyLobbyFieldChanged.AddDynamic(this, &UWBP_Lobby::OnAnyPSChanged);

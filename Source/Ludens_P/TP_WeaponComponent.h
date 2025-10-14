@@ -8,6 +8,7 @@
 #include "Ludens_PProjectile.h"
 #include "TP_WeaponComponent.generated.h"
 
+class UNiagaraSystem;
 class ALudens_PCharacter;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogWeapon, Log, All);
@@ -51,7 +52,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = Montage)
 	UAnimMontage* WeaponAttackMontage;
-	
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UNiagaraSystem* FireNiagara;
 protected:
 	UPROPERTY()
 	class UJellooComponent* TargetJelloo = nullptr; // 현재 흡수하고 있는 젤루
@@ -100,6 +103,9 @@ protected:
 	/** Ends gameplay for this component. */
 	UFUNCTION()
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastSpawnEffect(UNiagaraSystem* NiagaraEffect,FVector Location, FRotator Rotation);
 public:
 	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
 	void PlayMontage(UAnimMontage* Montage, float PlaySpeed);

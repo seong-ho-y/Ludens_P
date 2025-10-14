@@ -13,6 +13,7 @@ Content/DownloadAsset
 #Content/Enemy
 Content/__ExternalActors__
 Content/__ExternalObjects__
+Content/Characters
 
 # 에셋
 Content/Vefects
@@ -21,6 +22,9 @@ Content/StylizedProjectileVFX_Pack
 Content/NiagaraTrailEffect
 Content/Hun0FX
 Content/Cyberp_RPG_UI_5_2
+Content/Hit_vol1
+Content/A_Surface_Footstep
+Content/essential_footsteps_48khz_16bit
 
 # Visual Studio 2015 user specific files
 .vs/
