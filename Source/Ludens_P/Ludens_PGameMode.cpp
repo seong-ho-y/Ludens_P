@@ -1,13 +1,16 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Ludens_PGameMode.h"
-
+#include "EnemyPoolManager.h"
 #include "Ludens_PPlayerController.h"
+#include "PlayerStateComponent.h"
+#include "RewardSystemComponent.h"
 #include "GameFramework/GameStateBase.h"
 #include "GameFramework/PlayerStart.h"
 #include "Kismet/GameplayStatics.h"
 #include "UObject/ConstructorHelpers.h"
 #include "WorldPartition/ContentBundle/ContentBundleLog.h"
+#include "PlayerState_Real.h"
 
 ALudens_PGameMode::ALudens_PGameMode()
 	: Super()
@@ -25,9 +28,16 @@ ALudens_PGameMode::ALudens_PGameMode()
 		UE_LOG(LogTemp, Error, TEXT("❌ Failed to find BP Pawn!"));
 	}
 
+	ColorRotation.Add(EEnemyColor::Red);
+	ColorRotation.Add(EEnemyColor::Green);
+	ColorRotation.Add(EEnemyColor::Blue);
+
 	//PlayerController 할당을 위해서 c++ 클래스를 할당해놓음
 	PlayerControllerClass = ALudens_PPlayerController::StaticClass();
 
+	PlayerStateClass = APlayerState_Real::StaticClass();
+
+	bUseSeamlessTravel = true;
 }
 void ALudens_PGameMode::BeginPlay()
 {
@@ -48,11 +58,66 @@ AActor* ALudens_PGameMode::ChoosePlayerStart_Implementation(AController* Player)
 		if (!UsedStartSpots.Contains(Start)) //같은 위치에서 스폰되지 않게 해주는 로직
 		{
 			UsedStartSpots.Add(Start);
-			UE_LOG(LogTemp, Warning, TEXT("Player assigned to Start: %s"), *Start->GetName());
+			//UE_LOG(LogTemp, Warning, TEXT("Player assigned to Start: %s"), *Start->GetName());
 			return Start;
 		}
 	}
 
 	// 모두 사용됐으면 기본 처리
 	return Super::ChoosePlayerStart_Implementation(Player);
+}
+
+
+// GameMode의 OnPostLogin 함수 등에서 실행
+void ALudens_PGameMode::OnPostLogin(AController* NewPlayer)
+{
+	Super::OnPostLogin(NewPlayer);
+}
+
+void ALudens_PGameMode::HandleStartingNewPlayer_Implementation(APlayerController* NewPlayer)
+{
+	Super::HandleStartingNewPlayer_Implementation(NewPlayer); // Super 호출도 _Implementation으로 변경
+
+	// 이제 이 안에서 AssignColorToPlayer를 호출하면 됩니다.
+	AssignColorToPlayer(NewPlayer);
+}
+
+// ✨ 새로 추가된 함수의 전체 내용입니다.
+void ALudens_PGameMode::AssignColorToPlayer(AController* NewPlayer)
+{
+	// --- 진단 로그 시작 ---
+	//UE_LOG(LogTemp, Error, TEXT("--- AssignColorToPlayer CALLED for %s ---"), *NewPlayer->GetName());
+
+	AGameStateBase* CurrentGameState = GetGameState<AGameStateBase>();
+	if (!CurrentGameState)
+	{
+		UE_LOG(LogTemp, Error, TEXT("!!! CRITICAL ERROR: GameState is NULL. Cannot assign color. !!!"));
+		return;
+	}
+    
+	int32 PlayerCount = CurrentGameState->PlayerArray.Num();
+	//UE_LOG(LogTemp, Warning, TEXT("Current Player Count from GameState->PlayerArray.Num(): %d"), PlayerCount);
+
+	int32 PlayerIndex = PlayerCount - 1;
+	//UE_LOG(LogTemp, Warning, TEXT("Calculated Player Index: %d"), PlayerIndex);
+	// --- 진단 로그 끝 ---
+
+	if (!ColorRotation.IsValidIndex(PlayerIndex))
+	{
+		UE_LOG(LogTemp, Error, TEXT("!!! ERROR: Player Index %d is not valid for ColorRotation array!"), PlayerIndex);
+		return;
+	}
+
+	APawn* PlayerPawn = NewPlayer->GetPawn();
+	if (PlayerPawn)
+	{
+		UPlayerStateComponent* StateComp = PlayerPawn->FindComponentByClass<UPlayerStateComponent>();
+		if (StateComp)
+		{
+			EEnemyColor NewColor = ColorRotation[PlayerIndex];
+			StateComp->PlayerColor = NewColor;
+
+			//UE_LOG(LogTemp, Warning, TEXT("SUCCESS: Assigned Color %s to Player with Index %d."), *UEnum::GetValueAsString(NewColor), PlayerIndex);
+		}
+	}
 }

@@ -22,6 +22,7 @@ protected:
 	/** Input Mapping Context to be used for player input */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input)
 	UInputMappingContext* InputMappingContext;
+	
 
 	// Begin Actor interface
 
@@ -29,7 +30,23 @@ protected:
 
 public:
 	virtual void SetupInputComponent() override;
-	void SpawnEnemyFromPool();
 	UPROPERTY(EditAnywhere)
 	TSubclassOf<AEnemyBase> WalkerEnemyBPClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AEnemyBase> TankerEnemyBPClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AEnemyBase> RunnerEnemyBPClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AEnemyBase> SniperEnemyBPClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AEnemyBase> ExploEnemyBPClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AEnemyBase> StealthEnemyBPClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<AEnemyBase> MagicEnemyBPClass;
+
+	// "적 스폰을 요청"하는 서버 RPC 함수를 선언합니다.
+	UFUNCTION(Server, Reliable)
+	void Server_RequestSpawnEnemy();
+protected:
 };

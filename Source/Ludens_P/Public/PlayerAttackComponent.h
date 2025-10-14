@@ -1,0 +1,69 @@
+// Fill out your copyright notice in the Description page of Project Settings.
+
+#pragma once
+
+#include "CoreMinimal.h"
+#include "GameFramework/Character.h"
+#include "Components/ActorComponent.h"
+#include "MeleeAttackHandler.h"
+#include "PlayerAttackComponent.generated.h"
+
+
+UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
+class LUDENS_P_API UPlayerAttackComponent : public UActorComponent
+{
+	GENERATED_BODY()
+public:
+	UPROPERTY()
+	class UWeaponAttackHandler* WeaponAttackHandler; // 무기 공격 클래스를 선언
+private:
+	UPROPERTY()
+	class UMeleeAttackHandler* MeleeAttackHandler; // 근접 공격 클래스를 선언
+	UPROPERTY()
+	class ALudens_PCharacter* Character; // 캐릭터 클래스 선언
+	UPROPERTY(EditAnywhere, Category = Montage)
+	UAnimMontage* MeleeAttackMontage;
+
+	float AttackDamage = 9999.f;
+public:	
+	// Sets default values for this component's properties
+	UPlayerAttackComponent();
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
+	float WeaponAttackCoolTime = 2.f; // 플레이어 공격 쿨타임
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
+	bool bIsWeaponAttacking = false; // 플레이어가 무기 공격을 하고 있는지 확인
+	FTimerHandle WeaponAttackTimer; // 무기 공격 타이머
+	UFUNCTION()
+	void EndWeaponAttack();
+	
+	float MeleeAttackCoolTime = 1.f; // 플레이어 근접 공격 쿨타임
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
+	bool bIsMeleeAttacking = false; // 플레이어가 근접 공격을 하고 있는지 확인
+	FTimerHandle MeleeAttackTimer; // 근접 공격 타이머
+	UFUNCTION()
+	void EndMeleeAttack();
+
+
+	// 무기 공격 함수 호출
+	UFUNCTION(Server, Reliable)
+	void Server_TryWeaponAttack();
+	UFUNCTION(blueprintCallable)
+	void TryWeaponAttack();
+	
+	// 근접 공격 함수 호출
+	UFUNCTION(Server, Reliable)
+	void Server_TryMeleeAttack();
+	void TryMeleeAttack();
+	UFUNCTION(blueprintCallable)
+	void MeleeAttack();
+	
+protected:
+	// Called when the game starts
+	virtual void BeginPlay() override;
+
+public:	
+	// Called every frame
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
+	void PlayMontage(UAnimMontage* Montage, float PlaySpeed);
+};

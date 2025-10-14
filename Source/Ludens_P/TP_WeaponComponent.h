@@ -3,11 +3,14 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Components/ActorComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Ludens_PProjectile.h"
 #include "TP_WeaponComponent.generated.h"
 
 class ALudens_PCharacter;
+
+DECLARE_LOG_CATEGORY_EXTERN(LogWeapon, Log, All);
 
 UCLASS(Blueprintable, BlueprintType, ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LUDENS_P_API UTP_WeaponComponent : public USkeletalMeshComponent
@@ -15,6 +18,10 @@ class LUDENS_P_API UTP_WeaponComponent : public USkeletalMeshComponent
 	GENERATED_BODY()
 
 public:
+	/** The Character holding this weapon*/
+	UPROPERTY()
+	ALudens_PCharacter* Character;
+
 	/** Projectile class to spawn */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Projectile")
 	TSubclassOf<ALudens_PProjectile> ProjectileClass;
@@ -38,30 +45,62 @@ public:
 	/** Fire Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
 	class UInputAction* FireAction;
+	
+	UPROPERTY(EditAnywhere, Category = Montage)
+	UAnimMontage* AbsorbMontage;
 
+	UPROPERTY(EditAnywhere, Category = Montage)
+	UAnimMontage* WeaponAttackMontage;
+	
+protected:
+	UPROPERTY()
+	class UJellooComponent* TargetJelloo = nullptr; // 현재 흡수하고 있는 젤루
+	
+public:
 	/** Sets default values for this component's properties */
 	UTP_WeaponComponent();
 	void BeginPlay();
-
-	/** Attaches the actor to a FirstPersonCharacter */
-	//UFUNCTION(BlueprintCallable, Category="Weapon")
-	//bool AttachWeapon(ALudens_PCharacter* TargetCharacter);
-
+	
+	UPROPERTY()
+	class APlayerState_Real* PSR;
+	
 	/** Make the weapon Fire a Projectile */
 	UFUNCTION(BlueprintCallable, Category="Weapon")
 	void Fire();
 	UFUNCTION(Server, Reliable)
-	void ServerFire(); // 클라이언트가 서버에 발사 요청할 RPC
+	void ServerFire(FVector_NetQuantize SpawnLocation, FRotator SpawnRotation); // 클라이언트가 서버에 발사 요청할 RPC
+	void HandleFire(const FVector& SpawnLocation, const FRotator& SpawnRotation); // 서버에서만 실행되는 진짜 발사 로직
 
-	void HandleFire(); // 서버에서만 실행되는 진짜 발사 로직
+	UFUNCTION(BlueprintCallable, Category="Weapon")
+	FVector GetMuzzleLocation() const; // 총구 위치 계산
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
+	float WeaponAttackCoolTime = 0.3f; // 플레이어 공격 쿨타임
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Attack")
+	bool bIsWeaponAttacking = false; // 플레이어가 무기 공격을 하고 있는지 확인
+	FTimerHandle WeaponAttackTimer; // 무기 공격 타이머
+	UFUNCTION()
+	void EndWeaponAttack();
+	
+	UFUNCTION(Server, Reliable)
+	void ServerAbsorb(); // 클라이언트가 RPC 서버에 젤루 흡수 요청
+	void HandleAbsorb(); // 서버에서 실행되는 젤루 흡수 로직
+	void PerformAbsorb();
+	void StopPerformAbsorb();
 protected:
+	UPROPERTY()
+	float AbsorbRange = 200.f; // 젤루 흡수 사거리
+	UPROPERTY()
+	float AbsorbDelay = 0.5f; // 젤루 흡수 속도
+	UPROPERTY(Replicated)
+	int16 AbsorbAmount = 1; // 젤루 흡수 양 -> 나중에 이 수를 증가 시켜 젤루 흡수 속도 증가 같은 강화 요소로 쓸 수 있을 듯
+	FTimerHandle AbsorbDelayTimer;
+	bool bIsAbsorbing = false;
+	
 	/** Ends gameplay for this component. */
 	UFUNCTION()
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-
-private:
-	/** The Character holding this weapon*/
-	UPROPERTY()
-	ALudens_PCharacter* Character;
+public:
+	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
+	void PlayMontage(UAnimMontage* Montage, float PlaySpeed);
 };

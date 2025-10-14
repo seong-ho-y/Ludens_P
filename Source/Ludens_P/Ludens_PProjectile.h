@@ -8,6 +8,7 @@
 
 class USphereComponent;
 class UProjectileMovementComponent;
+class APlayerState_Real;
 
 UCLASS(config=Game)
 class ALudens_PProjectile : public AActor
@@ -24,7 +25,10 @@ class ALudens_PProjectile : public AActor
 
 public:
 	ALudens_PProjectile();
-
+	
+	UPROPERTY()
+	class APlayerState_Real* PSR;
+	
 	/** called when projectile hits something */
 	UFUNCTION()
 	void OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);

@@ -1,19 +1,31 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Ludens_PCharacter.h"
-
-#include "EnemyBase.h"
-#include "EngineUtils.h"
 #include "Ludens_PProjectile.h"
+#include "Blueprint/UserWidget.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "InputMappingContext.h"
+#include "InputAction.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "InputActionValue.h"
+#include "RewardSystemComponent.h"
+#include "PlayerAttackComponent.h"
+#include "PlayerStateComponent.h"
+#include "TP_WeaponComponent.h"
+#include "WeaponAttackHandler.h"
+#include "CreatureCombatComponent.h"
+#include "JellooComponent.h"
+#include "PlayerState_Real.h"
+#include "ReviveComponent.h"
+
 #include "Engine/LocalPlayer.h"
-#include "Util/ColorConstants.h"
+#include "Net/UnrealNetwork.h"
+
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
@@ -22,87 +34,141 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 ALudens_PCharacter::ALudens_PCharacter()
 {
-	//멀티 설정
-	bReplicates = true;
-	SetReplicatingMovement(true);
-	
-	//bReplicateMovement = true;
-	//필드가 private으로 되어있어서 SetReplciatingMovemt() Setter함수로 접근 및 설정
-
-	
-	//무기 컴포넌트 할당
-	Weapon = CreateDefaultSubobject<UTP_WeaponComponent>(TEXT("WeaponComponent"));
-	Weapon->SetupAttachment(RootComponent);
-	
 	// Set size for collision capsule
 	GetCapsuleComponent()->InitCapsuleSize(55.f, 96.0f);
-	
-	// 카메라 컴포넌트 생성 및 할당
+		
+	// Create a CameraComponent	
 	FirstPersonCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FirstPersonCamera"));
 	FirstPersonCameraComponent->SetupAttachment(GetCapsuleComponent());
-	FirstPersonCameraComponent->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // 카메라 위치 조정
+	FirstPersonCameraComponent->SetRelativeLocation(FVector(-10.f, 0.f, 60.f)); // Position the camera
 	FirstPersonCameraComponent->bUsePawnControlRotation = true;
 
 	// Create a mesh component that will be used when being viewed from a '1st person' view (when controlling this pawn)
-	// 기본 메시 설정 (다른 사람이 보는 메시)
-	GetMesh()->SetOnlyOwnerSee(false); // 모든 사람이 보도록
-	GetMesh()->SetIsReplicated(true);
-	GetMesh()->SetupAttachment(GetCapsuleComponent());
-	GetMesh()->SetRelativeLocation(FVector(0.f, 0.f, -96.f)); // 캡슐 기준 정렬
-	GetMesh()->SetRelativeRotation(FRotator(0.f, 0.f, 0.f)); // 필요 시 방향 조절
+	Mesh1P = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("CharacterMesh1P"));
+	Mesh1P->SetOnlyOwnerSee(true);
+	Mesh1P->SetupAttachment(FirstPersonCameraComponent);
+	Mesh1P->bCastDynamicShadow = false;
+	Mesh1P->CastShadow = false;
+	//Mesh1P->SetRelativeRotation(FRotator(0.9f, -19.19f, 5.2f));
+	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
 
+	RewardSystem = CreateDefaultSubobject<URewardSystemComponent>(TEXT("RewardSystem"));
+	PlayerAttackComponent = CreateDefaultSubobject<UPlayerAttackComponent>(TEXT("PlayerAttack"));
+	PlayerStateComponent = CreateDefaultSubobject<UPlayerStateComponent>(TEXT("PlayerState"));
+	WeaponComponent = CreateDefaultSubobject<UTP_WeaponComponent>(TEXT("Weapon"));
+	ReviveComponent = CreateDefaultSubobject<UReviveComponent>(TEXT("Revive"));
+	
+	// GetCharacterMovement()->JumpZVelocity = 600.f;
+	GetCharacterMovement()->GravityScale = 2.0f;
+	GetCharacterMovement()->AirControl = 1.0f;
+	OriginalGroundFriction = 8.0f;
+	OriginalBrakingDeceleration = 2048.0f;
 
+	// 네트워크 업데이트 주기 향상
+	NetUpdateFrequency = 100.0f;
+	MinNetUpdateFrequency = 50.0f;
+
+	// 이동 컴포넌트 복제 설정
+	GetCharacterMovement()->SetIsReplicated(true);
 }
 
 void ALudens_PCharacter::BeginPlay()
 {
 	// Call the base class  
 	Super::BeginPlay();
-	
-		/*
-		if (Controller)
-		{
-			UE_LOG(LogTemp, Log, TEXT("✅ Controller is %s"), *Controller->GetName());
-		}
-		else
-		{
-			UE_LOG(LogTemp, Warning, TEXT("❌ No Controller assigned to %s"), *GetName());
-		}
-		*/
 
+	if (!IsLocallyControlled()) return;
+
+	// 로컬 플레이어 컨트롤러 확인
+	if (APlayerController* PlayerController = Cast<APlayerController>(GetController()))
+	{
+		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = 
+			ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
+		{
+			// 기본 입력 매핑 컨텍스트 추가
+			Subsystem->AddMappingContext(DefaultMappingContext, 0);
+		}
+	}
+	
+	if (PlayerAttackComponent && WeaponComponent)
+	{
+		PlayerAttackComponent->WeaponAttackHandler->WeaponComp = WeaponComponent;
+	}
+	
+	if (!DashAction) UE_LOG(LogTemplateCharacter, Error, TEXT("DashAction is null!"))
+	
+	else if (!MeleeAttackAction) UE_LOG(LogTemplateCharacter, Error, TEXT("MeleeAttackAction is null!"))
+	
+	else if (!PlayerAttackComponent) UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerAttackComponent is null!"))
+	
+	else if (!PlayerStateComponent) UE_LOG(LogTemplateCharacter, Error, TEXT("PlayerStateComponent is null!"))
+	
+	else if (!ReviveComponent) UE_LOG(LogTemplateCharacter, Error, TEXT("ReviveComponent is null!"));
 }
+
 void ALudens_PCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
-	//적의 TakeDamage 메서드 실행 확인 여부
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (PC && PC->IsInputKeyDown(EKeys::E))
+	
+	// PlayerState가 아직 할당되지 않았을 때만 할당 시도
+	if (!bPSRInitialized && PlayerStateComponent->PSR) // 115 번째 줄
 	{
-		for (TActorIterator<AEnemyBase> It(GetWorld()); It; ++It)
+			CurrentDashCount = PlayerStateComponent->PSR->MaxDashCount;
+			CurrentAmmo = PlayerStateComponent->PSR->MaxAmmo;
+			MaxSavedAmmo = PlayerStateComponent->PSR->MaxSavedAmmo;
+			SavedAmmo = MaxSavedAmmo / 2;
+			MaxAmmo = PlayerStateComponent->PSR->MaxAmmo;
+			CurrentAmmo = MaxAmmo;
+
+			bPSRInitialized = true;  // 한 번만 실행되도록
+			UE_LOG(LogTemplateCharacter, Log, TEXT("PSR Completed in Ludens_PCharacter!"))
+	}
+	// 다른 Tick 로직에서도 PSR을 접근하는 경우
+	if (!PlayerStateComponent->PSR) return;
+    
+	// 이후 안전하게 PSR 멤버 사용 가능
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		int32 SlotBase = 0;
+
+		if (APlayerState* PS = PC->PlayerState)
 		{
-			AEnemyBase* Enemy = *It;
-			if (Enemy && Enemy->Combat)
-			{
-				Enemy->Combat->TakeDamage(10);
-				break;
-			}
+			SlotBase = PS->GetPlayerId();        // 권장: 매치 내 고유 ID
+		}
+		else if (UPlayer* P = PC->Player)
+		{
+			SlotBase = P->GetUniqueID();         // 대안: 에디터 런타임 고유
+		}
+
+		SlotBase = (SlotBase % 10000) * 100;
+
+		if (PC->IsLocalController() && GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(SlotBase + 70, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxHP: %f"), SlotBase, PlayerStateComponent->PSR->MaxHP));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 71, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxShield: %f"), SlotBase, PlayerStateComponent->PSR->MaxShield));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 72, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MoveSpeed: %f"), SlotBase, PlayerStateComponent->PSR->MoveSpeed));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 73, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] ShieldRegenSpeed: %f"), SlotBase, PlayerStateComponent->PSR->ShieldRegenSpeed));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 74, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] DashRechargeTime: %f"), SlotBase, PlayerStateComponent->PSR->DashRechargeTime));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 75, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxDashCount: %d"), SlotBase, PlayerStateComponent->PSR->MaxDashCount));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 76, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] AttackDamage: %f"), SlotBase, PlayerStateComponent->PSR->AttackDamage));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 77, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] WeaponAttackCoolTime: %f"), SlotBase, PlayerStateComponent->PSR->WeaponAttackCoolTime));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 78, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] CriticalRate: %f"), SlotBase, PlayerStateComponent->PSR->CriticalRate));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 79, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] CriticalDamage: %f"), SlotBase, PlayerStateComponent->PSR->CriticalDamage));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 80, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] AbsorbDelay: %f"), SlotBase, PlayerStateComponent->PSR->AbsorbDelay));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 81, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxSavedAmmo: %d"), SlotBase, PlayerStateComponent->PSR->MaxSavedAmmo));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 82, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxAmmo: %d"), SlotBase, PlayerStateComponent->PSR->MaxAmmo));
 		}
 	}
 }
 
-
-
-//////////////////////////////////////////////////////////////////////////// Input
-
 void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
+{	
 	// Set up action bindings
 	if (UEnhancedInputComponent* EnhancedInputComponent = Cast<UEnhancedInputComponent>(PlayerInputComponent))
 	{
-		// Jumping 여기다가 Double Jumping으로 수정
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
+		// Jumping
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Jump);
 		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
 		// Moving
@@ -111,20 +177,38 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		// Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ALudens_PCharacter::Look);
 
-		//Dash
-		//Fire 입력
-		PlayerInputComponent->BindAction("Fire", IE_Pressed, Weapon, &UTP_WeaponComponent::Fire);
+		// Dash
+		EnhancedInputComponent->BindAction(DashAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Dash);
 
-	}
-	else
-	{
-		UE_LOG(LogTemplateCharacter, Error, TEXT("'%s' Failed to find an Enhanced Input Component! This template is built to use the Enhanced Input system. If you intend to use the legacy system, then you will need to update this C++ file."), *GetNameSafe(this));
+		// MeleeAttack
+		EnhancedInputComponent->BindAction(MeleeAttackAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Interact);
+
+		// TestAttack -> P
+		EnhancedInputComponent->BindAction(TestAttackAction, ETriggerEvent::Started, this, &ALudens_PCharacter::TestAttack);
+
+		// Reload
+		EnhancedInputComponent->BindAction(ReloadAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Reload);
+
+		// Fire
+		EnhancedInputComponent->BindAction(FireAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Fire);
+
+		// Revive
+		EnhancedInputComponent->BindAction(ReviveAction, ETriggerEvent::Started, this, &ALudens_PCharacter::Interact);
+
+		// Absorb
+		EnhancedInputComponent->BindAction(AbsorbAction, ETriggerEvent::Ongoing, this, &ALudens_PCharacter::Absorb);
+		EnhancedInputComponent->BindAction(AbsorbAction, ETriggerEvent::Completed, this, &ALudens_PCharacter::AbsorbComplete);
 	}
 }
 
 
 void ALudens_PCharacter::Move(const FInputActionValue& Value)
 {
+	if (PlayerStateComponent->IsDead) return;
+	if (ReviveComponent && ReviveComponent->IsReviving())
+	{
+		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
+	}
 	// input is a Vector2D
 	FVector2D MovementVector = Value.Get<FVector2D>();
 
@@ -138,6 +222,7 @@ void ALudens_PCharacter::Move(const FInputActionValue& Value)
 
 void ALudens_PCharacter::Look(const FInputActionValue& Value)
 {
+	if (PlayerStateComponent->IsDead) return;
 	// input is a Vector2D
 	FVector2D LookAxisVector = Value.Get<FVector2D>();
 
@@ -147,4 +232,401 @@ void ALudens_PCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void ALudens_PCharacter::TestAttack(const FInputActionValue& Value)
+{
+	if (PlayerStateComponent)
+	{
+		PlayerStateComponent->TakeDamage(100.0f);
+	}
+}
+
+void ALudens_PCharacter::Jump()
+{
+	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked) return;
+	
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		Server_Jump();
+		return;
+	}
+	
+	if (ReviveComponent && ReviveComponent->IsReviving())
+	{
+		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
+	}
+	
+	if (JumpCount < MaxJumpCount)
+	{
+		Super::Jump();
+		JumpCount++;
+		if (JumpCount <= MaxJumpCount)
+		{
+			LaunchCharacter(FVector(0,0,600), false, true);
+		}
+	}
+}
+
+// 서버 전용 점프 처리
+void ALudens_PCharacter::Server_Jump_Implementation()
+{
+	Jump();
+}
+
+
+void ALudens_PCharacter::Landed(const FHitResult& Hit)
+{
+	Super::Landed(Hit);
+
+	if (GetLocalRole() == ROLE_Authority)
+	{
+		JumpCount = 0; // 서버에서 JumpCount 리셋
+	}
+}
+
+void ALudens_PCharacter::Dash(const FInputActionValue& Value)
+{
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		Server_Dash();
+		return;
+	}
+	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked) return;
+	if (ReviveComponent && ReviveComponent->IsReviving())
+	{
+		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
+	}
+	
+	if (bCanDash && CurrentDashCount > 0)
+	{
+		UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+		if (!MoveComp) return;
+
+		GetWorld()->GetTimerManager().ClearTimer(DashTimerHandle); // 기존에 돌아가던 타이머 취소
+	
+		// 1. 원본 값 백업
+		OriginalGroundFriction = MoveComp->GroundFriction;
+		OriginalBrakingDeceleration = MoveComp->BrakingDecelerationWalking;
+
+		// 2. 대시 중 마찰력 제거
+		MoveComp->GroundFriction = 1.0f;
+		MoveComp->BrakingDecelerationWalking = 1.0f;
+
+		// 3. 대시 방향 계산
+		FVector DashDirection = MoveComp->Velocity;
+		DashDirection.Z = 0;
+		DashDirection.Normalize();
+		if (DashDirection.IsNearlyZero())
+		{ 
+			DashDirection = GetActorForwardVector();
+		}
+
+		if (CurrentDashCount <= 0) return;
+
+		// 서버에서 강제 실행
+		LaunchCharacter(DashDirection * DashSpeed, true, true);
+
+		MulticastPlayDashEffect();
+		CurrentDashCount--;
+		bCanDash = false;
+	
+		// 5. 0.2초 후 원래 값 복원 (대시 지속시간에 맞게 조절)
+		GetWorld()->GetTimerManager().SetTimer(
+			DashPhysicsTimerHandle,
+			[this]()
+			{
+				if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+				{
+					MoveComp->GroundFriction = OriginalGroundFriction;
+					MoveComp->BrakingDecelerationWalking = OriginalBrakingDeceleration;
+				}
+			},
+			0.2f,
+			false
+		);
+
+		// 1초 후 다음 대쉬 가능
+		GetWorld()->GetTimerManager().SetTimer(
+			DashCooldownTimerHandle,
+			[this]() { bCanDash = true; },
+			DashCooldown,
+			false
+		);
+
+		//3초마다 대쉬 충전
+		if (!GetWorld()->GetTimerManager().IsTimerActive(DashRechargeTimerHandle))
+		{
+			GetWorld()->GetTimerManager().SetTimer(
+				DashRechargeTimerHandle,
+				this,
+				&ALudens_PCharacter::RechargeDash,
+				PlayerStateComponent->PSR->DashRechargeTime,
+				true
+			);
+		}
+	}
+}
+
+void ALudens_PCharacter::Server_Dash_Implementation()
+{
+	Dash(FInputActionValue()); // 실제 대쉬 실행
+}
+
+void ALudens_PCharacter::RechargeDash()
+{
+	if (GetLocalRole() == ROLE_Authority && CurrentDashCount < PlayerStateComponent->PSR->MaxDashCount)
+	{
+		CurrentDashCount++;
+	}
+	else
+	{
+		GetWorld()->GetTimerManager().ClearTimer(DashRechargeTimerHandle);
+	}
+}
+
+void ALudens_PCharacter::ResetMovementParams() const
+{
+	// 대쉬 끝난 뒤 마찰력 초기화
+	if (UCharacterMovementComponent* MoveComp = GetCharacterMovement())
+	{
+		MoveComp->GroundFriction = OriginalGroundFriction;
+		MoveComp->BrakingDecelerationWalking = OriginalBrakingDeceleration;
+	}
+}
+
+void ALudens_PCharacter::Interact(const FInputActionValue& Value) // 앞에 있는 대상이 무엇인지 판별해주는 메서드
+{
+	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked) return;
+	if (ReviveComponent && ReviveComponent->IsReviving())
+	{
+		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
+	}
+	// 라인 트레이스를 통해 앞에 있는 대상이 무엇인지 판별
+	// 화면 중심에서 월드 방향 구하기
+	FVector WorldLocation = FirstPersonCameraComponent->GetComponentLocation();
+	FRotator CameraRotation = GetActorRotation();
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		CameraRotation = PC->PlayerCameraManager->GetCameraRotation();
+	}
+	else UE_LOG(LogTemp, Warning, TEXT("❗ GetController() is null, fallback to actor rotation"));
+
+	FVector TraceDirection = CameraRotation.Vector();
+	// 트레이스 시작/끝 위치 계산
+	FVector TraceStart = WorldLocation;
+	FVector TraceEnd = TraceStart + (TraceDirection * 150.f);
+
+	// 라인 트레이스
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+	
+	// 라인 트레이스를 하여 무언가에 맞았는지를 나타냄
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Pawn, Params);
+	
+
+	// 맞은 액터가 어떤 컴포넌트를 가지고 있는지 검사
+	if (bHit && Hit.GetActor() && Hit.GetActor()->FindComponentByClass<UPlayerStateComponent>())
+	{
+		Revive(Value);
+	}
+	else
+	{
+		MeleeAttack(Value);
+	}
+}
+
+void ALudens_PCharacter::MeleeAttack(const FInputActionValue& Value)
+{
+	//근접 공격 로직 호출
+	if (PlayerAttackComponent)
+	{
+		PlayerAttackComponent->TryMeleeAttack();
+	}
+}
+
+void ALudens_PCharacter::Server_Fire_Implementation(const FInputActionValue& Value)
+{
+	Fire(Value); // 서버에서 발사 처리
+}
+
+void ALudens_PCharacter::Fire(const FInputActionValue& Value)
+{
+	// 무기 공격 로직 호출
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		// 클라: 서버에 발사 요청 RPC 호출
+		Server_Fire(Value);
+		return;
+	}
+	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked || WeaponComponent->bIsWeaponAttacking || bIsReloading) return;
+	if (CurrentAmmo > 0)
+	{
+		// 서버: 실제 발사 처리
+		UE_LOG(LogTemp, Warning, TEXT("<Fire>"));
+		WeaponComponent->Fire();
+		CurrentAmmo --;
+	}
+}
+
+void ALudens_PCharacter::Server_Reload_Implementation()
+{
+	HandleReload();
+}
+
+void ALudens_PCharacter::Reload(const FInputActionValue& Value)
+{
+	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked) return;
+	if (ReviveComponent && ReviveComponent->IsReviving())
+	{
+		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
+	}
+
+	if (GetLocalRole() < ROLE_Authority)
+	{
+		// 클라이언트 플레이어
+		Server_Reload();
+		return;
+	}
+	else HandleReload(); // 서버 플레이어
+}
+
+void ALudens_PCharacter::HandleReload()
+{
+	if (bIsReloading) return; // 이미 재장전 중이면 리턴
+	
+	bIsReloading = true;
+	if (CurrentAmmo != MaxAmmo)
+	{
+		if (SavedAmmo <= 0)
+		{
+			return;
+		}
+		else if (SavedAmmo - (MaxAmmo - CurrentAmmo) <= 0)
+		{
+			CurrentAmmo += SavedAmmo;
+			SavedAmmo = 0;
+		}
+		else
+		{
+			SavedAmmo -= (MaxAmmo-CurrentAmmo);
+			CurrentAmmo = MaxAmmo;
+		}
+	}
+
+	GetWorld()->GetTimerManager().SetTimer(ReloadTimerHandle, this, &ALudens_PCharacter::EndReload, ReloadTime, false);
+}
+
+void ALudens_PCharacter::EndReload()
+{
+	bIsReloading = false;
+}
+
+void ALudens_PCharacter::OnRep_SavedAmmo()
+{
+	// 젤루 흡수 or 재장전 시 변경되는 UI, 사운드 등
+}
+
+void ALudens_PCharacter::OnRep_CurrentAmmo()
+{
+	// 재장전 시 변경되는 UI, 사운드 등
+}
+
+int ALudens_PCharacter::GetCurrentAmmo() const // PlayerAttackComponent에서 현재 탄알 수 확인용
+{
+	return CurrentAmmo;
+}
+
+void ALudens_PCharacter::Server_Revive_Implementation()
+{
+	// 서버에서 소생 처리
+	ReviveComponent->HandleRevive();
+}
+
+void ALudens_PCharacter::Revive(const FInputActionValue& Value)
+{
+	// 만약 클라이면 -> 서버에게 소생 요청
+	if (GetLocalRole() < ROLE_Authority) Server_Revive();
+	ReviveComponent->HandleRevive();
+}
+
+void ALudens_PCharacter::Absorb(const FInputActionValue& Value)
+{
+	// 클라의 경우 서버에서 로직 실행
+	if (GetLocalRole() < ROLE_Authority) Server_Absorb(Value);
+	
+	if (PlayerStateComponent->IsDead || PlayerStateComponent->IsKnocked) return;
+	if (ReviveComponent && ReviveComponent->IsReviving())
+	{
+		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
+	}
+	// 라인 트레이스를 통해 앞에 있는 대상이 무엇인지 판별
+	// 화면 중심에서 월드 방향 구하기
+	FVector WorldLocation = FirstPersonCameraComponent->GetComponentLocation();
+	FRotator CameraRotation = GetActorRotation();
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		CameraRotation = PC->PlayerCameraManager->GetCameraRotation();
+	}
+	else UE_LOG(LogTemp, Warning, TEXT("❗ GetController() is null, fallback to actor rotation"));
+
+	FVector TraceDirection = CameraRotation.Vector();
+	// 트레이스 시작/끝 위치 계산
+	FVector TraceStart = WorldLocation;
+	FVector TraceEnd = TraceStart + (TraceDirection * 150.f);
+
+	// 라인 트레이스
+	FHitResult Hit;
+	FCollisionQueryParams Params;
+	Params.AddIgnoredActor(this);
+	
+	// 라인 트레이스를 하여 무언가에 맞았는지를 나타냄
+	bool bHit = GetWorld()->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_Pawn, Params);
+
+	if (bHit && Hit.GetActor())
+	{
+		if (Hit.GetActor()->FindComponentByClass<UJellooComponent>())
+		{
+			WeaponComponent->HandleAbsorb();
+		}
+	}
+}
+
+void ALudens_PCharacter::Server_Absorb_Implementation(const FInputActionValue& Value)
+{
+	Absorb(Value);
+}
+
+void ALudens_PCharacter::AbsorbComplete(const FInputActionValue& Value)
+{
+	
+	if (GetLocalRole() < ROLE_Authority) Server_AbsorbComplete(Value);
+	GetWorldTimerManager().SetTimer(
+	   AbsorbCompleteTimerHandle,
+	   FTimerDelegate::CreateUObject(WeaponComponent, &UTP_WeaponComponent::StopPerformAbsorb),
+	   0.3f, 
+	   false
+   );
+	UE_LOG(LogTemp, Log, TEXT("AbsorbComplete"));
+}
+
+void ALudens_PCharacter::Server_AbsorbComplete_Implementation(const FInputActionValue& Value)
+{
+	AbsorbComplete(Value);
+}
+
+void ALudens_PCharacter::MulticastPlayDashEffect_Implementation()
+{
+	if (DashNiagara) UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DashNiagara, GetActorLocation(), GetActorRotation());
+}
+
+void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+	DOREPLIFETIME(ALudens_PCharacter, JumpCount);
+	DOREPLIFETIME(ALudens_PCharacter, CurrentDashCount);
+	DOREPLIFETIME(ALudens_PCharacter, bCanDash);
+	DOREPLIFETIME(ALudens_PCharacter, SavedAmmo);
+	DOREPLIFETIME(ALudens_PCharacter, CurrentAmmo);
 }
