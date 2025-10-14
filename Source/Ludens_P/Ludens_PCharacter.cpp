@@ -55,6 +55,10 @@ ALudens_PCharacter::ALudens_PCharacter()
 	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
 
 	RewardSystem = CreateDefaultSubobject<URewardSystemComponent>(TEXT("RewardSystem"));
+	PlayerAttackComponent = CreateDefaultSubobject<UPlayerAttackComponent>(TEXT("PlayerAttack"));
+	PlayerStateComponent = CreateDefaultSubobject<UPlayerStateComponent>(TEXT("PlayerState"));
+	WeaponComponent = CreateDefaultSubobject<UTP_WeaponComponent>(TEXT("Weapon"));
+	ReviveComponent = CreateDefaultSubobject<UReviveComponent>(TEXT("Revive"));
 	
 	// GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->GravityScale = 2.0f;
@@ -85,13 +89,6 @@ void ALudens_PCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
-
-	//컴포넌트 할당
-	PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
-	PlayerStateComponent = FindComponentByClass<UPlayerStateComponent>();
-	WeaponComponent = FindComponentByClass<UTP_WeaponComponent>();
-	ReviveComponent = FindComponentByClass<UReviveComponent>();
-
 	if (PlayerAttackComponent && PlayerAttackComponent->WeaponAttackHandler && WeaponComponent)
 	{
 		PlayerAttackComponent->WeaponAttackHandler->WeaponComp = WeaponComponent;
@@ -121,25 +118,9 @@ void ALudens_PCharacter::BeginPlay()
 			}
 		}
 
-		/*
-		//컴포넌트 할당
-		PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
-		PlayerStateComponent = FindComponentByClass<UPlayerStateComponent>();
-		WeaponComponent = FindComponentByClass<UTP_WeaponComponent>();
-		ReviveComponent = FindComponentByClass<UReviveComponent>();
-
-		if (PlayerAttackComponent && WeaponComponent)
-		{
-			PlayerAttackComponent->WeaponAttackHandler->WeaponComp = WeaponComponent;
-		}
-
-		*/
-
 		// --- 널 체크 ---
 		if (!DashAction) { UE_LOG(LogTemplateCharacter, Error, TEXT("DashAction is null!")); }
 		if (!MeleeAttackAction) { UE_LOG(LogTemplateCharacter, Error, TEXT("MeleeAttackAction is null!")); }
-		
-
 
 		// 로비 UI 모드 잔상이 있으면 입력이 막힐 수 있음 → 게임 전용으로 전환
 		PC->SetInputMode(FInputModeGameOnly{});
@@ -176,6 +157,39 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 	if (!PSR) return;
     
 	// 이후 안전하게 PSR 멤버 사용 가능
+
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		int32 SlotBase = 0;
+
+		if (APlayerState* PS = PC->PlayerState)
+		{
+			SlotBase = PS->GetPlayerId();        // 권장: 매치 내 고유 ID
+		}
+		else if (UPlayer* P = PC->Player)
+		{
+			SlotBase = P->GetUniqueID();         // 대안: 에디터 런타임 고유
+		}
+
+		SlotBase = (SlotBase % 10000) * 100;
+
+		if (PC->IsLocalController() && GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(SlotBase + 70, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxHP: %f"), SlotBase, PSR->MaxHP));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 71, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxShield: %f"), SlotBase, PSR->MaxShield));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 72, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MoveSpeed: %f"), SlotBase, PSR->MoveSpeed));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 73, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] ShieldRegenSpeed: %f"), SlotBase, PSR->ShieldRegenSpeed));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 74, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] DashRechargeTime: %f"), SlotBase, PSR->DashRechargeTime));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 75, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxDashCount: %d"), SlotBase, PSR->MaxDashCount));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 76, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] AttackDamage: %f"), SlotBase, PSR->AttackDamage));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 77, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] WeaponAttackCoolTime: %f"), SlotBase, PSR->WeaponAttackCoolTime));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 78, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] CriticalRate: %f"), SlotBase, PSR->CriticalRate));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 79, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] CriticalDamage: %f"), SlotBase, PSR->CriticalDamage));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 80, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] AbsorbDelay: %f"), SlotBase, PSR->AbsorbDelay));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 81, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxSavedAmmo: %d"), SlotBase, PSR->MaxSavedAmmo));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 82, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxAmmo: %d"), SlotBase, PSR->MaxAmmo));
+		}
+	}
 }
 
 void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

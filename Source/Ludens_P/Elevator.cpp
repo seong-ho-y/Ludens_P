@@ -41,7 +41,7 @@ void AElevator::OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor*
                     FString::Printf(TEXT("[Elevator] Waiting: %d / %d"), EnteredPlayers.Num(), RequiredPlayers));
             }
 
-            if (EnteredPlayers.Num() >= RequiredPlayers)
+            if (EnteredPlayers.Num() >= 2)
             {
                 // Start/End ������ RoomManager�� �Ѵ�
                 OnAllPlayersReady.Broadcast();

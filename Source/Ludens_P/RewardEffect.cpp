@@ -10,7 +10,6 @@
 
 void URewardEffect_Stat::ApplyReward_Implementation(ACharacter* Player, const FRewardRow& Row)
 {
-    /*
     if (!Player || !Player->HasAuthority()) return;
     auto* PSR = Player->GetPlayerState<APlayerState_Real>();
     auto* PSC = Player->FindComponentByClass<UPlayerStateComponent>();
@@ -27,6 +26,9 @@ void URewardEffect_Stat::ApplyReward_Implementation(ACharacter* Player, const FR
         break;
     case EPlayerReward::MaxShield:
         if (PSC) PSC->ApplyMaxShield(Op, V, ECurrentHPPolicy::HealToFull);
+        break;
+    case EPlayerReward::ShieldRegenSpeed:
+        if (PSC) PSC->ApplyShieldRegenSpeed(Op, V);
         break;
 
         // --- �̵�/�뽬 �� PSR ���� ����
@@ -47,7 +49,6 @@ void URewardEffect_Stat::ApplyReward_Implementation(ACharacter* Player, const FR
 
     default: break;
     }
-    */
 }
 
 void URewardEffect_Skill::ApplyReward_Implementation(ACharacter* Player, const FRewardRow& Row)
