@@ -105,6 +105,8 @@ void URewardSystemComponent::Client_ShowRewardUI_Implementation(const TArray<FNa
 
 	PC->SetIgnoreMoveInput(true);
 	PC->SetIgnoreLookInput(true);
+
+	PC->bShowMouseCursor = true;
 }
 
 void URewardSystemComponent::Server_SelectReward_Implementation(FName PickedRowName)
