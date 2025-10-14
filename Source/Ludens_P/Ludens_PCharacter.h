@@ -19,6 +19,7 @@ class UCameraComponent;
 class URewardSystemComponent;
 class UInputAction;
 class UInputMappingContext;
+class ULudensAppearanceData;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -31,7 +32,7 @@ class ALudens_PCharacter : public ACharacter
 	/** Pawn mesh: 1st person view (arms; seen only by self) */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Mesh, meta = (AllowPrivateAccess = "true"))
 	USkeletalMeshComponent* Mesh1P;
-
+public:
 	/** First person camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	UCameraComponent* FirstPersonCameraComponent;
@@ -227,4 +228,31 @@ protected:
 
 public:
 	//UFUNCTION(BlueprintPure, Category = "Player") APlayerState_Real* GetPSR_FromPSC() const;
+
+public:
+	// **3. 컴포넌트 활성화/비활성화용 Multicast 함수**
+	UFUNCTION(NetMulticast, Reliable)
+	void MulticastControlDashEffect(bool bActivate);
+	// **4. 이펙트를 비활성화할 함수**
+	void DeactivateDashEffect();
+
+public:
+	// 외형 적용 추가
+	UPROPERTY(EditDefaultsOnly, Category = "Cosmetics")
+	ULudensAppearanceData* AppearanceDB = nullptr;
+
+	bool bCosmeticsApplied = false;     // 1회 적용 보증
+	int32 CachedSubskillId = -1;        // (표현은 안 해도) 선택 스킬 id만 캐시
+
+	virtual void PossessedBy(AController* NewController) override;
+	
+	UPROPERTY(EditAnywhere, Category = "Tool")
+	UActorComponent* ToolComponent;
+
+	void OnInteract();
+
+	// 외형 적용 1회 함수
+	UFUNCTION()
+	void ApplyCosmeticsFromPSROnce();
+	virtual void OnRep_PlayerState() override;   // 클라: PS 세팅 복제 시
 };

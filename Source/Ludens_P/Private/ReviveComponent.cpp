@@ -85,6 +85,8 @@ void UReviveComponent::HandleReviveComplete()
 	TargetPlayerState->CurrentHP = (TargetPlayerState->MaxHP) / 2;
 	TargetPlayerState->IsKnocked = false;
 	TargetPlayerState->UpdateMoveSpeed();
+	TargetPlayerState->OnRep_Knocked();
+	TargetPlayerState->TakeDamage(0.f);
 	UE_LOG(LogTemp, Error, TEXT("Revive Complete!"));
 	UE_LOG(LogTemp, Warning, TEXT("CurrentHP: %f"), TargetPlayerState->CurrentHP);
 	TargetPlayerState = nullptr;

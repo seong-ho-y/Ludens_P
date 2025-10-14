@@ -37,7 +37,7 @@ void UMeleeAttackHandler::HandleMeleeAttack(float damage)
 		}
 		
 		// 화면 중심에서 월드 방향 구하기
-		FVector WorldLocation = LudensCharacter->GetFirstPersonCameraComponent()->GetComponentLocation();
+		FVector WorldLocation = LudensCharacter->FirstPersonCameraComponent->GetComponentLocation();
 		FRotator CameraRotation = OwnerCharacter->GetActorRotation();
 		if (APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController()))
 		{

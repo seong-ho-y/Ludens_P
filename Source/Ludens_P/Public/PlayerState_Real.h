@@ -8,10 +8,11 @@
 #include "Ludens_P/EEnemyColor.h"
 #include "Net/UnrealNetwork.h"
 #include "Ludens_P/RewardData.h"
+#include "LobbyTypes.h"
 #include "PlayerState_Real.generated.h"
 
 /**
- * 
+ *
  */
 UCLASS()
 class LUDENS_P_API APlayerState_Real : public APlayerState
@@ -39,17 +40,50 @@ public:
 	UPROPERTY(Replicated) int MaxSavedAmmo = 500; // 최대 저장 가능한 탄알(젤루) ✅
 	UPROPERTY(Replicated) int MaxAmmo = 15; // 최대 재장전 가능한 탈알(젤루) ✅
 
+	/// 로비 관련 수정
+
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnLobbyFieldChanged);
+
+	UPROPERTY(ReplicatedUsing = OnRep_AppearanceId, BlueprintReadOnly, Category = "Lobby")
+	int32 AppearanceId = -1;              // 로비에서 고른 외형(A0~A3 등)
+
+	UPROPERTY(ReplicatedUsing = OnRep_PreviewColor, BlueprintReadOnly, Category = "Lobby")
+	EEnemyColor PreviewColor = EEnemyColor::Red;   // 폴백(초기값, 편한 값으로)
+
+	UPROPERTY(ReplicatedUsing = OnRep_SelectedColor, BlueprintReadOnly, Category = "Lobby")
+	EEnemyColor SelectedColor = EEnemyColor::Red;
+
+	UPROPERTY(ReplicatedUsing = OnRep_SubskillId, BlueprintReadOnly, Category = "Lobby")
+	int32 SubskillId = -1;                // 보조 스킬(인덱스)
+
+	// Ready 토글(잠금 여부)
+	UPROPERTY(ReplicatedUsing = OnRep_Ready, BlueprintReadOnly, Category = "Lobby")
+	bool bReady = false;
+
+	// 로비 선택값 중 하나라도 바뀌면 브로드캐스트(UMG 갱신용)
+	UPROPERTY(BlueprintAssignable, Category = "Lobby")
+	FOnLobbyFieldChanged OnAnyLobbyFieldChanged;
+
 protected:
 	virtual void BeginPlay() override;
 
 	virtual void CopyProperties(APlayerState* PlayerState) override;
 	virtual void OverrideWith(APlayerState* PlayerState) override;
+	virtual void SeamlessTravelTo(APlayerState* NewPlayerState) override;
 
 protected:
 	void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 
 protected:
 	UFUNCTION() void OnRep_PlayerColor();
+
+	/// 로비 관련 수정
+
+	UFUNCTION() void OnRep_AppearanceId();
+	UFUNCTION() void OnRep_PreviewColor();
+	UFUNCTION() void OnRep_SelectedColor();
+	UFUNCTION() void OnRep_SubskillId();
+	UFUNCTION() void OnRep_Ready();
 
 public:
 	// ---- PSR: 영속/공유 스탯 변경 메서드들
@@ -65,4 +99,7 @@ public:
 	UFUNCTION() void ApplyAbsorbDelay(ERewardOpType Op, float V);
 	UFUNCTION() void ApplyMaxSavedAmmo(ERewardOpType Op, float V);    // 내부에서 정수화
 	UFUNCTION() void ApplyMaxAmmo(ERewardOpType Op, float V);         // 내부에서 정수화
+
+	UFUNCTION(BlueprintCallable, Category = "Lobby")
+	void NotifyAnyLobbyFieldChanged(); // 로비 즉시 반영용 이벤트 트리거
 };

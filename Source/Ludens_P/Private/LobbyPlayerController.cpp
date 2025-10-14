@@ -1,6 +1,6 @@
 // LobbyPlayerController.cpp
 #include "LobbyPlayerController.h"
-#include "LobbyPlayerState.h"
+#include "PlayerState_Real.h" // 수정 완료
 #include "LobbyGameState.h"
 #include "WBP_Lobby.h"      
 #include "LobbyPreviewRig.h" 
@@ -10,14 +10,17 @@
 #include "GameFramework/GameStateBase.h"
 #include "Kismet/KismetRenderingLibrary.h"
 #include "GameFramework/Actor.h"
+#include "Ludens_P/EEnemyColor.h"
+#include "LobbyTypes.h"
+
 
 
 DEFINE_LOG_CATEGORY_STATIC(LogLobbyPC, Log, All);
 
 // ===== 내부 헬퍼 =====
-ALobbyPlayerState* ALobbyPlayerController::GetLobbyPS() const
+APlayerState_Real* ALobbyPlayerController::GetLobbyPS() const
 {
-    return GetPlayerState<ALobbyPlayerState>();
+    return GetPlayerState<APlayerState_Real>();
 }
 
 ALobbyGameState* ALobbyPlayerController::GetLobbyGS() const
@@ -132,10 +135,10 @@ void ALobbyPlayerController::SpawnAndWirePreviewRigs()
 }
 
 
-// ===== S2: 클라 → 서버 RPC 구현 =====
+// ===== 서버 RPC 구현 =====
 void ALobbyPlayerController::ServerSetAppearance_Implementation(int32 InAppearanceId)
 {
-    if (ALobbyPlayerState* PS = GetLobbyPS())
+    if (APlayerState_Real* PS = GetLobbyPS())
     {
         PS->AppearanceId = FMath::Clamp(InAppearanceId, 0, 3);
         PS->NotifyAnyLobbyFieldChanged();
@@ -150,7 +153,7 @@ void ALobbyPlayerController::ServerSetAppearance_Implementation(int32 InAppearan
 
 void ALobbyPlayerController::ServerSetSubskill_Implementation(int32 InSubskillId)
 {
-    if (ALobbyPlayerState* PS = GetLobbyPS())
+    if (APlayerState_Real* PS = GetLobbyPS())
     {
         PS->SubskillId = FMath::Clamp(InSubskillId, 0, 4);
         PS->NotifyAnyLobbyFieldChanged();
@@ -158,17 +161,17 @@ void ALobbyPlayerController::ServerSetSubskill_Implementation(int32 InSubskillId
     }
 }
 
-void ALobbyPlayerController::ServerSetPreviewColor_Implementation(ELobbyColor InColor)
+void ALobbyPlayerController::ServerSetPreviewColor_Implementation(EEnemyColor InColor)
 {
     UE_LOG(LogTemp, Log, TEXT("[LobbyPC] ServerSetPreviewColor InColor=%d HasAuthority=%d"),  // LOG B
         (int32)InColor, (int32)HasAuthority());
 
-    if (ALobbyPlayerState* PS = GetLobbyPS())
+    if (APlayerState_Real* PS = GetLobbyPS())
     {
         if (!PS->bReady)
         {
             PS->PreviewColor = InColor;
-            PS->NotifyAnyLobbyFieldChanged(); // 호스트 즉시 갱신
+            PS->NotifyAnyLobbyFieldChanged();         // 호스트 즉시 갱신
             PS->ForceNetUpdate();
         }
 
@@ -180,68 +183,66 @@ void ALobbyPlayerController::ServerSetPreviewColor_Implementation(ELobbyColor In
 
 
 
-void ALobbyPlayerController::ServerReadyOn_Implementation(ELobbyColor Requested)
+void ALobbyPlayerController::ServerReadyOn_Implementation(EEnemyColor Requested)
 {
-    ALobbyPlayerState* PS = GetLobbyPS();
+    APlayerState_Real* PS = GetLobbyPS();
     ALobbyGameState* GS = GetLobbyGS();
-    if (!PS || !GS) return;
+    if (!PS || !GS || PS->bReady) return;
 
-    if (PS->bReady) return; // 이미 Ready면 무시
+    // 이미 Ready면 무시
+    if (PS->bReady) return;
 
-    // 유효성 검증 (서버 권위)
-    const bool bHasColor = (PS->PreviewColor != ELobbyColor::None);
-    const bool bHasSkill = (PS->SubskillId >= 0 && PS->SubskillId <= 4);
+    const EEnemyColor ColorToLock = Requested;
+
+    // 유효성 체크(기존 유지)
     const bool bHasAppearance = (PS->AppearanceId >= 0 && PS->AppearanceId <= 3);
+    const bool bHasSkill = (PS->SubskillId >= 0 && PS->SubskillId <= 4);
+    const bool bHasColor = (ColorToLock == EEnemyColor::Red || ColorToLock == EEnemyColor::Green || ColorToLock == EEnemyColor::Blue);
 
-    UE_LOG(LogTemp, Display, TEXT("[ReadyCheck] Appear=%d SelColor=%d Skill=%d  -> bHasA=%d bHasC=%d bHasS=%d"),
-        PS->AppearanceId, (int)PS->SelectedColor, PS->SubskillId,
-        bHasAppearance, bHasColor, bHasSkill);
-
-    if (!(bHasColor && bHasSkill && bHasAppearance))
+    if (!(bHasAppearance && bHasSkill && bHasColor))
     {
-        return; // 미충족 → 무시 (S3에서 실패 토스트 예정)
+        // 필요시 이유 로그
+        return;
     }
 
-    // 요청 색 보정: None으로 오면 현재 PreviewColor 사용
-    const ELobbyColor ColorToLock = (Requested != ELobbyColor::None) ? Requested : PS->PreviewColor;
-
+    // 서버 권위로 색 락 시도(기존 유지: GState가 ELobbyColor 기반이면 그대로 사용)
     const int32 MyId = PS->GetPlayerId();
-    const bool bLocked = GS->TryLockColor(MyId, ColorToLock);
+    const bool  bLocked = GS->TryLockColor(MyId, ColorToLock);
 
     if (bLocked)
     {
+        // 로비 PS 필드만 갱신 (ELobbyColor 기반)
         PS->SelectedColor = ColorToLock;
         PS->bReady = true;
 
-        // 호스트(서버 로컬) 위젯 즉시 갱신
+        //    최종 확정은 LobbyGameMode::StartGameIfAllReady() 직전에 1회 커밋
+
+        // 알림/복제 업데이트(기존 유지)
         PS->NotifyAnyLobbyFieldChanged();
-
         GS->ReadyCount++;
-        GS->NotifyReadyCountChanged();   // ★ 호스트 UI 활성화 조건 즉시 반영
-
+        GS->NotifyReadyCountChanged();
         PS->ForceNetUpdate();
     }
     else
     {
-        // 충돌: S3에서 UI 토스트 처리 예정
+        // 충돌 시 처리(기존 있었던 안내/로그 유지)
     }
 
-    UE_LOG(LogTemp, Display, TEXT("[RPC] Appear=%d  Preview=%d  Selected=%d  Ready=%d"),
-        PS->AppearanceId, (int)PS->PreviewColor, (int)PS->SelectedColor, (int)PS->bReady);
-
+    UE_LOG(LogTemp, Display, TEXT("[ReadyOn] Appear=%d Preview=%d Selected=%d Ready=%d (ReqEnemy=%d)"),
+        PS->AppearanceId, (int)PS->PreviewColor, (int)PS->SelectedColor, (int)PS->bReady, (int)Requested);
 }
+
 
 
 void ALobbyPlayerController::ServerReadyOff_Implementation()
 {
-    ALobbyPlayerState* PS = GetLobbyPS();
+    APlayerState_Real* PS = GetLobbyPS();
     ALobbyGameState* GS = GetLobbyGS();
     if (!PS || !GS) return;
 
     if (PS->bReady)
     {
         GS->UnlockColor(PS->GetPlayerId(), PS->SelectedColor); // 색 잠금 해제
-        PS->SelectedColor = ELobbyColor::None;                  // 커밋 색 초기화
         PS->bReady = false;                                     // 준비 해제
 
         // UI 동기화
@@ -265,7 +266,7 @@ void ALobbyPlayerController::CaptureMiniFor(APlayerState* OtherPS, bool bLeftSlo
     ALobbyPreviewRig* Rig = bLeftSlot ? Rig_ThumbL : Rig_ThumbR;
     if (!Rig) return;
 
-    auto* LPS = Cast<ALobbyPlayerState>(OtherPS);
+    auto* LPS = Cast<APlayerState_Real>(OtherPS);
 
     UE_LOG(LogTemp, Display, TEXT("[Mini] %s id=%d Ready=%d Prev=%d Sel=%d slot=%s"),
         *LPS->GetPlayerName(), LPS->GetPlayerId(),
@@ -366,7 +367,7 @@ void ALobbyPlayerController::BindAllPSDelegates()
         bool bNewBound = false;
         for (APlayerState* PS : GS->PlayerArray)
         {
-            if (ALobbyPlayerState* LPS = Cast<ALobbyPlayerState>(PS))
+            if (APlayerState_Real* LPS = Cast<APlayerState_Real>(PS))
             {
                 if (!LPS->OnAnyLobbyFieldChanged.IsAlreadyBound(this, &ALobbyPlayerController::OnAnyPSChangedHandler))
                 {
@@ -384,15 +385,15 @@ void ALobbyPlayerController::RefreshMiniSlots()
     AGameStateBase* GS = GetWorld() ? GetWorld()->GetGameState<AGameStateBase>() : nullptr;
     if (!GS) return;
 
-    TArray<ALobbyPlayerState*> Others;
+    TArray<APlayerState_Real*> Others;
     for (APlayerState* PS : GS->PlayerArray)
     {
         if (PS && PS != PlayerState)
-            if (auto* LPS = Cast<ALobbyPlayerState>(PS)) Others.Add(LPS);
+            if (auto* LPS = Cast<APlayerState_Real>(PS)) Others.Add(LPS);
     }
 
     // 정렬 기준 고정(플레이어 ID 오름차순) → 좌/우 안정 배치
-    Others.Sort([](const ALobbyPlayerState& A, const ALobbyPlayerState& B)
+    Others.Sort([](const APlayerState_Real& A, const APlayerState_Real& B)
         { return A.GetPlayerId() < B.GetPlayerId(); });
 
     ClearMiniRT(true);

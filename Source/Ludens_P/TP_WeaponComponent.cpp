@@ -16,6 +16,7 @@
 #include "PlayerState_Real.h"
 #include "Net/UnrealNetwork.h"
 #include "Projects.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Engine/LocalPlayer.h"
@@ -61,7 +62,7 @@ void UTP_WeaponComponent::Fire()
 	SpawnRotation = SpawnQuat.Rotator();
 	
 	// 총구 앞쪽에서 발사
-	constexpr float Distance = 30.0f;
+	constexpr float Distance = 20.0f;
 	FVector FireDirection = SpawnRotation.Vector();
 	FVector SpawnLocation = GetMuzzleLocation() + FireDirection * Distance;
 	
@@ -101,6 +102,12 @@ void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotato
 	//SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
+	
+	if (FireNiagara)
+	{
+		FRotator NiagaraRotation(0.0f, SpawnRotation.Yaw, 0.0f);
+		MulticastSpawnEffect(FireNiagara, SpawnLocation - FVector(20,0,0), NiagaraRotation); // 발사할 때 총구 쪽에 나이아가라 재생
+	}
 
 	ALudens_PProjectile* Projectile = GetWorld()->SpawnActor<ALudens_PProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams); // (스폰 위치, 방향, 액터가 게임 월드가 스폰될 때 디테알한 부분을 조정 가능.)
 	if (!Projectile)
@@ -264,6 +271,11 @@ void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) //�
 			Subsystem->RemoveMappingContext(FireMappingContext);
 		}
 	}
+}
+
+void UTP_WeaponComponent::MulticastSpawnEffect_Implementation(UNiagaraSystem* NiagaraEffect, FVector Location, FRotator Rotation)
+{
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraEffect, Location, Rotation);
 }
 
 void UTP_WeaponComponent::PlayMontage_Implementation(UAnimMontage* Montage, float PlaySpeed)

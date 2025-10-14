@@ -3,13 +3,14 @@
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
 #include "LobbyTypes.h"
+#include "Ludens_P/EEnemyColor.h"
 #include "LobbyPlayerController.generated.h"
 
 // ---- Forward Declarations ----
 class ALobbyPreviewRig;
 class UTextureRenderTarget2D;
 class UWBP_Lobby;
-class ALobbyPlayerState;
+class APlayerState_Real;
 class ALobbyGameState;
 class APlayerState;
 
@@ -25,8 +26,8 @@ public:
     // 
     UFUNCTION(Server, Reliable) void ServerSetAppearance(int32 InAppearanceId);
     UFUNCTION(Server, Reliable) void ServerSetSubskill(int32 InSubskillId);
-    UFUNCTION(Server, Reliable) void ServerSetPreviewColor(ELobbyColor InColor);
-    UFUNCTION(Server, Reliable) void ServerReadyOn(ELobbyColor Requested);
+    UFUNCTION(Server, Reliable) void ServerSetPreviewColor(EEnemyColor InColor);
+    UFUNCTION(Server, Reliable) void ServerReadyOn(EEnemyColor Requested);
     UFUNCTION(Server, Reliable) void ServerReadyOff();
 
     UFUNCTION(Server, Reliable)
@@ -43,6 +44,10 @@ public:
     void RefreshMiniSlots();
     void BindAllPSDelegates();
     FTimerHandle PSBindTimer;
+
+    // ---- 내부 헬퍼 ----
+    APlayerState_Real* GetLobbyPS() const;
+    ALobbyGameState* GetLobbyGS() const;
 
 protected:
     // ---- 런타임 스폰되는 프리뷰 리그(클라 전용/비복제) ----
@@ -63,10 +68,6 @@ private:
 
     // ---- 프리뷰 리그 스폰 & (레거시 RT 배선), 위젯에 참조 주입 ----
     void SpawnAndWirePreviewRigs();
-
-    // ---- 내부 헬퍼 ----
-    ALobbyPlayerState* GetLobbyPS() const;
-    ALobbyGameState* GetLobbyGS() const;
 
     // ---- 동적 RT: 각 클라이언트 전용 (중복 금지! private에만 둠) ----
     UPROPERTY() UTextureRenderTarget2D* RT_SelfDyn = nullptr;

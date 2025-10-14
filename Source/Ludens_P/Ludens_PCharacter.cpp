@@ -19,9 +19,13 @@
 #include "TP_WeaponComponent.h"
 #include "WeaponAttackHandler.h"
 #include "CreatureCombatComponent.h"
+#include "DecolorComp.h"
+#include "GrenadeComp.h"
 #include "JellooComponent.h"
 #include "PlayerState_Real.h"
 #include "ReviveComponent.h"
+#include "LudensAppearanceData.h"
+#include "ToolInterface.h"
 
 #include "Engine/LocalPlayer.h"
 #include "Net/UnrealNetwork.h"
@@ -70,6 +74,16 @@ ALudens_PCharacter::ALudens_PCharacter()
 
 	// 이동 컴포넌트 복제 설정
 	GetCharacterMovement()->SetIsReplicated(true);
+
+	// 나이아가라 컴포넌트 생성 및 설정
+	DashNiagaraComponent = CreateDefaultSubobject<UNiagaraComponent>(TEXT("DashNiagaraComponent"));
+    
+	// 메시 컴포넌트에 부착
+	DashNiagaraComponent->SetupAttachment(GetMesh()); 
+    
+	// **가장 중요: 자동 활성화 비활성화**
+	// 블루프린트에서 Set Active로 제어하기 위해 기본적으로 꺼둡니다.
+	DashNiagaraComponent->bAutoActivate = false;
 }
 
 void ALudens_PCharacter::BeginPlay()
@@ -159,6 +173,32 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 			GEngine->AddOnScreenDebugMessage(SlotBase + 81, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxSavedAmmo: %d"), SlotBase, PlayerStateComponent->PSR->MaxSavedAmmo));
 			GEngine->AddOnScreenDebugMessage(SlotBase + 82, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxAmmo: %d"), SlotBase, PlayerStateComponent->PSR->MaxAmmo));
 		}
+
+		/*
+		//컴포넌트 할당
+		PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
+		PlayerStateComponent = FindComponentByClass<UPlayerStateComponent>();
+		WeaponComponent = FindComponentByClass<UTP_WeaponComponent>();
+		ReviveComponent = FindComponentByClass<UReviveComponent>();
+
+		if (PlayerAttackComponent && WeaponComponent)
+		{
+			PlayerAttackComponent->WeaponAttackHandler->WeaponComp = WeaponComponent;
+		}
+
+		*/
+
+		// --- 널 체크 ---
+		if (!DashAction) { UE_LOG(LogTemplateCharacter, Error, TEXT("DashAction is null!")); }
+		if (!MeleeAttackAction) { UE_LOG(LogTemplateCharacter, Error, TEXT("MeleeAttackAction is null!")); }
+		
+
+
+		// 로비 UI 모드 잔상이 있으면 입력이 막힐 수 있음 → 게임 전용으로 전환
+		PC->SetInputMode(FInputModeGameOnly{});
+		PC->bShowMouseCursor = false;
+
+		ApplyCosmeticsFromPSROnce(); // 조기 시도(PSR/DB 준비 전이면 미적용 + 로그만 남고 재시도 가능)
 	}
 }
 
@@ -198,6 +238,8 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		// Absorb
 		EnhancedInputComponent->BindAction(AbsorbAction, ETriggerEvent::Ongoing, this, &ALudens_PCharacter::Absorb);
 		EnhancedInputComponent->BindAction(AbsorbAction, ETriggerEvent::Completed, this, &ALudens_PCharacter::AbsorbComplete);
+
+		PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ALudens_PCharacter::OnInteract);
 	}
 }
 
@@ -326,11 +368,12 @@ void ALudens_PCharacter::Dash(const FInputActionValue& Value)
 
 		// 서버에서 강제 실행
 		LaunchCharacter(DashDirection * DashSpeed, true, true);
-
-		MulticastPlayDashEffect();
+		// Multicast로 이펙트 활성화 명령 전달**
+		// 서버에서 이 함수를 호출하면, 모든 클라이언트(서버 포함)에서 MulticastControlDashEffect_Implementation이 실행됩니다.
+		MulticastControlDashEffect(true); 
 		CurrentDashCount--;
 		bCanDash = false;
-	
+		
 		// 5. 0.2초 후 원래 값 복원 (대시 지속시간에 맞게 조절)
 		GetWorld()->GetTimerManager().SetTimer(
 			DashPhysicsTimerHandle,
@@ -345,13 +388,22 @@ void ALudens_PCharacter::Dash(const FInputActionValue& Value)
 			0.2f,
 			false
 		);
+		
+		// 1. 서버 시간 복제
+		// 현재 서버 시간을 복제 변수에 저장합니다.
+		ReplicatedDashCooldownStartTime = GetWorld()->GetTimeSeconds(); 
+        
+		// 2. OnRep 함수가 서버에서도 실행되도록 수동 호출
+		// 서버의 UI도 업데이트해야 하므로 필수
+		OnRep_DashCooldownTime(); 
 
-		// 1초 후 다음 대쉬 가능
+		// 3. 쿨타임 종료 로직은 서버 타이머로 유지
+		// bCanDash를 True로 바꾸는 로직은 서버에서만 결정해야 합니다.
 		GetWorld()->GetTimerManager().SetTimer(
-			DashCooldownTimerHandle,
-			[this]() { bCanDash = true; },
-			DashCooldown,
-			false
+		   DashCooldownTimerHandle,
+		   [this]() { bCanDash = true; },
+		   DashCooldown,
+		   false
 		);
 
 		//3초마다 대쉬 충전
@@ -383,6 +435,15 @@ void ALudens_PCharacter::RechargeDash()
 	{
 		GetWorld()->GetTimerManager().ClearTimer(DashRechargeTimerHandle);
 	}
+}
+
+void ALudens_PCharacter::OnRep_DashCooldownTime()
+{
+	// 이 함수는 클라이언트와 서버에서 모두 실행됩니다.
+	// **클라이언트 UI**가 쿨타임 시작을 알 수 있게 됩니다.
+    
+	// 이 로직은 UI 바인딩에 필요한 정보를 제공하는 역할을 합니다.
+	// UI 바인딩 로직에서 이 변수를 사용하게 됩니다.
 }
 
 void ALudens_PCharacter::ResetMovementParams() const
@@ -427,7 +488,7 @@ void ALudens_PCharacter::Interact(const FInputActionValue& Value) // 앞에 있�
 	
 
 	// 맞은 액터가 어떤 컴포넌트를 가지고 있는지 검사
-	if (bHit && Hit.GetActor() && Hit.GetActor()->FindComponentByClass<UPlayerStateComponent>())
+	if (bHit && Hit.GetActor()->FindComponentByClass<UPlayerStateComponent>())
 	{
 		Revive(Value);
 	}
@@ -616,9 +677,53 @@ void ALudens_PCharacter::Server_AbsorbComplete_Implementation(const FInputAction
 	AbsorbComplete(Value);
 }
 
-void ALudens_PCharacter::MulticastPlayDashEffect_Implementation()
+void ALudens_PCharacter::MulticastControlDashEffect_Implementation(bool bActivate)
 {
-	if (DashNiagara) UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DashNiagara, GetActorLocation(), GetActorRotation());
+	if (DashNiagaraComponent)
+	{
+		if (bActivate)
+		{
+			// 모든 클라이언트에서 활성화 명령
+			// 이미 활성화된 경우에도 Reset 옵션으로 재시작 (Set Active는 Reset 옵션을 포함합니다)
+			DashNiagaraComponent->SetActive(true, true); 
+            
+			// 0.3초 후 DeactivateDashEffect 함수 호출하도록 타이머 설정
+			GetWorld()->GetTimerManager().SetTimer(
+				DashEffectTimerHandle,
+				this,
+				&ALudens_PCharacter::DeactivateDashEffect,
+				0.3f, // 대시 이펙트 지속 시간
+				false
+			);
+		}
+		else
+		{
+			// 비활성화 명령 (0.3초 타이머에 의해 호출됨)
+			DashNiagaraComponent->Deactivate();
+            
+			// 타이머 해제 (안전 장치)
+			GetWorld()->GetTimerManager().ClearTimer(DashEffectTimerHandle);
+		}
+	}
+}
+
+void ALudens_PCharacter::DeactivateDashEffect()
+{
+	// MulticastControlDashEffect_Implementation(false)를 직접 호출
+	// 서버에서 호출하면 Multicast로 동작하지 않으므로, 이펙트 비활성화는
+	// 이미 클라이언트와 서버 모두에서 실행되고 있는 Deactivate 함수를 직접 호출하는 방식이 더 간단합니다.
+	// 하지만 네트워크 안정성을 위해 Multicast 함수에 통합하는 것이 가장 좋습니다.
+    
+	// 여기서는 MulticastControlDashEffect_Implementation(false)를 대신 호출하는 로직을 가정합니다.
+	// **다만, Multicast 함수의 Implementation을 직접 호출하는 것은 권장되지 않습니다.**
+	// 가장 안전한 방법은 아래 Dash() 로직처럼, 
+	// 서버에서만 SetTimer를 설정하고, 이 타이머 완료 시 Deactivate()를 호출하는 것입니다.
+
+	// 🌟 안전한 방법: 클라이언트마다 타이머를 실행하고 로컬에서 비활성화
+	if (DashNiagaraComponent)
+	{
+		DashNiagaraComponent->Deactivate();
+	}
 }
 
 void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const
@@ -627,6 +732,111 @@ void ALudens_PCharacter::GetLifetimeReplicatedProps(TArray<class FLifetimeProper
 	DOREPLIFETIME(ALudens_PCharacter, JumpCount);
 	DOREPLIFETIME(ALudens_PCharacter, CurrentDashCount);
 	DOREPLIFETIME(ALudens_PCharacter, bCanDash);
+	DOREPLIFETIME(ALudens_PCharacter, ReplicatedDashCooldownStartTime);
 	DOREPLIFETIME(ALudens_PCharacter, SavedAmmo);
 	DOREPLIFETIME(ALudens_PCharacter, CurrentAmmo);
+}
+
+void ALudens_PCharacter::PossessedBy(AController* NewController)
+{
+	Super::PossessedBy(NewController);
+	UE_LOG(LogTemp, Log, TEXT("[Char] Possessed Pawn=%s Auth=%d"), *GetName(), (int)HasAuthority());
+	ApplyCosmeticsFromPSROnce(); // 서버: 폰 소유 확정 시 1회 시도
+	if (HasAuthority())
+	{
+		
+	}
+	/*{
+		APlayerState_Real* PS = GetPlayerState<APlayerState_Real>();
+		if (PS && PS->) // PlayerState에서 선택한 도구 클래스 정보를 가져옵니다.
+		{
+			// 기존에 컴포넌트가 있다면 파괴합니다 (재스폰 등의 경우를 위해).
+			if (ActiveToolComponent)
+			{
+				ActiveToolComponent->DestroyComponent();
+			}
+
+			// 새로운 컴포넌트를 생성하고, 소유자를 이 캐릭터로 설정합니다.
+			ActiveToolComponent = NewObject<UActorComponent>(this, PS->SelectedToolClass);
+			if (ActiveToolComponent)
+			{
+				// 컴포넌트를 등록하여 월드에서 활성화합니다.
+				ActiveToolComponent->RegisterComponent();
+
+				// 만약 컴포넌트가 특정 액터에 부착되어야 한다면, 여기서 처리합니다.
+				// 예: USceneComponent인 경우
+				// USceneComponent* SceneComp = Cast<USceneComponent>(ActiveToolComponent);
+				// if (SceneComp)
+				// {
+				//    SceneComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("ToolSocket"));
+				// }
+
+				UE_LOG(LogTemp, Warning, TEXT("ToolComponent has been successfully assigned on Server."));
+			}
+		}
+	}
+	*/
+}
+
+void ALudens_PCharacter::OnInteract()
+{
+	//ToolComponent = FindComponentByClass<UGrenadeComp>();
+	// 현재 활성화된 도구 컴포넌트가 있는지 확인
+	ToolComponent = FindComponentByClass<UDecolorComp>();
+	if (ToolComponent)
+	{
+		// 컴포넌트가 ToolInterface를 구현했는지 확인
+		if (ToolComponent->GetClass()->ImplementsInterface(UToolInterface::StaticClass()))
+		{
+			// 인터페이스 함수를 호출
+			IToolInterface::Execute_Interact(ToolComponent, this);
+		}
+	}
+}
+
+void ALudens_PCharacter::ApplyCosmeticsFromPSROnce()
+{
+	if (bCosmeticsApplied) { UE_LOG(LogTemp, Verbose, TEXT("[Cosmetics] Skip: already applied")); return; }
+
+	APlayerState_Real* PSRLocal = GetPlayerState<APlayerState_Real>();
+	if (!PSRLocal) { UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] PSR not ready on %s"), *GetName()); return; }
+	if (!AppearanceDB) { UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] AppearanceDB is NULL on %s"), *GetName()); return; }
+
+	// ✅ 폴백 준비
+
+	int32 ApId = PSRLocal->AppearanceId;
+	bool bUsedFallback = false;
+	if (ApId < 0)
+	{
+		bUsedFallback = true;
+		ApId = 0; // 임시로 Appearance 0 사용
+		UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] AppearanceId was -1 -> fallback to 0 (Pawn=%s)"), *GetName());
+	}
+
+
+	if (USkeletalMeshComponent* Mesh3P = GetMesh())
+	{
+		AppearanceDB->ApplyToByEnemyColor(Mesh3P, ApId, PSRLocal->PlayerColor);
+
+		if (!bUsedFallback)
+		{
+			// 정상 값으로 성공 적용한 경우에만 잠금
+			bCosmeticsApplied = true;
+			UE_LOG(LogTemp, Display, TEXT("[Cosmetics] Server-applied Ap=%d, Color=%d, Pawn=%s"),
+				ApId, (int32)PSRLocal->PlayerColor, *GetName());
+		}
+		else
+		{
+			// 폴백으로 적용했으면 잠그지 않음 → 이후 정상 값 들어오면 재적용 가능
+			UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] Applied with fallback; NOT locking (Auth=%d Pawn=%s)"), (int32)HasAuthority(), *GetName());
+		}
+	}
+
+}
+
+void ALudens_PCharacter::OnRep_PlayerState()
+{
+	Super::OnRep_PlayerState();
+	UE_LOG(LogTemp, Log, TEXT("[Char] OnRep PS Pawn=%s Local=%d"), *GetName(), (int)IsLocallyControlled());
+	ApplyCosmeticsFromPSROnce(); // 클라: PSR 복제 완료 직후 1회 더 시도
 }

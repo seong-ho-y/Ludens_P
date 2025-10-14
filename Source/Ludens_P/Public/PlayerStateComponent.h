@@ -33,25 +33,19 @@ public:
 	EEnemyColor PlayerColor;
 	
 	// 플레이어 체력
-	UPROPERTY(EditAnywhere, BlueprintReadOnly,  Category = "Player", Replicated)
-	float MaxHP = 100.0f;
-	UPROPERTY(VisibleAnywhere, Category = "Player", Replicated)
-	float CurrentHP;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,  Category = "Player", Replicated) float MaxHP = 100.0f;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player", Replicated) float CurrentHP;
 
 	// 플레이어 쉴드
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", Replicated)
-	float MaxShield = 100.0f;
-	UPROPERTY(VisibleAnywhere, Category = "Player", Replicated)
-	float CurrentShield;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", Replicated) float MaxShield = 100.0f;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player", Replicated) float CurrentShield;
 
 	// 플레이어 이동 속도
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement", ReplicatedUsing=OnRep_MoveSpeed)
-	float MoveSpeed;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Movement", ReplicatedUsing=OnRep_MoveSpeed) float MoveSpeed;
 
 	// 플레이어가 공격 당한 상태인지 확인, 공격 당하면 일정 시간 동안 무적 상태
 	UPROPERTY(VisibleAnywhere, Category = "Player", ReplicatedUsing=OnRep_IsAttacked)
 	bool IsAttacked = false;
-	FTimerHandle InvincibilityTimerHandle;
 
 	//플레이어의 생존 여부
 	UPROPERTY(BlueprintReadOnly, VisibleAnywhere, Category = "Player", ReplicatedUsing=OnRep_Dead)
@@ -114,5 +108,30 @@ protected:
 	FTimerHandle RegenShieldTimer;
 
 public:
+	FTimerHandle InvincibilityTimerHandle;
 	FTimerHandle KnockedTimer; // 기절 한 뒤 죽을 때까지 작동하는 타이머
+
+// UI 업데이트를 위한 델리게이트 선언 (데미지 입는 시점)
+	// 이 델리게이트에 블루프린트 UI 함수를 바인딩합니다.
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDamageTakenUI);
+    
+	UPROPERTY(BlueprintAssignable, Category = "UI")
+	FOnDamageTakenUI OnDamageTakenUI; 
+    
+	// UI 애니메이션 재생을 위한 Multicast 함수
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayDamageUI();
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayKnockedUI();
+protected:
+	UFUNCTION(Server, Reliable)
+	void Server_RequestDamageUI();
+	
+	// 데미지 비네트 UI의 현재 Opacity 값 (복제 필요 없음)
+	UPROPERTY(BlueprintReadOnly, Category = "UI")
+	float DamageVignetteOpacity = 0.0f;
+
+	FTimerHandle VignetteTimerHandle;
+
+	void UpdateVignetteOpacity(); 
 };

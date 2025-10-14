@@ -3,10 +3,10 @@
 #include "Ludens_PProjectile.h"
 
 #include "EnemyBase.h"
+#include "PlayerState_Real.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
 #include "Kismet/GameplayStatics.h"
-#include "PlayerState_Real.h"
 
 ALudens_PProjectile::ALudens_PProjectile() 
 {
@@ -58,7 +58,23 @@ void ALudens_PProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor
 	if (HitEnemy)
 	{
 		// 2. 데미지 처리를 위한 정보를 준비합니다.
-		const float DamageAmount = 5.0f; // 이 프로젝타일의 기본 데미지
+		float DamageAmount = PSR->AttackDamage;
+		bool bIsCritical = false; // bool 타입 변수를 확인해서 크리티컬이면 이를 시각화 하는데 쓸 수 있음. 물론 안 써도 상관 X
+       
+		// FMath::FRand()는 0.0f와 1.0f 사이의 랜덤 float 값을 반환합니다.
+		if (FMath::FRand() < PSR->CriticalRate) // 예: CriticalRate가 0.1이면 10% 확률로 true
+		{
+			// 크리티컬 발동!
+			bIsCritical = true;
+          
+			// 기본 데미지에 크리티컬 데미지 배율을 곱합니다.
+			// PSR->CriticalDamage는 배율 값(초깃값: 1.5배)
+			DamageAmount *= PSR->CriticalDamage;
+          
+			// (선택 사항: 크리티컬 발생 로그를 남기거나, 클라이언트에게 알리는 로직 추가)
+			UE_LOG(LogTemp, Warning, TEXT("Critical Hit! Damage: %f"), DamageAmount);
+		}
+		
 		AController* InstigatorController = MyOwner ? MyOwner->GetInstigatorController() : nullptr; // 나를 쏜 폰의 컨트롤러
 
 		// 3. 언리얼 데미지 시스템을 통해 데미지를 전달합니다.

@@ -43,10 +43,9 @@ void AElevator::OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor*
 
             if (EnteredPlayers.Num() >= RequiredPlayers)
             {
-                // Start/End ±¸ºÐÀº RoomManager°¡ ÇÑ´Ù
+                // Start/End ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ RoomManagerï¿½ï¿½ ï¿½Ñ´ï¿½
                 OnAllPlayersReady.Broadcast();
             }
         }
     }
 }
-

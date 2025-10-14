@@ -13,52 +13,6 @@ void APlayerState_Real::BeginPlay()
 	Super::BeginPlay();
 }
 
-void APlayerState_Real::CopyProperties(APlayerState* PlayerState)
-{
-    Super::CopyProperties(PlayerState);
-
-    if (APlayerState_Real* PS = Cast<APlayerState_Real>(PlayerState))
-    {
-        PS->MaxHP = MaxHP;
-        PS->MaxShield = MaxShield;
-        PS->MoveSpeed = MoveSpeed;
-        PS->ShieldRegenSpeed = ShieldRegenSpeed;
-        PS->DashRechargeTime = DashRechargeTime;
-        PS->MaxDashCount = MaxDashCount;
-        PS->AttackDamage = AttackDamage;
-        PS->WeaponAttackCoolTime = WeaponAttackCoolTime;
-        PS->CriticalRate = CriticalRate;
-        PS->CriticalDamage = CriticalDamage;
-        PS->AbsorbDelay = AbsorbDelay;
-        PS->MaxSavedAmmo = MaxSavedAmmo;
-        PS->MaxAmmo = MaxAmmo;
-    }
-}
-
-void APlayerState_Real::OverrideWith(APlayerState* PlayerState)
-{
-    Super::OverrideWith(PlayerState);
-
-    if (APlayerState_Real* PS = Cast<APlayerState_Real>(PlayerState))
-    {
-        MaxHP = PS->MaxHP;
-        MaxShield = PS->MaxShield;
-        MoveSpeed = PS->MoveSpeed;
-        ShieldRegenSpeed = PS->ShieldRegenSpeed;
-        DashRechargeTime = PS->DashRechargeTime;
-        MaxDashCount = PS->MaxDashCount;
-        AttackDamage = PS->AttackDamage;
-        WeaponAttackCoolTime = PS->WeaponAttackCoolTime;
-        CriticalRate = PS->CriticalRate;
-        CriticalDamage = PS->CriticalDamage;
-        AbsorbDelay = PS->AbsorbDelay;
-        MaxSavedAmmo = PS->MaxSavedAmmo;
-        MaxAmmo = PS->MaxAmmo;
-
-        ForceNetUpdate();
-    }
-}
-
 void APlayerState_Real::OnRep_PlayerColor()
 {
 	
@@ -82,6 +36,21 @@ void APlayerState_Real::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(APlayerState_Real, AbsorbDelay);
 	DOREPLIFETIME(APlayerState_Real, MaxSavedAmmo);
 	DOREPLIFETIME(APlayerState_Real, MaxAmmo);
+
+    
+	///
+
+	DOREPLIFETIME(APlayerState_Real, AppearanceId);
+	DOREPLIFETIME(APlayerState_Real, PreviewColor);
+	DOREPLIFETIME(APlayerState_Real, SelectedColor);
+	DOREPLIFETIME(APlayerState_Real, SubskillId);
+	DOREPLIFETIME(APlayerState_Real, bReady);
+
+	// [ï¿½ß¿ï¿½] ï¿½ï¿½ ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Readyï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ Å¬ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
+	DOREPLIFETIME(APlayerState_Real, PlayerColor);
+
+	///
+}
 }
 
 static FORCEINLINE void OpApply(float& S, ERewardOpType Op, float V)
@@ -89,7 +58,7 @@ static FORCEINLINE void OpApply(float& S, ERewardOpType Op, float V)
     if (Op == ERewardOpType::Multiply) S *= V; else S += V;
 }
 
-// Á¤¼öÈ­ À¯Æ¿
+// ï¿½ï¿½ï¿½ï¿½È­ ï¿½ï¿½Æ¿
 static FORCEINLINE int32 ToIntNonNeg(float V) { return FMath::Max(0, FMath::RoundToInt(V)); }
 
 void APlayerState_Real::ApplyMoveSpeed(ERewardOpType Op, float V)
@@ -103,7 +72,7 @@ void APlayerState_Real::ApplyMoveSpeed(ERewardOpType Op, float V)
 void APlayerState_Real::ApplyDashRechargeTime(ERewardOpType Op, float V)
 {
     if (!HasAuthority()) return;
-    // ÀçÃæÀü "´ÜÃà"Àº °ö(0.9 = 10% ´ÜÃà) ±ÇÀå
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ "ï¿½ï¿½ï¿½ï¿½"ï¿½ï¿½ ï¿½ï¿½(0.9 = 10% ï¿½ï¿½ï¿½ï¿½) ï¿½ï¿½ï¿½ï¿½
     OpApply(DashRechargeTime, Op, V);
     DashRechargeTime = FMath::Clamp(DashRechargeTime, 0.05f, 60.f);
     ForceNetUpdate();
@@ -129,7 +98,7 @@ void APlayerState_Real::ApplyAttackDamage(ERewardOpType Op, float V)
 void APlayerState_Real::ApplyWeaponAttackCoolTime(ERewardOpType Op, float V)
 {
     if (!HasAuthority()) return;
-    // ³·À»¼ö·Ï ºü¸§ ¡æ °ö ±ÇÀå (0.9 = 10% »¡¶óÁü)
+    // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (0.9 = 10% ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½)
     OpApply(WeaponAttackCoolTime, Op, V);
     WeaponAttackCoolTime = FMath::Clamp(WeaponAttackCoolTime, 0.03f, 10.f);
     ForceNetUpdate();
@@ -147,7 +116,7 @@ void APlayerState_Real::ApplyCriticalDamage(ERewardOpType Op, float V)
 {
     if (!HasAuthority()) return;
     OpApply(CriticalDamage, Op, V);
-    CriticalDamage = FMath::Max(1.0f, CriticalDamage); // ÇÏÇÑ 1.0¹è
+    CriticalDamage = FMath::Max(1.0f, CriticalDamage); // ï¿½ï¿½ï¿½ï¿½ 1.0ï¿½ï¿½
     ForceNetUpdate();
 }
 
@@ -175,4 +144,95 @@ void APlayerState_Real::ApplyMaxAmmo(ERewardOpType Op, float V)
     OpApply(Temp, Op, V);
     MaxAmmo = FMath::Clamp(ToIntNonNeg(Temp), 0, 999);
     ForceNetUpdate();
+}
+
+// --- OnRepï¿½ï¿½: UI/Ç¥ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½ï¿½ ---
+void APlayerState_Real::OnRep_AppearanceId() { OnAnyLobbyFieldChanged.Broadcast(); }
+void APlayerState_Real::OnRep_PreviewColor() { OnAnyLobbyFieldChanged.Broadcast(); }
+void APlayerState_Real::OnRep_SelectedColor() { OnAnyLobbyFieldChanged.Broadcast(); }
+void APlayerState_Real::OnRep_SubskillId() { OnAnyLobbyFieldChanged.Broadcast(); }
+void APlayerState_Real::OnRep_Ready() { OnAnyLobbyFieldChanged.Broadcast(); }
+
+void APlayerState_Real::NotifyAnyLobbyFieldChanged()
+{
+	OnAnyLobbyFieldChanged.Broadcast(); // [PS-UNIFY] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½ï¿½
+}
+
+
+void APlayerState_Real::CopyProperties(APlayerState* PS)
+{
+	Super::CopyProperties(PS);
+
+	// ? ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Î±ï¿½
+	UE_LOG(LogTemp, Warning, TEXT("CopyProperties: SOURCE -> Ap: %d, Sel: %d, Ply: %d"),
+		AppearanceId, (int)SelectedColor, (int)PlayerColor);
+
+	if (auto* P = Cast<APlayerState_Real>(PS))
+	{
+		// ? ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½Î¿ï¿½ PlayerState)ï¿½ï¿½ ï¿½Ê±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Î±ï¿½
+		UE_LOG(LogTemp, Warning, TEXT("CopyProperties: TARGET (Before) -> Ap: %d, Sel: %d, Ply: %d"),
+			P->AppearanceId, (int)P->SelectedColor, (int)P->PlayerColor);
+
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+		P->AppearanceId = AppearanceId;
+		P->SelectedColor = SelectedColor;
+		P->PlayerColor = PlayerColor;
+		P->SubskillId = SubskillId;
+		P->bReady = bReady;
+
+		// ? ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Î±ï¿½
+		UE_LOG(LogTemp, Warning, TEXT("CopyProperties: TARGET (After) -> Ap: %d, Sel: %d, Ply: %d"),
+			P->AppearanceId, (int)P->SelectedColor, (int)P->PlayerColor);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("CopyProperties: Failed to cast PlayerState to APlayerState_Real."));
+	}
+
+    if (APlayerState_Real* PS = Cast<APlayerState_Real>(PlayerState))
+    {
+        PS->MaxHP = MaxHP;
+        PS->MaxShield = MaxShield;
+        PS->MoveSpeed = MoveSpeed;
+        PS->ShieldRegenSpeed = ShieldRegenSpeed;
+        PS->DashRechargeTime = DashRechargeTime;
+        PS->MaxDashCount = MaxDashCount;
+        PS->AttackDamage = AttackDamage;
+        PS->WeaponAttackCoolTime = WeaponAttackCoolTime;
+        PS->CriticalRate = CriticalRate;
+        PS->CriticalDamage = CriticalDamage;
+        PS->AbsorbDelay = AbsorbDelay;
+        PS->MaxSavedAmmo = MaxSavedAmmo;
+        PS->MaxAmmo = MaxAmmo;
+    }
+}
+
+/*
+
+void APlayerState_Real::OverrideWith(APlayerState* PS)
+{
+	Super::OverrideWith(PS);
+	if (auto* R = Cast<APlayerState_Real>(PS))
+	{
+		PlayerColor = R->PlayerColor;
+		AppearanceId = R->AppearanceId;
+		SubskillId = R->SubskillId;
+	}
+}
+*/
+
+void APlayerState_Real::SeamlessTravelTo(APlayerState* NewPlayerState)
+{
+	Super::SeamlessTravelTo(NewPlayerState);
+	if (APlayerState_Real* NewRealPS = Cast<APlayerState_Real>(NewPlayerState))
+	{
+		// ï¿½Îºñ¿¡¼ï¿½ ï¿½Î°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½
+		NewRealPS->AppearanceId = AppearanceId;
+		NewRealPS->SelectedColor = SelectedColor;
+		NewRealPS->PlayerColor = PlayerColor;
+		NewRealPS->SubskillId = SubskillId;
+		NewRealPS->bReady = bReady;
+
+		NewRealPS->NotifyAnyLobbyFieldChanged();
+	}
 }

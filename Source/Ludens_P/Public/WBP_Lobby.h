@@ -5,11 +5,12 @@
 #include "Blueprint/UserWidget.h"
 #include "Components/Border.h"
 #include "LobbyTypes.h"
+#include "Ludens_P/EEnemyColor.h"
 #include "WBP_Lobby.generated.h"
 
 class ALobbyPreviewRig; class UButton; class UBorder;
 class UTextBlock;
-class ALobbyPlayerState;
+class APlayerState_Real;
 class UWidget;
 
 
@@ -32,7 +33,7 @@ public:
     float DragYawScale = 0.25f;
 
     UFUNCTION(BlueprintCallable, Category = "Lobby|Input") void BP_SetAppearance(int32 Id);
-    UFUNCTION(BlueprintCallable, Category = "Lobby|Input") void BP_SetPreviewColor(ELobbyColor InColor);
+    UFUNCTION(BlueprintCallable, Category = "Lobby|Input") void BP_SetPreviewColor(EEnemyColor InColor);
     UFUNCTION(BlueprintCallable, Category = "Lobby|Input") void BP_SetSubskill(int32 Id);
     UFUNCTION(BlueprintCallable, Category = "Lobby|Input") void BP_ReadyOn();
     UFUNCTION(BlueprintCallable, Category = "Lobby|Input") void BP_ReadyOff();
@@ -117,8 +118,8 @@ protected:
 
     int32       LastAppearanceId = -1;                 // 유효한 외형이 0 이상이므로, -1로 초기화
     bool        bLastReady = false;              // 직전 Ready 상태
-    ELobbyColor LastPreviewColor = ELobbyColor::None;  // 직전 미리보기 색
-    ELobbyColor LastSelectedColor = ELobbyColor::None;  // 직전 확정 색
+    EEnemyColor LastPreviewColor = EEnemyColor::Red;  // 직전 미리보기 색
+    EEnemyColor LastSelectedColor = EEnemyColor::Red;  // 직전 확정 색
 
 
 private:
@@ -133,7 +134,7 @@ private:
 
     UFUNCTION() void OnPSChanged();
 
-    UPROPERTY() class ALobbyPlayerState* PS_Cached = nullptr;
+    UPROPERTY() class APlayerState_Real* PS_Cached = nullptr;
 
     TArray<UBorder*> AllDim() const { return { Dim_A0, Dim_A1, Dim_A2, Dim_A3 }; }
     TArray<UBorder*> AllSel() const { return { Sel_A0, Sel_A1, Sel_A2, Sel_A3 }; }
@@ -179,11 +180,14 @@ private:
     UFUNCTION() void OnAnyPSChanged();
 
     // 타인 PS 바운드 집합(중복 방지)
-    TSet<TWeakObjectPtr<ALobbyPlayerState>> BoundOtherPS;
+    TSet<TWeakObjectPtr<APlayerState_Real>> BoundOtherPS;
 
 
     UPROPERTY(meta = (BindWidget))          class UImage* Img_Self = nullptr;
     UPROPERTY(meta = (BindWidgetOptional))  class UImage* Img_OtherL = nullptr;
     UPROPERTY(meta = (BindWidgetOptional))  class UImage* Img_OtherR = nullptr;
+
+    UPROPERTY(Transient)
+    EEnemyColor CurrentColorCache = EEnemyColor::Red; // 폴백(초기값)
 
 };

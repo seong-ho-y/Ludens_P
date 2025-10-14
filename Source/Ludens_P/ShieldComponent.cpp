@@ -4,6 +4,7 @@
 #include "ShieldComponent.h"
 
 #include "EEnemyColor.h"
+#include "BehaviorTree/BehaviorTreeTypes.h"
 #include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
@@ -19,16 +20,43 @@ void UShieldComponent::TakeShieldDamage(float DamageAmount, EEnemyColor DamageCo
 	// 클라이언트에 쉴드 상태 변경을 알리기
 
 
-	for (FShieldLayer& Shield: ActiveShields)
-	{
-		if (Shield.ShieldColor == DamageColor && Shield.CurrentHealth > 0)
-		{
-			float AbsorbedDamage = FMath::Min(Shield.CurrentHealth, DamageAmount);
-			Shield.CurrentHealth -= AbsorbedDamage;
+	UE_LOG(LogTemp, Log, TEXT("ShieldComponent::TakeShieldDamage"));
 
-			//UE_LOG(LogTemp, Log, TEXT("%s Shield took %.1f damage. Current Health: %.1f"), 
-			//	*UEnum::GetValueAsString(DamageColor), AbsorbedDamage, Shield.CurrentHealth);
-			OnRep_ActiveShields();
+	// ✨ 디버그 로그 추가 (1단계)
+	UE_LOG(LogTemp, Warning, TEXT("Checking shields... ActiveShields Count: %d"), ActiveShields.Num());
+
+	if (DamageColor == EEnemyColor::Black) //데미지 타입이 블랙일 때(무지개 수류탄 한정)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("!!Grenade Damage Detected!!"));
+		for (FShieldLayer& Shield: ActiveShields)
+		{
+			if (Shield.CurrentHealth > 0)
+			{
+				float AbsorbedDamage = FMath::Min(Shield.CurrentHealth, DamageAmount);
+				Shield.CurrentHealth -= AbsorbedDamage;
+				OnRep_ActiveShields();
+			}
+		}
+	}
+	else
+	{
+		for (FShieldLayer& Shield: ActiveShields)
+		{
+			// UEnum::GetValueAsString으로 Enum 값을 문자열로 볼 수 있어 편리합니다.
+			UE_LOG(LogTemp, Log, TEXT("Checking Shield -> ShieldColor: %s, Health: %.1f | Incoming DamageColor: %s"), 
+				*UEnum::GetValueAsString(Shield.ShieldColor), 
+				Shield.CurrentHealth, 
+				*UEnum::GetValueAsString(DamageColor));
+
+			if (Shield.ShieldColor == DamageColor && Shield.CurrentHealth > 0)
+			{
+				float AbsorbedDamage = FMath::Min(Shield.CurrentHealth, DamageAmount);
+				Shield.CurrentHealth -= AbsorbedDamage;
+
+				UE_LOG(LogTemp, Log, TEXT("SUCCESS: Shield took %.1f damage. Current Health: %.1f"), 
+			  AbsorbedDamage, Shield.CurrentHealth);
+				OnRep_ActiveShields();
+			}
 		}
 	}
 }

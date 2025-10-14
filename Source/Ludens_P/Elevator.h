@@ -17,7 +17,7 @@ public:
 	// Sets default values for this actor's properties
 	AElevator();
 
-    // 3ÀÎ Áý°á½Ã ºê·ÎµåÄ³½ºÆ® ¡æ RoomManager°¡ ¹ÞÀ½
+    // 3ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Îµï¿½Ä³ï¿½ï¿½Æ® ï¿½ï¿½ RoomManagerï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     UPROPERTY(BlueprintAssignable, Category = "Elevator")
     FOnAllPlayersReady OnAllPlayersReady;
 
@@ -25,7 +25,7 @@ protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
-    // ÇÃ·¹ÀÌ¾î°¡ ´Ù ¸ð¿´À» ¶§ È£Ãâ
+    // ï¿½Ã·ï¿½ï¿½Ì¾î°¡ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ È£ï¿½ï¿½
     virtual void OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
         UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
         const FHitResult& SweepResult) override;

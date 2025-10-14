@@ -3,7 +3,28 @@
 *.sln.iml
 
 # Unreal Engine Content 폴더 무시 (주의: 에셋 공유 안 됨)
-Content/*
+Content/StarterContent
+Content/FirstPersonArms
+Content/FBX
+Content/Collections
+Content/Developers
+Content/MonsterForSurvivalGame
+Content/DownloadAsset
+#Content/Enemy
+Content/__ExternalActors__
+Content/__ExternalObjects__
+Content/Characters
+
+# 에셋
+Content/Vefects
+Content/Basic_VFX
+Content/StylizedProjectileVFX_Pack
+Content/NiagaraTrailEffect
+Content/Hun0FX
+Content/Cyberp_RPG_UI_5_2
+Content/Hit_vol1
+Content/A_Surface_Footstep
+Content/essential_footsteps_48khz_16bit
 
 # Visual Studio 2015 user specific files
 .vs/
