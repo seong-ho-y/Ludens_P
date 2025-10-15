@@ -104,12 +104,15 @@ protected:
 	// Static Mesh 등 다른 컴포넌트처럼 캐릭터에 부착되어 사용됩니다.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dash")
 	TObjectPtr<UNiagaraComponent> DashNiagaraComponent; // 'DashNiagara' 대신 컴포넌트 사용
+
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 	
 public:
 	ALudens_PCharacter();
 
 protected:
 	virtual void BeginPlay();
+	void SetActiveToolByState();
 	void Tick(float DeltaTime) override;
 
 public:
@@ -168,6 +171,7 @@ protected:
 
 	UFUNCTION(Category="Dash")
 	void ResetMovementParams() const; // 마찰력 복원 함수
+	void AddToolComponent(TSubclassOf<UActorComponent> ToolClass);
 	FVector2D LastMovementInput; // 마지막 이동 입력 저장
 
 	UFUNCTION()

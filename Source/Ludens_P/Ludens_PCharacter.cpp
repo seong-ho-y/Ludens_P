@@ -19,10 +19,12 @@
 #include "CreatureCombatComponent.h"
 #include "DecolorComp.h"
 #include "GrenadeComp.h"
+#include "HealPackComp.h"
 #include "JellooComponent.h"
 #include "PlayerState_Real.h"
 #include "ReviveComponent.h"
 #include "LudensAppearanceData.h"
+#include "ShieldPackComp.h"
 #include "ToolInterface.h"
 
 #include "Engine/LocalPlayer.h"
@@ -33,6 +35,13 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 //////////////////////////////////////////////////////////////////////////
 // ALudens_PCharacter
+
+float ALudens_PCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+	class AController* EventInstigator, AActor* DamageCauser)
+{
+	PlayerStateComponent->TakeDamage(DamageAmount);
+	return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+}
 
 ALudens_PCharacter::ALudens_PCharacter()
 {
@@ -99,7 +108,7 @@ void ALudens_PCharacter::BeginPlay()
 	if (!WeaponComponent) { UE_LOG(LogTemplateCharacter, Error, TEXT("WeaponComponent is null!")); }
 	if (!ReviveComponent) { UE_LOG(LogTemplateCharacter, Error, TEXT("ReviveComponent is null!")); }
 
-
+	
 	// 로컬 플레이어 컨트롤러 확인
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
@@ -130,6 +139,41 @@ void ALudens_PCharacter::BeginPlay()
 	}
 }
 
+void ALudens_PCharacter::SetActiveToolByState()
+{
+	if (!PSR) return;
+
+	switch (PSR->SelectedTool)
+	{
+	case EToolType::Grenade:
+		ToolComponent = FindComponentByClass<UGrenadeComp>();
+		break;
+
+	case EToolType::ShieldPack:
+		ToolComponent = FindComponentByClass<UShieldPackComp>();
+		break;
+
+	case EToolType::HealPack:
+		ToolComponent = FindComponentByClass<UHealPackComp>();
+		break;
+
+	case EToolType::DeColor:
+		ToolComponent = FindComponentByClass<UDecolorComp>();
+		break;
+
+	default:
+		ToolComponent = nullptr;
+		break;
+	}
+
+	if (ToolComponent)
+	{
+		ToolComponent->Activate(true);
+		ToolComponent->SetComponentTickEnabled(true);
+		UE_LOG(LogTemp, Log, TEXT("Activated Tool Component: %s"), *ToolComponent->GetName());
+	}
+}
+
 void ALudens_PCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
@@ -147,9 +191,16 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 			SavedAmmo = MaxSavedAmmo / 2;
 			MaxAmmo = PSR->MaxAmmo;
 			CurrentAmmo = MaxAmmo;
-			
 
+			for (UActorComponent* Comp : GetComponents())
+			{
+				if (Comp->GetClass()->ImplementsInterface(UToolInterface::StaticClass()))
+				{
+					Comp->SetActive(false);
+				}
+			}
 
+			SetActiveToolByState();
 			bPSRInitialized = true;  // 한 번만 실행되도록
 			UE_LOG(LogTemplateCharacter, Log, TEXT("PSR Completed in Ludens_PCharacter!"));
 		}
@@ -158,7 +209,7 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 	if (!PSR) return;
     
 	// 이후 안전하게 PSR 멤버 사용 가능
-
+	
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		int32 SlotBase = 0;
@@ -274,6 +325,8 @@ void ALudens_PCharacter::TestAttack(const FInputActionValue& Value)
 		PlayerStateComponent->TakeDamage(100.0f);
 	}
 }
+
+
 
 void ALudens_PCharacter::Jump()
 {
@@ -446,6 +499,7 @@ void ALudens_PCharacter::ResetMovementParams() const
 		MoveComp->BrakingDecelerationWalking = OriginalBrakingDeceleration;
 	}
 }
+
 
 void ALudens_PCharacter::Interact(const FInputActionValue& Value) // 앞에 있는 대상이 무엇인지 판별해주는 메서드
 {
@@ -737,43 +791,12 @@ void ALudens_PCharacter::PossessedBy(AController* NewController)
 	{
 		
 	}
-	/*{
-		APlayerState_Real* PS = GetPlayerState<APlayerState_Real>();
-		if (PS && PS->) // PlayerState에서 선택한 도구 클래스 정보를 가져옵니다.
-		{
-			// 기존에 컴포넌트가 있다면 파괴합니다 (재스폰 등의 경우를 위해).
-			if (ActiveToolComponent)
-			{
-				ActiveToolComponent->DestroyComponent();
-			}
 
-			// 새로운 컴포넌트를 생성하고, 소유자를 이 캐릭터로 설정합니다.
-			ActiveToolComponent = NewObject<UActorComponent>(this, PS->SelectedToolClass);
-			if (ActiveToolComponent)
-			{
-				// 컴포넌트를 등록하여 월드에서 활성화합니다.
-				ActiveToolComponent->RegisterComponent();
-
-				// 만약 컴포넌트가 특정 액터에 부착되어야 한다면, 여기서 처리합니다.
-				// 예: USceneComponent인 경우
-				// USceneComponent* SceneComp = Cast<USceneComponent>(ActiveToolComponent);
-				// if (SceneComp)
-				// {
-				//    SceneComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("ToolSocket"));
-				// }
-
-				UE_LOG(LogTemp, Warning, TEXT("ToolComponent has been successfully assigned on Server."));
-			}
-		}
-	}
-	*/
 }
 
 void ALudens_PCharacter::OnInteract()
 {
-	//ToolComponent = FindComponentByClass<UGrenadeComp>();
 	// 현재 활성화된 도구 컴포넌트가 있는지 확인
-	ToolComponent = FindComponentByClass<UDecolorComp>();
 	if (ToolComponent)
 	{
 		// 컴포넌트가 ToolInterface를 구현했는지 확인

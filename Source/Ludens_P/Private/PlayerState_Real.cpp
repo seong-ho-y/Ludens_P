@@ -48,7 +48,7 @@ void APlayerState_Real::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 
 	// [�߿�] �� �� (������ Ready���� Ȯ���� ���� �� �� Ŭ�� ����)
 	DOREPLIFETIME(APlayerState_Real, PlayerColor);
-
+	DOREPLIFETIME(APlayerState_Real, SelectedTool);
 	///
 }
 
@@ -65,6 +65,18 @@ void APlayerState_Real::OnRep_Ready() { OnAnyLobbyFieldChanged.Broadcast(); }
 void APlayerState_Real::NotifyAnyLobbyFieldChanged()
 {
 	OnAnyLobbyFieldChanged.Broadcast(); // [PS-UNIFY] �������� ���� Ʈ����
+}
+
+void APlayerState_Real::OnRep_SelectedTool()
+{
+		// 클라이언트에서 도구 변경에 반응할 때 (UI 갱신, 아이콘 표시 등)
+		UE_LOG(LogTemp, Log, TEXT("Player %s selected tool: %d"), *GetPlayerName(), (int32)SelectedTool);
+}
+
+void APlayerState_Real::Server_SelectTool_Implementation(EToolType NewTool)
+{
+	SelectedTool = NewTool;
+	OnRep_SelectedTool(); // 서버에서도 즉시 반영
 }
 
 
@@ -138,7 +150,6 @@ void APlayerState_Real::SeamlessTravelTo(APlayerState* NewPlayerState)
 		NewRealPS->AppearanceId = AppearanceId;
 		NewRealPS->SelectedColor = SelectedColor;
 		NewRealPS->PlayerColor = PlayerColor;
-		NewRealPS->SubskillId = SubskillId;
 		NewRealPS->bReady = bReady;
 
 		
@@ -157,6 +168,26 @@ void APlayerState_Real::SeamlessTravelTo(APlayerState* NewPlayerState)
 		NewRealPS->MaxAmmo = MaxAmmo;
 		
 
+		switch (SubskillId)
+		{
+		case 0:
+			NewRealPS->SelectedTool = EToolType::Grenade;
+			break;
+		case 1:
+			NewRealPS->SelectedTool = EToolType::HealPack;
+			break;
+		case 2:
+			NewRealPS->SelectedTool = EToolType::DeColor;
+			break;
+		case 3:
+			NewRealPS->SelectedTool = EToolType::ShieldPack;
+			break;
+		default:
+			NewRealPS->SelectedTool = EToolType::None;
+			break;
+			
+			
+		}
 		NewRealPS->NotifyAnyLobbyFieldChanged();
 	}
 }
