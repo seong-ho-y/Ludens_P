@@ -110,6 +110,7 @@ public:
 
 protected:
 	virtual void BeginPlay();
+	void SetActiveToolByState();
 	void Tick(float DeltaTime) override;
 
 public:
@@ -168,6 +169,7 @@ protected:
 
 	UFUNCTION(Category="Dash")
 	void ResetMovementParams() const; // 마찰력 복원 함수
+	void AddToolComponent(TSubclassOf<UActorComponent> ToolClass);
 	FVector2D LastMovementInput; // 마지막 이동 입력 저장
 
 	UFUNCTION()

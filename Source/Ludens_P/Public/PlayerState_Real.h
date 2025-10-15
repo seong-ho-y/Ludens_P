@@ -11,9 +11,37 @@
 #include "LobbyTypes.h"
 #include "PlayerState_Real.generated.h"
 
-/**
- *
- */
+UENUM(BlueprintType)
+enum class EToolType : uint8
+{
+	None UMETA(DisplayName = "None"),
+	HealPack UMETA(DisplayName = "HealPack"),
+	ShieldPack UMETA(DisplayName = "ShieldPack"),
+	Grenade UMETA(DisplayName = "Grenade"),
+	DeColor UMETA(DisplayName = "DeColor")
+	
+};
+
+USTRUCT(BlueprintType)
+struct FToolType
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool")
+	EToolType ToolKind = EToolType::None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool")
+	FText DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool")
+	UTexture2D* Icon = nullptr;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool")
+	TSubclassOf<UActorComponent> ToolComponent;
+
+	
+};
+
 UCLASS()
 class LUDENS_P_API APlayerState_Real : public APlayerState
 {
@@ -43,6 +71,12 @@ public:
 
 	UPROPERTY(Replicated)
 	int MaxDashCount = 3; // 대쉬 수
+
+	UPROPERTY(ReplicatedUsing = OnRep_SelectedTool, BlueprintReadOnly, Category = "Tool")
+	EToolType SelectedTool = EToolType::None;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tool")
+	FToolType ToolData;
 
 	/*UPROPERTY(Replicated)
 	float JumpZVelocity = 600.f; // 점프력*/
@@ -96,6 +130,12 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Lobby")
 	void NotifyAnyLobbyFieldChanged(); // 로비 즉시 반영용 이벤트 트리거
 
+	
+	UFUNCTION()
+	void OnRep_SelectedTool();
+
+	UFUNCTION(Server, Reliable)
+	void Server_SelectTool(EToolType NewTool);
 	
 	virtual void CopyProperties(APlayerState* PlayerState) override;
 	/*

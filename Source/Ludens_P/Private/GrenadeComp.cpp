@@ -47,6 +47,7 @@ void UGrenadeComp::Server_ThrowGrenade_Implementation()
 {
 	if (!GrenadeProjectileClass) return;
 
+	UE_LOG(LogTemp, Error, TEXT("Projectile is set"));
 	AActor* MyOwner = GetOwner();
 	if (!MyOwner) return;
 
