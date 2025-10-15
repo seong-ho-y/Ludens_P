@@ -12,7 +12,6 @@ APlayerState_Real::APlayerState_Real()
 void APlayerState_Real::BeginPlay()
 {
 	Super::BeginPlay();
-	SelectedTool = EToolType::Grenade;
 }
 
 void APlayerState_Real::OnRep_PlayerColor()
@@ -151,7 +150,6 @@ void APlayerState_Real::SeamlessTravelTo(APlayerState* NewPlayerState)
 		NewRealPS->AppearanceId = AppearanceId;
 		NewRealPS->SelectedColor = SelectedColor;
 		NewRealPS->PlayerColor = PlayerColor;
-		NewRealPS->SubskillId = SubskillId;
 		NewRealPS->bReady = bReady;
 
 		
@@ -170,6 +168,26 @@ void APlayerState_Real::SeamlessTravelTo(APlayerState* NewPlayerState)
 		NewRealPS->MaxAmmo = MaxAmmo;
 		
 
+		switch (SubskillId)
+		{
+		case 0:
+			NewRealPS->SelectedTool = EToolType::Grenade;
+			break;
+		case 1:
+			NewRealPS->SelectedTool = EToolType::HealPack;
+			break;
+		case 2:
+			NewRealPS->SelectedTool = EToolType::DeColor;
+			break;
+		case 3:
+			NewRealPS->SelectedTool = EToolType::ShieldPack;
+			break;
+		default:
+			NewRealPS->SelectedTool = EToolType::None;
+			break;
+			
+			
+		}
 		NewRealPS->NotifyAnyLobbyFieldChanged();
 	}
 }

@@ -19,6 +19,7 @@
 #include "CreatureCombatComponent.h"
 #include "DecolorComp.h"
 #include "GrenadeComp.h"
+#include "HealPackComp.h"
 #include "JellooComponent.h"
 #include "PlayerState_Real.h"
 #include "ReviveComponent.h"
@@ -153,7 +154,7 @@ void ALudens_PCharacter::SetActiveToolByState()
 		break;
 
 	case EToolType::HealPack:
-		//ToolComponent = FindComponentByClass<UHealPackComp>();
+		ToolComponent = FindComponentByClass<UHealPackComp>();
 		break;
 
 	case EToolType::DeColor:
