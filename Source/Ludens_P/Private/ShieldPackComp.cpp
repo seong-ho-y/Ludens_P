@@ -96,6 +96,14 @@ void UShieldPackComp::SpawnShieldVFX_Implementation()
 {
 	if (ShiledVFX)
 	{
-		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ShiledVFX, GetOwner()->GetActorLocation());
+		UNiagaraFunctionLibrary::SpawnSystemAttached(
+    ShiledVFX,                     // Niagara 시스템
+    GetOwner()->GetRootComponent(),       // 부모 컴포넌트 (플레이어 루트)
+    NAME_None,                            // 소켓 이름 (없으면 루트 기준)
+    FVector::ZeroVector,                  // 오프셋
+    FRotator::ZeroRotator,                // 회전
+    EAttachLocation::KeepRelativeOffset,  // 상대 위치 유지
+    true                                  // 액터가 없어지면 자동 파괴
+);
 	}
 }

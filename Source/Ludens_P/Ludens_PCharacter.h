@@ -104,6 +104,8 @@ protected:
 	// Static Mesh 등 다른 컴포넌트처럼 캐릭터에 부착되어 사용됩니다.
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Dash")
 	TObjectPtr<UNiagaraComponent> DashNiagaraComponent; // 'DashNiagara' 대신 컴포넌트 사용
+
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 	
 public:
 	ALudens_PCharacter();

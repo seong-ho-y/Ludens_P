@@ -35,6 +35,13 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 //////////////////////////////////////////////////////////////////////////
 // ALudens_PCharacter
 
+float ALudens_PCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+	class AController* EventInstigator, AActor* DamageCauser)
+{
+	PlayerStateComponent->TakeDamage(DamageAmount);
+	return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+}
+
 ALudens_PCharacter::ALudens_PCharacter()
 {
 	// Set size for collision capsule
@@ -317,6 +324,8 @@ void ALudens_PCharacter::TestAttack(const FInputActionValue& Value)
 		PlayerStateComponent->TakeDamage(100.0f);
 	}
 }
+
+
 
 void ALudens_PCharacter::Jump()
 {
