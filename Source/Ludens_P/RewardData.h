@@ -10,14 +10,40 @@ class URewardEffect;
 class UTexture2D;
 
 /**
- ���� �����͸� �����ϴ� ����ü
- */
+보상을 관리할 DataTable
+*/
 
 UENUM(BlueprintType)
 enum class ERewardOpType : uint8
 {
-    Add,        // �տ���
-    Multiply    // ������
+    Add,        // 합연산
+    Multiply    // 곱연산
+};
+
+UENUM(BlueprintType)
+enum class ERewardType : uint8
+{
+    Stat,
+    Skill
+};
+
+UENUM(BlueprintType)
+enum class EPlayerReward : uint8
+{
+    MaxHP,
+    MaxShield,
+    MoveSpeed,
+    ShieldRegenSpeed,
+    DashRechargeTime,
+    MaxDashCount,
+    //JumpZVelocity,
+    AttackDamage,
+    WeaponAttackCoolTime,
+    CriticalRate,
+    CriticalDamage,
+    AbsorbDelay,
+    MaxSavedAmmo,
+    MaxAmmo
 };
 
 USTRUCT(BlueprintType)
@@ -25,30 +51,35 @@ struct FRewardRow : public FTableRowBase
 {
     GENERATED_BODY()
 
-    // 1) �̸�
+    // 1) 이름
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FText RewardName;
 
-    // 2) ����
+    // 2) 설명
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FText Description;
 
-    // 3) ������(����Ʈ)
+    // 3) 아이콘
     UPROPERTY(EditAnywhere, BlueprintReadOnly) TSoftObjectPtr<UTexture2D> Icon;
 
-    // 5) ������ ��ġ (��: 30 Ȥ�� 120)
+    // 4) 증가 수치
     UPROPERTY(EditAnywhere, BlueprintReadOnly) float Value = 0.f;
 
-    // 6) ��/�� ���� Ÿ��
+    // 5) 명시되어 있는 보상 종류
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) ERewardType TargetRewardType = ERewardType::Skill;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) EPlayerReward TargetReward;
+    // 6) 합/곱
     UPROPERTY(EditAnywhere, BlueprintReadOnly) ERewardOpType Op = ERewardOpType::Add;
     
-    // �� ���� ������� (��: ���� ����, �ߺ� �Ұ�)
+    /**
+    // 한 게임 동안 한 번만 허용할지
     UPROPERTY(EditAnywhere, BlueprintReadOnly) bool bUniquePerRun = false;
 
-    // ���� �׷쳢���� �ߺ� �Ұ� (��: 'HP_Regeneration' �׷� �� �ϳ���)
+    // 같은 그룹끼리는 중복 불가
     UPROPERTY(EditAnywhere, BlueprintReadOnly) FName ExclusiveGroup;
 
-    // �� ������ ��� ���� �ʿ��� �±�(���� ����/Ŭ���� ���� ��)
+    // 보상을 얻기 위한 선행 태그
     UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<FName> RequiresTags;
 
-    // �� ������� ���ÿ� ���� �� ���� �±�(����/OP ���� ����)
+    // 보상과 동시에 얻을 수 없는 태그
     UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<FName> ExcludesTags;
+    */
 };

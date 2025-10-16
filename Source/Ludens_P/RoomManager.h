@@ -13,7 +13,10 @@ UCLASS()
 class LUDENS_P_API ARoomManager : public AActor
 {
 	GENERATED_BODY()
-	
+
+    // 생성된 방 인스턴스 저장
+    UPROPERTY() TArray<ARoom*> SpawnedRooms;
+
 public:	
 	// Sets default values for this actor's properties
 	ARoomManager();
@@ -26,42 +29,48 @@ public:
     UPROPERTY(EditAnywhere, Category = "Room")
     TArray<TSubclassOf<ARoom>> RoomTypes;
 
-    // 방 간 거리 (X축 기준)
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room")
-    float RoomSpacing = 2000.f;
-
     // 레벨에 배치한 엘리베이터 참조(인스턴스 지정)
-    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Elevator")
-    class AElevator* StartElevator;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room|Elevator")
+    TSubclassOf<AElevator> Start;
 
-    UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Elevator")
-    class AElevator* EndElevator;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room|Elevator")
+    TSubclassOf<AElevator> End;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room|Layout")
+    float GapBetweenRooms = 0.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Room|Travel")
+    TSoftObjectPtr<UWorld> NextStage;
+
+    UPROPERTY() AElevator* StartElevator;
+    UPROPERTY() AElevator* EndElevator;
+
+private:
+    void GenerateRooms(); // 방을 생성하는 함수
+
+    void LayoutChain();
+
+    void TravelToNextStage();
 
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
 
 public:
+    UFUNCTION() void HandleStartElevatorReady();
+    UFUNCTION() void HandleEndElevatorReady();
+
     // 첫 방의 EntryDoor를 열어주는 함수
-    UFUNCTION()
-    void OpenFirstRoomEntryDoor();
+    UFUNCTION() void OpenFirstRoomEntryDoor();
 
     // 다음 방을 시작시키는 공개 함수 (ARoom이 호출)
-    UFUNCTION()
-    void StartNextRoom();
+    UFUNCTION() void StartNextRoom();
 
     // 현재 방을 클리어 처리함 (ARoom에서 알림 받음)
-    UFUNCTION()
-    void NotifyRoomCleared(int32 RoomIndex);
+    UFUNCTION() void NotifyRoomCleared(int32 RoomIndex);
+
 
 private:
-    // 생성된 방 인스턴스 저장
-    UPROPERTY()
-    TArray<ARoom*> SpawnedRooms;
-
     // 현재 플레이어가 위치한 방의 인덱스
     int32 CurrentRoomIndex = 0;
-
-    // 방을 생성하는 함수
-    void GenerateRooms();
 };
