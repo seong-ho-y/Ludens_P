@@ -19,10 +19,12 @@
 #include "CreatureCombatComponent.h"
 #include "DecolorComp.h"
 #include "GrenadeComp.h"
+#include "HealPackComp.h"
 #include "JellooComponent.h"
 #include "PlayerState_Real.h"
 #include "ReviveComponent.h"
 #include "LudensAppearanceData.h"
+#include "ShieldPackComp.h"
 #include "ToolInterface.h"
 
 #include "Engine/LocalPlayer.h"
@@ -33,6 +35,13 @@ DEFINE_LOG_CATEGORY(LogTemplateCharacter);
 
 //////////////////////////////////////////////////////////////////////////
 // ALudens_PCharacter
+
+float ALudens_PCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+	class AController* EventInstigator, AActor* DamageCauser)
+{
+	PlayerStateComponent->TakeDamage(DamageAmount);
+	return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+}
 
 ALudens_PCharacter::ALudens_PCharacter()
 {
@@ -55,6 +64,10 @@ ALudens_PCharacter::ALudens_PCharacter()
 	Mesh1P->SetRelativeLocation(FVector(-30.f, 0.f, -150.f));
 
 	RewardSystem = CreateDefaultSubobject<URewardSystemComponent>(TEXT("RewardSystem"));
+	PlayerAttackComponent = CreateDefaultSubobject<UPlayerAttackComponent>(TEXT("PlayerAttack"));
+	PlayerStateComponent = CreateDefaultSubobject<UPlayerStateComponent>(TEXT("PlayerState"));
+	WeaponComponent = CreateDefaultSubobject<UTP_WeaponComponent>(TEXT("Weapon"));
+	ReviveComponent = CreateDefaultSubobject<UReviveComponent>(TEXT("Revive"));
 	
 	// GetCharacterMovement()->JumpZVelocity = 600.f;
 	GetCharacterMovement()->GravityScale = 2.0f;
@@ -85,13 +98,6 @@ void ALudens_PCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
-
-	//컴포넌트 할당
-	PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
-	PlayerStateComponent = FindComponentByClass<UPlayerStateComponent>();
-	WeaponComponent = FindComponentByClass<UTP_WeaponComponent>();
-	ReviveComponent = FindComponentByClass<UReviveComponent>();
-
 	if (PlayerAttackComponent && PlayerAttackComponent->WeaponAttackHandler && WeaponComponent)
 	{
 		PlayerAttackComponent->WeaponAttackHandler->WeaponComp = WeaponComponent;
@@ -102,7 +108,7 @@ void ALudens_PCharacter::BeginPlay()
 	if (!WeaponComponent) { UE_LOG(LogTemplateCharacter, Error, TEXT("WeaponComponent is null!")); }
 	if (!ReviveComponent) { UE_LOG(LogTemplateCharacter, Error, TEXT("ReviveComponent is null!")); }
 
-
+	
 	// 로컬 플레이어 컨트롤러 확인
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
@@ -121,31 +127,50 @@ void ALudens_PCharacter::BeginPlay()
 			}
 		}
 
-		/*
-		//컴포넌트 할당
-		PlayerAttackComponent = FindComponentByClass<UPlayerAttackComponent>();
-		PlayerStateComponent = FindComponentByClass<UPlayerStateComponent>();
-		WeaponComponent = FindComponentByClass<UTP_WeaponComponent>();
-		ReviveComponent = FindComponentByClass<UReviveComponent>();
-
-		if (PlayerAttackComponent && WeaponComponent)
-		{
-			PlayerAttackComponent->WeaponAttackHandler->WeaponComp = WeaponComponent;
-		}
-
-		*/
-
 		// --- 널 체크 ---
 		if (!DashAction) { UE_LOG(LogTemplateCharacter, Error, TEXT("DashAction is null!")); }
 		if (!MeleeAttackAction) { UE_LOG(LogTemplateCharacter, Error, TEXT("MeleeAttackAction is null!")); }
-		
-
 
 		// 로비 UI 모드 잔상이 있으면 입력이 막힐 수 있음 → 게임 전용으로 전환
 		PC->SetInputMode(FInputModeGameOnly{});
 		PC->bShowMouseCursor = false;
 
 		ApplyCosmeticsFromPSROnce(); // 조기 시도(PSR/DB 준비 전이면 미적용 + 로그만 남고 재시도 가능)
+	}
+}
+
+void ALudens_PCharacter::SetActiveToolByState()
+{
+	if (!PSR) return;
+
+	switch (PSR->SelectedTool)
+	{
+	case EToolType::Grenade:
+		ToolComponent = FindComponentByClass<UGrenadeComp>();
+		break;
+
+	case EToolType::ShieldPack:
+		ToolComponent = FindComponentByClass<UShieldPackComp>();
+		break;
+
+	case EToolType::HealPack:
+		ToolComponent = FindComponentByClass<UHealPackComp>();
+		break;
+
+	case EToolType::DeColor:
+		ToolComponent = FindComponentByClass<UDecolorComp>();
+		break;
+
+	default:
+		ToolComponent = nullptr;
+		break;
+	}
+
+	if (ToolComponent)
+	{
+		ToolComponent->Activate(true);
+		ToolComponent->SetComponentTickEnabled(true);
+		UE_LOG(LogTemp, Log, TEXT("Activated Tool Component: %s"), *ToolComponent->GetName());
 	}
 }
 
@@ -167,7 +192,15 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 			MaxAmmo = PSR->MaxAmmo;
 			CurrentAmmo = MaxAmmo;
 
+			for (UActorComponent* Comp : GetComponents())
+			{
+				if (Comp->GetClass()->ImplementsInterface(UToolInterface::StaticClass()))
+				{
+					Comp->SetActive(false);
+				}
+			}
 
+			SetActiveToolByState();
 			bPSRInitialized = true;  // 한 번만 실행되도록
 			UE_LOG(LogTemplateCharacter, Log, TEXT("PSR Completed in Ludens_PCharacter!"));
 		}
@@ -176,6 +209,39 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 	if (!PSR) return;
     
 	// 이후 안전하게 PSR 멤버 사용 가능
+	
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		int32 SlotBase = 0;
+
+		if (APlayerState* PS = PC->PlayerState)
+		{
+			SlotBase = PS->GetPlayerId();        // 권장: 매치 내 고유 ID
+		}
+		else if (UPlayer* P = PC->Player)
+		{
+			SlotBase = P->GetUniqueID();         // 대안: 에디터 런타임 고유
+		}
+
+		SlotBase = (SlotBase % 10000) * 100;
+
+		if (PC->IsLocalController() && GEngine)
+		{
+			GEngine->AddOnScreenDebugMessage(SlotBase + 70, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxHP: %f"), SlotBase, PSR->MaxHP));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 71, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxShield: %f"), SlotBase, PSR->MaxShield));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 72, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MoveSpeed: %f |||||| %f"), SlotBase, PSR->MoveSpeed, GetCharacterMovement()->MaxWalkSpeed));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 73, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] ShieldRegenSpeed: %f"), SlotBase, PSR->ShieldRegenSpeed));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 74, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] DashRechargeTime: %f"), SlotBase, PSR->DashRechargeTime));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 75, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxDashCount: %d"), SlotBase, PSR->MaxDashCount));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 76, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] AttackDamage: %f"), SlotBase, PSR->AttackDamage));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 77, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] WeaponAttackCoolTime: %f"), SlotBase, PSR->WeaponAttackCoolTime));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 78, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] CriticalRate: %f"), SlotBase, PSR->CriticalRate));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 79, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] CriticalDamage: %f"), SlotBase, PSR->CriticalDamage));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 80, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] AbsorbDelay: %f"), SlotBase, PSR->AbsorbDelay));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 81, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxSavedAmmo: %d"), SlotBase, PSR->MaxSavedAmmo));
+			GEngine->AddOnScreenDebugMessage(SlotBase + 82, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxAmmo: %d"), SlotBase, PSR->MaxAmmo));
+		}
+	}
 }
 
 void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -259,6 +325,8 @@ void ALudens_PCharacter::TestAttack(const FInputActionValue& Value)
 		PlayerStateComponent->TakeDamage(100.0f);
 	}
 }
+
+
 
 void ALudens_PCharacter::Jump()
 {
@@ -431,6 +499,7 @@ void ALudens_PCharacter::ResetMovementParams() const
 		MoveComp->BrakingDecelerationWalking = OriginalBrakingDeceleration;
 	}
 }
+
 
 void ALudens_PCharacter::Interact(const FInputActionValue& Value) // 앞에 있는 대상이 무엇인지 판별해주는 메서드
 {
@@ -722,43 +791,12 @@ void ALudens_PCharacter::PossessedBy(AController* NewController)
 	{
 		
 	}
-	/*{
-		APlayerState_Real* PS = GetPlayerState<APlayerState_Real>();
-		if (PS && PS->) // PlayerState에서 선택한 도구 클래스 정보를 가져옵니다.
-		{
-			// 기존에 컴포넌트가 있다면 파괴합니다 (재스폰 등의 경우를 위해).
-			if (ActiveToolComponent)
-			{
-				ActiveToolComponent->DestroyComponent();
-			}
 
-			// 새로운 컴포넌트를 생성하고, 소유자를 이 캐릭터로 설정합니다.
-			ActiveToolComponent = NewObject<UActorComponent>(this, PS->SelectedToolClass);
-			if (ActiveToolComponent)
-			{
-				// 컴포넌트를 등록하여 월드에서 활성화합니다.
-				ActiveToolComponent->RegisterComponent();
-
-				// 만약 컴포넌트가 특정 액터에 부착되어야 한다면, 여기서 처리합니다.
-				// 예: USceneComponent인 경우
-				// USceneComponent* SceneComp = Cast<USceneComponent>(ActiveToolComponent);
-				// if (SceneComp)
-				// {
-				//    SceneComp->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetNotIncludingScale, FName("ToolSocket"));
-				// }
-
-				UE_LOG(LogTemp, Warning, TEXT("ToolComponent has been successfully assigned on Server."));
-			}
-		}
-	}
-	*/
 }
 
 void ALudens_PCharacter::OnInteract()
 {
-	//ToolComponent = FindComponentByClass<UGrenadeComp>();
 	// 현재 활성화된 도구 컴포넌트가 있는지 확인
-	ToolComponent = FindComponentByClass<UDecolorComp>();
 	if (ToolComponent)
 	{
 		// 컴포넌트가 ToolInterface를 구현했는지 확인

@@ -132,20 +132,21 @@ void UPlayerAttackComponent::TickComponent(float DeltaTime, ELevelTick TickType,
 
 void UPlayerAttackComponent::PlayMontage_Implementation(UAnimMontage* Montage, float PlaySpeed)
 {
-	ACharacter* OwnerChar = Cast<ACharacter>(GetOwner());
+	ALudens_PCharacter* OwnerChar = Cast<ALudens_PCharacter>(GetOwner());
+	
 	if (!OwnerChar)
 	{
 		UE_LOG(LogTemp, Error, TEXT("OwnerChar is nullptr!"));
 		return;
 	};
+	
 	UAnimInstance* AnimInstance = OwnerChar->GetMesh() ? OwnerChar->GetMesh()->GetAnimInstance() : nullptr;
-	if (!AnimInstance)
-	{
-		UE_LOG(LogTemp, Error, TEXT("AnimInstance is nullptr!"));
-		return;
-	}
-	if (AnimInstance && Montage)
+	UAnimInstance* AnimInstance1p = OwnerChar->GetMesh1P() ? OwnerChar->GetMesh1P()->GetAnimInstance() : nullptr;
+
+	if (AnimInstance && AnimInstance1p && Montage)
 	{
 		AnimInstance->Montage_Play(Montage, PlaySpeed);
+		AnimInstance1p->Montage_Play(Montage, PlaySpeed);
 	}
+	return;
 }

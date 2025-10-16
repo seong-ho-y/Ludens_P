@@ -19,6 +19,9 @@ public:
 	// Sets default values for this actor's properties
 	ARoom();
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
+    int32 RequiredPlayers = 3;
+
     // 문과 연결할 수 있도록 변수 노출
     UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Door")
     ADoor* EntryDoor;   // 입구 쪽 문 (다음 방 입장 후 닫히게 될 문)
@@ -31,15 +34,19 @@ public:
     TSubclassOf<ADoor> DoorClass;
 
     // 문 생성 위치
-    UPROPERTY(EditAnywhere, Category = "Door")
-    float EntryDoorLoc = -1000.f;
+    UPROPERTY(EditAnywhere, Category = "Door|Layout")
+    FVector2D EntryDoorOffset = FVector2D(-1000.f, 0.f);
 
-    UPROPERTY(EditAnywhere, Category = "Door")
-    float ExitDoorLoc = 1000.f;
+    UPROPERTY(EditAnywhere, Category = "Door|Layout")
+    FVector2D ExitDoorOffset = FVector2D(1000.f, 0.f);
 
     // 방 입장 체크용 트리거
     UPROPERTY(VisibleAnywhere, Category = "Room")
     UBoxComponent* EntryTrigger;
+
+    // 방 크기 (X축 기준)
+    UPROPERTY(EditAnywhere, Category = "Room|Layout")
+    float RoomSize = 2000.f;
 
 protected:
 	// Called when the game starts or when spawned
@@ -64,6 +71,10 @@ public:
     virtual void OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
         UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
         const FHitResult& SweepResult);
+
+    float GetHalfWidthX() const { return RoomSize * 0.5f; }
+    FVector GetEntryDoorWorldPos() const { return GetActorLocation() + FVector(EntryDoorOffset.X, EntryDoorOffset.Y, 0.f); }
+    FVector GetExitDoorWorldPos()  const { return GetActorLocation() + FVector(ExitDoorOffset.X, ExitDoorOffset.Y, 0.f); }
 
 private:
     UPROPERTY()

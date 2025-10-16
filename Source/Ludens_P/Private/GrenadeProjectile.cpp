@@ -64,6 +64,12 @@ void AGrenadeProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
 	if (HasAuthority())
 	{
 		UE_LOG(LogTemp, Log, TEXT("Grenade OnHit Called : Server"));
+		// 나 자신이나 나를 쏜 소유자(Owner)와 부딪힌 경우는 무시합니다.
+		AActor* MyOwner = GetOwner();
+		if (OtherActor == nullptr || OtherActor == this || OtherActor == MyOwner)
+		{
+			return;
+		}
 		SpawnExploVFX();
 		// 폭발 이펙트와 사운드를 모든 클라이언트에서 재생하도록 합니다. (Multicast RPC 사용 - 선택사항)
 		// Multicast_PlayExplosionEffects();
