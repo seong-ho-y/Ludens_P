@@ -29,8 +29,26 @@ protected:
     UFUNCTION()
     void OnRep_DoorStateChanged();  // 클라이언트에서만 호출됨
 
-    // 문 시각 + 충돌 처리
-    void ApplyDoorState();
+    // 문 시각/충돌 처리 → 애니메이션 기반으로 재구성
+    void StartOpenAnim();
+    void StartCloseAnim();
+
+    // Tick으로 애니메이션 구동
+    virtual void Tick(float DeltaSeconds) override;
+
+    // ---- 애니메이션 파라미터 ----
+    UPROPERTY(EditAnywhere, Category = "Door|Anim")
+    float OpenDuration = 0.6f;
+
+    UPROPERTY(EditAnywhere, Category = "Door|Anim")
+    float SlideDistance = 220.f; // 아래로 내려갈 거리(+Z는 위, 우리는 -Z로 내림)
+
+    bool  bAnimating = false;
+    bool  bAnimOpening = false;
+    float AnimElapsed = 0.f;
+
+    FVector ClosedRelLocation; // 시작(닫힘) 위치
+    FVector OpenRelLocation;   // 완전 개방 위치(닫힘 기준 -Z
 
 public:
     UFUNCTION(BlueprintCallable)

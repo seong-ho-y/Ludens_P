@@ -210,6 +210,7 @@ void ALudens_PCharacter::Tick(float DeltaTime)
     
 	// 이후 안전하게 PSR 멤버 사용 가능
 	
+	/*
 	if (APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		int32 SlotBase = 0;
@@ -242,6 +243,7 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 			GEngine->AddOnScreenDebugMessage(SlotBase + 82, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxAmmo: %d"), SlotBase, PSR->MaxAmmo));
 		}
 	}
+	*/
 }
 
 void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

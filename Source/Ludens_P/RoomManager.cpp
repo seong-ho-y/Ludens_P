@@ -5,6 +5,7 @@
 #include "Room.h"
 #include "Elevator.h"
 #include "Door.h"
+#include "Algo/RandomShuffle.h"
 #include "Kismet/KismetMathLibrary.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
@@ -53,18 +54,22 @@ void ARoomManager::BeginPlay()
 void ARoomManager::GenerateRooms()
 {
     SpawnedRooms.Reset();
-
     if (RoomTypes.Num() == 0) return;
+
+    // 1) 뽑기용 풀을 복사해서 섞는다
+    TArray<TSubclassOf<ARoom>> Pool = RoomTypes;
+    Algo::RandomShuffle(Pool);
+
+    // 2) 타입 개수보다 더 많이 만들라고 하면, 가능한 만큼만
+    const int32 CountToSpawn = FMath::Min(NumRoomsToSpawn, Pool.Num());
 
     const FRotator Rot = FRotator::ZeroRotator;
     FActorSpawnParameters Params; Params.Owner = this;
 
-    for (int32 i = 0; i < NumRoomsToSpawn; ++i)
+    for (int32 i = 0; i < CountToSpawn; ++i)
     {
-        const int32 RandIndex = FMath::RandRange(0, RoomTypes.Num() - 1);
-        TSubclassOf<ARoom> Chosen = RoomTypes[RandIndex];
+        TSubclassOf<ARoom> Chosen = Pool[i];
 
-        // 일단 대략적인 위치(매니저 위치)로 스폰 → 나중에 LayoutChain()에서 재배치
         ARoom* NewRoom = GetWorld()->SpawnActor<ARoom>(Chosen, GetActorLocation(), Rot, Params);
         if (NewRoom)
         {
@@ -72,12 +77,15 @@ void ARoomManager::GenerateRooms()
             NewRoom->SetManager(this);
             SpawnedRooms.Add(NewRoom);
 
-            if (GEngine)
-            {
-                GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Cyan,
-                    FString::Printf(TEXT("Room %d Created (%s)"), i, *Chosen->GetName()));
-            }
+            UE_LOG(LogTemp, Warning, TEXT("Room %d Created (%s)"), i, *Chosen->GetName());
         }
+    }
+
+    // 요청 수가 더 많았던 경우엔 경고만 남겨두면 디버깅에 좋아요
+    if (NumRoomsToSpawn > Pool.Num())
+    {
+        UE_LOG(LogTemp, Warning, TEXT("[RoomManager] Requested %d rooms, but only %d unique types available. Spawned %d."),
+            NumRoomsToSpawn, Pool.Num(), CountToSpawn);
     }
 }
 
