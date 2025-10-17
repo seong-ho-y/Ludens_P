@@ -33,6 +33,8 @@ struct FEnemySpawnProfile
 	EEnemyColor Color;
 };
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnAllEnemiesKilled);
+
 UCLASS(minimalapi)
 class ALudens_PGameMode : public AGameMode
 {
@@ -77,6 +79,14 @@ public:
 	// 에디터에서 8종류의 적 BP를 지정할 배열
 	UPROPERTY(EditDefaultsOnly, Category = "Spawning")
 	TArray<TSubclassOf<AActor>> EnemyBPs;
+
+	// 모두 처치 시 외부(룸)에서 바인딩 가능한 이벤트
+	UPROPERTY(BlueprintAssignable, Category = "Stage")
+	FOnAllEnemiesKilled OnAllEnemiesKilled;
+
+	UFUNCTION(BlueprintCallable, Category = "Stage")
+	int32 GetAliveEnemyCount() const { return EnemyCount; }
+
 protected:
 	int EnemyCount = 0;
 

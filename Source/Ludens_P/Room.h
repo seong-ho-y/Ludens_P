@@ -49,13 +49,12 @@ public:
     float RoomSize = 2000.f;
 
 protected:
-	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
     TSet<AActor*> EnteredPlayers;  // 중복 방지를 위한 집합
 
-    // 자동 클리어 처리
-    void AutoClear();
+    // void AutoClear();
 
 public:
     // 방 시작 (5초 후 자동 클리어)
@@ -77,11 +76,24 @@ public:
     FVector GetExitDoorWorldPos()  const { return GetActorLocation() + FVector(ExitDoorOffset.X, ExitDoorOffset.Y, 0.f); }
 
 private:
-    UPROPERTY()
-    ARoomManager* Manager;
+    UPROPERTY() ARoomManager* Manager;
 
     int32 RoomIndex = -1;
     bool bIsCleared = false;
 
-    FTimerHandle AutoClearTimer;
+    // 지연 클리어” 설정값 (BP에서 조절 가능)
+    UPROPERTY(EditDefaultsOnly, Category = "Room|Clear")
+    float ClearDelaySeconds = 5.0f;   // 0.8~1.5s 추천
+
+    // 중복 예약 방지/취소용
+    bool bClearPending = false;
+    FTimerHandle ClearDelayTimer;
+
+    // 모두 처치 이벤트 콜백
+    UFUNCTION() void HandleAllEnemiesKilled();
+
+    void ScheduleClearWithDelay();   // 지연 클리어 예약
+    void CancelPendingClear();       // 필요 시 예약 취소
+    void DoClear();                  // 실제 클리어 처리
+
 };
