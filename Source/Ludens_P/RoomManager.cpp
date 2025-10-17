@@ -9,6 +9,7 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Engine/World.h"
 #include "Engine/Engine.h"
+#include "GameFramework/PlayerController.h"
 
 // Sets default values
 ARoomManager::ARoomManager()
@@ -48,7 +49,35 @@ void ARoomManager::BeginPlay()
         // 엘리베이터 신호 바인딩
         StartElevator->OnAllPlayersReady.AddDynamic(this, &ARoomManager::HandleStartElevatorReady);
         EndElevator->OnAllPlayersReady.AddDynamic(this, &ARoomManager::HandleEndElevatorReady);
+
+        // 새 스테이지 시작 ‘덜컥’ (BP_StartArrival) — 스테이지 이동 직후
+        if (StartArrivalShake)
+        {
+            // 입력 잠금 ON
+            SetAllPlayersCinematic(true, /*Move*/true, /*Turn*/true, /*HUD*/false);
+
+            FTimerHandle TH;
+            GetWorldTimerManager().SetTimer(TH, [this]()
+                {
+                    StartShake_AllPlayers(StartArrivalShake, StartArrivalShakeScale);
+
+                    // 입력 잠금 OFF 시점 예약 (흔들림 길이에 맞춰 조절)
+                    FTimerHandle UnlockTH;
+                    GetWorldTimerManager().SetTimer(
+                        UnlockTH,
+                        [this]() { SetAllPlayersCinematic(false); },
+                        StartArrivalInputLockSeconds,
+                        false
+                    );
+                }, 1.5f, false); 
+        }
     }
+}
+
+void ARoomManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    SetAllPlayersCinematic(false);
+    Super::EndPlay(EndPlayReason);
 }
 
 void ARoomManager::GenerateRooms()
@@ -139,9 +168,6 @@ void ARoomManager::NotifyRoomCleared(int32 RoomIndex)
         const bool bIsLastRoom = (RoomIndex == NumRoomsToSpawn - 1);
         if (bIsLastRoom && EndElevator && EndElevator->EntryDoor) { EndElevator->EntryDoor->Open(); }
 
-        // 이전 방 비활성화
-        SpawnedRooms[CurrentRoomIndex]->EntryTrigger->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
         CurrentRoomIndex++;
 
         if (SpawnedRooms.IsValidIndex(CurrentRoomIndex))
@@ -192,14 +218,54 @@ void ARoomManager::LayoutChain()
     }
 }
 
+
+// 시작 엘리베이터 준비 완료(= 플레이어들이 첫 방 입구로 나갈 수 있는 순간)
 void ARoomManager::HandleStartElevatorReady()
 {
+    // 첫 방 진입 가능하게 문 오픈
     OpenFirstRoomEntryDoor();
 }
 
+
+// 엔드 엘리베이터 모든 인원 탑승 완료
 void ARoomManager::HandleEndElevatorReady()
 {
-    TravelToNextStage();
+    if (!HasAuthority()) return;
+
+    // 0) 문 닫아 고정(기존 연출)
+    if (EndElevator && EndElevator->EntryDoor) { EndElevator->EntryDoor->Close(); }
+
+    const int32 LastRoomIdx = FMath::Max(0, NumRoomsToSpawn - 1);
+    if (SpawnedRooms.IsValidIndex(LastRoomIdx))
+    {
+        if (SpawnedRooms[LastRoomIdx]->ExitDoor) { SpawnedRooms[LastRoomIdx]->ExitDoor->Close(); }
+    }
+
+    // "문이 완전히 닫힌 순간" = CloseTime 경과 시점에 흔들림 재생
+    FTimerHandle TH_DepartShake;
+    GetWorldTimerManager().SetTimer(TH_DepartShake, [this]()
+        {
+            if (DepartShake)
+                StartShake_AllPlayers(DepartShake, DepartShakeScale);
+
+            // 흔들림을 느낄 수 있도록 약간 더 기다렸다가(DelayBeforeTravel) 이동
+            if (!GetWorldTimerManager().IsTimerActive(TravelTimer))
+            {
+                GetWorldTimerManager().SetTimer(
+                    TravelTimer, this, &ARoomManager::TravelToNextStage,
+                    DelayBeforeTravel, false
+                );
+            }
+        }, EndElevator->EntryDoor->GetAnimDuration() + 0.8f, false);
+
+    // 약간의 딜레이 후 스테이지 이동(기존 로직)
+    if (!GetWorldTimerManager().IsTimerActive(TravelTimer))
+    {
+        GetWorldTimerManager().SetTimer(
+            TravelTimer, this, &ARoomManager::TravelToNextStage,
+            DelayBeforeTravel, false
+        );
+    }
 }
 
 void ARoomManager::TravelToNextStage()
@@ -229,4 +295,35 @@ void ARoomManager::TravelToNextStage()
 
     UE_LOG(LogTemp, Log, TEXT("[RoomManager] ServerTravel to: %s"), *URL);
     GetWorld()->ServerTravel(URL, /*bAbsolute*/ false);
+}
+
+void ARoomManager::StartShake_AllPlayers(TSubclassOf<UCameraShakeBase> ShakeClass, float Scale) const
+{
+    if (!ShakeClass) return;
+    UWorld* World = GetWorld();
+    if (!World) return;
+
+    for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+    {
+        if (APlayerController* PC = It->Get())
+        {
+            PC->ClientStartCameraShake(ShakeClass, Scale);
+        }
+    }
+}
+
+void ARoomManager::SetAllPlayersCinematic(bool bEnable, bool bAffectMovement, bool bAffectTurning,
+    bool bAffectHUD, bool bAffectCamera)
+{
+    if (UWorld* World = GetWorld())
+    {
+        for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+        {
+            if (APlayerController* PC = It->Get())
+            {
+                // 클라이언트에서 적용되도록 RPC 사용
+                PC->ClientSetCinematicMode(bEnable, bAffectMovement, bAffectTurning, bAffectHUD);
+            }
+        }
+    }
 }

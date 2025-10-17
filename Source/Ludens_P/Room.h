@@ -83,7 +83,7 @@ private:
 
     // 지연 클리어” 설정값 (BP에서 조절 가능)
     UPROPERTY(EditDefaultsOnly, Category = "Room|Clear")
-    float ClearDelaySeconds = 5.0f;   // 0.8~1.5s 추천
+    float ClearDelaySeconds = 1.5f;   // 0.8~1.5s 추천
 
     // 중복 예약 방지/취소용
     bool bClearPending = false;
@@ -95,5 +95,9 @@ private:
     void ScheduleClearWithDelay();   // 지연 클리어 예약
     void CancelPendingClear();       // 필요 시 예약 취소
     void DoClear();                  // 실제 클리어 처리
+
+public:
+    UFUNCTION(BlueprintCallable, Category = "Room|Trigger")
+    void DisableEntryTrigger(bool bDestroyComponent = true);
 
 };

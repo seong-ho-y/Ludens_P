@@ -272,6 +272,28 @@ void ARoom::OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* Oth
         {
             if (EntryDoor) EntryDoor->Close();      // 문 닫고
             if (Manager) Manager->StartNextRoom();  // 다음 방 시작
+
+            DisableEntryTrigger(true);
         }
+    }
+}
+
+void ARoom::DisableEntryTrigger(bool bDestroyComponent /*=true*/)
+{
+    if (!EntryTrigger) return;
+
+    // 겹침/충돌 중단
+    EntryTrigger->SetGenerateOverlapEvents(false);
+    EntryTrigger->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+    // 에디터/게임에서 보이지 않게(디버그 도형 등)
+    EntryTrigger->SetHiddenInGame(true);
+    EntryTrigger->SetVisibility(false, true);
+
+    // 더 이상 필요 없다면 파괴
+    if (bDestroyComponent)
+    {
+        EntryTrigger->DestroyComponent();
+        EntryTrigger = nullptr;
     }
 }
