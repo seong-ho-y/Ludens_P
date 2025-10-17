@@ -59,6 +59,10 @@ public:
 
 	void AssignColorToPlayer(AController* NewPlayer);
 
+	UFUNCTION(BlueprintCallable, Category = "Stage")
+	bool GetEnemyAllKilled() const;
+	void HandleEnemyDied(AEnemyBase* EnemyBase);
+	
 	void StartSpawningEnemies();
 
 	
@@ -73,7 +77,8 @@ public:
 	// 에디터에서 8종류의 적 BP를 지정할 배열
 	UPROPERTY(EditDefaultsOnly, Category = "Spawning")
 	TArray<TSubclassOf<AActor>> EnemyBPs;
-
+protected:
+	int EnemyCount = 0;
 
 };
 
