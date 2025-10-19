@@ -45,6 +45,8 @@ void AElevator::OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor*
             {
                 // Start/End ������ RoomManager�� �Ѵ�
                 OnAllPlayersReady.Broadcast();
+
+                DisableEntryTrigger(true);
             }
         }
     }

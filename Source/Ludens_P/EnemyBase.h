@@ -19,6 +19,8 @@ class UShieldComponent;
 class UWidgetComponent;
 class UEnemyHealthBarBase;
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnEnemyDied, AEnemyBase*);
+
 UCLASS(Abstract)
 class LUDENS_P_API AEnemyBase : public ACharacter, public IDeathHandlerInterface, public IStealthInterface
 {
@@ -32,6 +34,8 @@ public:
 
 	AEnemyBase();
 
+	FOnEnemyDied OnEnemyDied;
+	
 	void Deactivate();
 
 	bool IsActive() const;
@@ -169,6 +173,9 @@ private:
 public:
 	UPROPERTY(EditAnywhere, Category = "Effects")
 	UNiagaraSystem* SpawnVFX;
+
+	UPROPERTY(EditAnywhere, Category = "Effects")
+	UNiagaraSystem* DeadVFX;
 protected:
 	// 1. 은신 값을 저장하고 복제할 변수 선언
 	// ReplicatedUsing = OnRep_StealthAmount는 이 변수가 복제될 때 OnRep_StealthAmount 함수를 호출하라는 의미
@@ -180,6 +187,10 @@ protected:
 	void OnRep_StealthAmount();
 	void UpdateStealthMaterial();
 
+	UFUNCTION(NetMulticast, Reliable)
+	void SpawnDeadVFX();
+
+	
 private:
 	// 동적 머티리얼 인스턴스를 저장할 변수
 	UPROPERTY()

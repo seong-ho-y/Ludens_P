@@ -2,6 +2,7 @@
 
 
 #include "PlayerState_Real.h"
+#include "Ludens_P/RewardData.h"
 
 APlayerState_Real::APlayerState_Real()
 {
@@ -45,16 +46,16 @@ void APlayerState_Real::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& Ou
 	DOREPLIFETIME(APlayerState_Real, SubskillId);
 	DOREPLIFETIME(APlayerState_Real, bReady);
 
-	// [Áß¿ä] »ó¼º »ö (¼­¹ö°¡ Ready¿¡¼­ È®Á¤ÇØ ÁÖÀÔ ¡æ Àü Å¬¶ó º¹Á¦)
+	// [ï¿½ß¿ï¿½] ï¿½ï¿½ ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Readyï¿½ï¿½ï¿½ï¿½ È®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ Å¬ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
 	DOREPLIFETIME(APlayerState_Real, PlayerColor);
-
+	DOREPLIFETIME(APlayerState_Real, SelectedTool);
 	///
 }
 
 
 ///
 
-// --- OnRepµé: UI/Ç¥Çö °»½Å Æ®¸®°Å ---
+// --- OnRepï¿½ï¿½: UI/Ç¥ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½ï¿½ ---
 void APlayerState_Real::OnRep_AppearanceId() { OnAnyLobbyFieldChanged.Broadcast(); }
 void APlayerState_Real::OnRep_PreviewColor() { OnAnyLobbyFieldChanged.Broadcast(); }
 void APlayerState_Real::OnRep_SelectedColor() { OnAnyLobbyFieldChanged.Broadcast(); }
@@ -63,7 +64,19 @@ void APlayerState_Real::OnRep_Ready() { OnAnyLobbyFieldChanged.Broadcast(); }
 
 void APlayerState_Real::NotifyAnyLobbyFieldChanged()
 {
-	OnAnyLobbyFieldChanged.Broadcast(); // [PS-UNIFY] ¼­¹ö¿¡¼­ ¼öµ¿ Æ®¸®°Å
+	OnAnyLobbyFieldChanged.Broadcast(); // [PS-UNIFY] ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½ï¿½
+}
+
+void APlayerState_Real::OnRep_SelectedTool()
+{
+		// í´ë¼ì´ì–¸íŠ¸ì—ì„œ ë„êµ¬ ë³€ê²½ì— ë°˜ì‘í•  ë•Œ (UI ê°±ì‹ , ì•„ì´ì½˜ í‘œì‹œ ë“±)
+		UE_LOG(LogTemp, Log, TEXT("Player %s selected tool: %d"), *GetPlayerName(), (int32)SelectedTool);
+}
+
+void APlayerState_Real::Server_SelectTool_Implementation(EToolType NewTool)
+{
+	SelectedTool = NewTool;
+	OnRep_SelectedTool(); // ì„œë²„ì—ì„œë„ ì¦‰ì‹œ ë°˜ì˜
 }
 
 
@@ -71,24 +84,40 @@ void APlayerState_Real::CopyProperties(APlayerState* PS)
 {
 	Super::CopyProperties(PS);
 
-	// ? º¹»ç Àü ¿øº» µ¥ÀÌÅÍ ·Î±×
+	// ? ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½Î±ï¿½
 	UE_LOG(LogTemp, Warning, TEXT("CopyProperties: SOURCE -> Ap: %d, Sel: %d, Ply: %d"),
 		AppearanceId, (int)SelectedColor, (int)PlayerColor);
 
 	if (auto* P = Cast<APlayerState_Real>(PS))
 	{
-		// ? º¹»çµÉ ´ë»ó(»õ·Î¿î PlayerState)ÀÇ ÃÊ±â »óÅÂ ·Î±×
+		// ? ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½(ï¿½ï¿½ï¿½Î¿ï¿½ PlayerState)ï¿½ï¿½ ï¿½Ê±ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Î±ï¿½
 		UE_LOG(LogTemp, Warning, TEXT("CopyProperties: TARGET (Before) -> Ap: %d, Sel: %d, Ply: %d"),
 			P->AppearanceId, (int)P->SelectedColor, (int)P->PlayerColor);
 
-		// µ¥ÀÌÅÍ º¹»ç
+		// ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 		P->AppearanceId = AppearanceId;
 		P->SelectedColor = SelectedColor;
 		P->PlayerColor = PlayerColor;
 		P->SubskillId = SubskillId;
 		P->bReady = bReady;
 
-		// ? º¹»ç ÈÄ ´ë»óÀÇ ÃÖÁ¾ »óÅÂ ·Î±×
+		
+		P->MaxHP = MaxHP;
+		P->MaxShield = MaxShield;
+		P->MoveSpeed = MoveSpeed;
+		P->ShieldRegenSpeed = ShieldRegenSpeed;
+		P->DashRechargeTime = DashRechargeTime;
+		P->MaxDashCount = MaxDashCount;
+		P->AttackDamage = AttackDamage;
+		P->WeaponAttackCoolTime = WeaponAttackCoolTime;
+		P->CriticalRate = CriticalRate;
+		P->CriticalDamage = CriticalDamage;
+		P->AbsorbDelay = AbsorbDelay;
+		P->MaxSavedAmmo = MaxSavedAmmo;
+		P->MaxAmmo = MaxAmmo;
+		
+
+		// ? ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Î±ï¿½
 		UE_LOG(LogTemp, Warning, TEXT("CopyProperties: TARGET (After) -> Ap: %d, Sel: %d, Ply: %d"),
 			P->AppearanceId, (int)P->SelectedColor, (int)P->PlayerColor);
 	}
@@ -117,17 +146,143 @@ void APlayerState_Real::SeamlessTravelTo(APlayerState* NewPlayerState)
 	Super::SeamlessTravelTo(NewPlayerState);
 	if (APlayerState_Real* NewRealPS = Cast<APlayerState_Real>(NewPlayerState))
 	{
-		// ·Îºñ¿¡¼­ ÀÎ°ÔÀÓÀ¸·Î Á¤º¸¸¦ ¾ÈÀüÇÏ°Ô º¹»ç
+		// ï¿½Îºñ¿¡¼ï¿½ ï¿½Î°ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï°ï¿½ ï¿½ï¿½ï¿½ï¿½
 		NewRealPS->AppearanceId = AppearanceId;
 		NewRealPS->SelectedColor = SelectedColor;
 		NewRealPS->PlayerColor = PlayerColor;
-		NewRealPS->SubskillId = SubskillId;
 		NewRealPS->bReady = bReady;
 
+		
+		NewRealPS->MaxHP = MaxHP;
+		NewRealPS->MaxShield = MaxShield;
+		NewRealPS->MoveSpeed = MoveSpeed;
+		NewRealPS->ShieldRegenSpeed = ShieldRegenSpeed;
+		NewRealPS->DashRechargeTime = DashRechargeTime;
+		NewRealPS->MaxDashCount = MaxDashCount;
+		NewRealPS->AttackDamage = AttackDamage;
+		NewRealPS->WeaponAttackCoolTime = WeaponAttackCoolTime;
+		NewRealPS->CriticalRate = CriticalRate;
+		NewRealPS->CriticalDamage = CriticalDamage;
+		NewRealPS->AbsorbDelay = AbsorbDelay;
+		NewRealPS->MaxSavedAmmo = MaxSavedAmmo;
+		NewRealPS->MaxAmmo = MaxAmmo;
+		
+
+		switch (SubskillId)
+		{
+		case 0:
+			NewRealPS->SelectedTool = EToolType::Grenade;
+			break;
+		case 1:
+			NewRealPS->SelectedTool = EToolType::HealPack;
+			break;
+		case 2:
+			NewRealPS->SelectedTool = EToolType::DeColor;
+			break;
+		case 3:
+			NewRealPS->SelectedTool = EToolType::ShieldPack;
+			break;
+		default:
+			NewRealPS->SelectedTool = EToolType::None;
+			break;
+			
+			
+		}
 		NewRealPS->NotifyAnyLobbyFieldChanged();
 	}
 }
 
 
 ///
+static FORCEINLINE void OpApply(float& S, ERewardOpType Op, float V)
+{
+	if (Op == ERewardOpType::Multiply) S *= V; else S += V;
+}
 
+
+static FORCEINLINE int32 ToIntNonNeg(float V) { return FMath::Max(0, FMath::RoundToInt(V)); }
+
+void APlayerState_Real::ApplyMoveSpeed(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	OpApply(MoveSpeed, Op, V);
+	MoveSpeed = FMath::Clamp(MoveSpeed, 50.f, 20000.f);
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyDashRechargeTime(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+
+	OpApply(DashRechargeTime, Op, V);
+	DashRechargeTime = FMath::Clamp(DashRechargeTime, 0.05f, 60.f);
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyMaxDashCount(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	float Temp = (float)MaxDashCount;
+	OpApply(Temp, Op, V);
+	MaxDashCount = FMath::Clamp(ToIntNonNeg(Temp), 0, 10);
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyAttackDamage(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	OpApply(AttackDamage, Op, V);
+	AttackDamage = FMath::Max(0.f, AttackDamage);
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyWeaponAttackCoolTime(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	
+	OpApply(WeaponAttackCoolTime, Op, V);
+	WeaponAttackCoolTime = FMath::Clamp(WeaponAttackCoolTime, 0.03f, 10.f);
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyCriticalRate(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	OpApply(CriticalRate, Op, V);
+	CriticalRate = FMath::Clamp(CriticalRate, 0.f, 1.f);
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyCriticalDamage(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	OpApply(CriticalDamage, Op, V);
+	CriticalDamage = FMath::Max(1.0f, CriticalDamage); 
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyAbsorbDelay(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	OpApply(AbsorbDelay, Op, V);
+	AbsorbDelay = FMath::Clamp(AbsorbDelay, 0.f, 10.f);
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyMaxSavedAmmo(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	float Temp = (float)MaxSavedAmmo;
+	OpApply(Temp, Op, V);
+	MaxSavedAmmo = FMath::Clamp(ToIntNonNeg(Temp), 0, 9999);
+	ForceNetUpdate();
+}
+
+void APlayerState_Real::ApplyMaxAmmo(ERewardOpType Op, float V)
+{
+	if (!HasAuthority()) return;
+	float Temp = (float)MaxAmmo;
+	OpApply(Temp, Op, V);
+	MaxAmmo = FMath::Clamp(ToIntNonNeg(Temp), 0, 999);
+	ForceNetUpdate();
+}

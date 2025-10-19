@@ -220,6 +220,11 @@ void AEnemyBase::UpdateStealthMaterial()
 	}
 }
 
+void AEnemyBase::SpawnDeadVFX_Implementation()
+{
+	if (DeadVFX) UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DeadVFX, GetActorLocation());
+}
+
 
 // 2. 서버에서 호출되는 비활성화 함수
 void AEnemyBase::Deactivate()
@@ -506,7 +511,7 @@ void AEnemyBase::SetBodyColor(EEnemyColor NewColor)
 {
 	if (!BodyMID)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("BodyMID is not valid"));
+		UE_LOG(LogTemp, Error, TEXT("BodyMID is not valid"));
 		return;
 	}
 	FLinearColor TargetColor;
@@ -557,14 +562,14 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 	// ----------------------------쉴드 체크 로직-----------------------------------
 	if (ShieldComponent && !ShieldComponent->AreAllShieldsBroken())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("ShieldComponent damageStart"));
+		//UE_LOG(LogTemp, Warning, TEXT("ShieldComponent damageStart"));
 		EEnemyColor DamageColor = EEnemyColor::Black;
 
 		// 1-1. 공격자가 수류탄인지 확인
 		if (DamageCauser && DamageCauser->IsA<AGrenadeProjectile>())
 		{
 			// 수류탄이라면 DamageColor Black으로 유지
-			UE_LOG(LogTemp, Warning, TEXT("Damage from Grenade detected! Setting color to Black."));
+			//UE_LOG(LogTemp, Warning, TEXT("Damage from Grenade detected! Setting color to Black."));
 		}
 		// 1-2. 공격자 컨트롤러가 있는지 확인
 		else if (EventInstigator)
@@ -585,7 +590,7 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 				}
 			}
 		}
-		UE_LOG(LogTemp,Error, TEXT("DamageAmount  %f"), DamageAmount)
+		//UE_LOG(LogTemp,Error, TEXT("DamageAmount  %f"), DamageAmount)
 		ShieldComponent->TakeShieldDamage(DamageAmount, DamageColor);
 	}
 	//활성화된 쉴드 없으면 직접 데미지 주기
@@ -613,17 +618,23 @@ void AEnemyBase::HandleDied()
 	{
 		return;
 	}
-    
+    // 0. 적이 죽었음을 방송하기 (EnemyCount 세는 용도)
+	OnEnemyDied.Broadcast(this);
+
+	// 0-1. 죽었을 때 VFX
+	SpawnDeadVFX();
+	
 	// 1. 레벨에 있는 PoolManager를 찾기
 
 	if (AEnemyPoolManager* PoolManager = Cast<AEnemyPoolManager>(UGameplayStatics::GetActorOfClass(GetWorld(), AEnemyPoolManager::StaticClass())))
 	{
 		// 2. 자기 자신을 풀로 반환을 요청
 		PoolManager->ReturnEnemy(this);
+		//UE_LOG(LogTemp, Log, TEXT("Enemy Died and Return to Pool"))
 	}
 	else
 	{
-		UE_LOG(LogTemp, Warning, TEXT("No PoolManager Found!!"));
+		UE_LOG(LogTemp, Error, TEXT("No PoolManager Found!!"));
 		// 풀 매니저가 없는 예외 케이스 경우 그냥 액터를 파괴
 		Destroy();
 	}
@@ -640,7 +651,7 @@ void AEnemyBase::InitializeMID()
 		if (BodyMID)
 		{
 			// GetName()으로 어떤 적의 MID가 생성되었는지 명확히 확인
-			UE_LOG(LogTemp, Warning, TEXT("[%s] MID created successfully."), *GetName());
+			//UE_LOG(LogTemp, Warning, TEXT("[%s] MID created successfully."), *GetName());
 
 			SetBodyColor(ColorType);
 		}

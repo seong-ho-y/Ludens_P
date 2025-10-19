@@ -10,7 +10,6 @@
 
 void URewardEffect_Stat::ApplyReward_Implementation(ACharacter* Player, const FRewardRow& Row)
 {
-    /*
     if (!Player || !Player->HasAuthority()) return;
     auto* PSR = Player->GetPlayerState<APlayerState_Real>();
     auto* PSC = Player->FindComponentByClass<UPlayerStateComponent>();
@@ -28,9 +27,12 @@ void URewardEffect_Stat::ApplyReward_Implementation(ACharacter* Player, const FR
     case EPlayerReward::MaxShield:
         if (PSC) PSC->ApplyMaxShield(Op, V, ECurrentHPPolicy::HealToFull);
         break;
+    case EPlayerReward::ShieldRegenSpeed:
+        if (PSC) PSC->ApplyShieldRegenSpeed(Op, V);
+        break;
 
         // --- �̵�/�뽬 �� PSR ���� ����
-    case EPlayerReward::MoveSpeed:             if (PSR) PSR->ApplyMoveSpeed(Op, V); break;
+    case EPlayerReward::MoveSpeed:             if (PSR) PSR->ApplyMoveSpeed(Op, V); if (PSC) PSC->SyncMoveSpeedFromPSR(PSR); break;
     case EPlayerReward::DashRechargeTime:      if (PSR) PSR->ApplyDashRechargeTime(Op, V); break;
     case EPlayerReward::MaxDashCount:          if (PSR) PSR->ApplyMaxDashCount(Op, V); break;
 
@@ -47,7 +49,6 @@ void URewardEffect_Stat::ApplyReward_Implementation(ACharacter* Player, const FR
 
     default: break;
     }
-    */
 }
 
 void URewardEffect_Skill::ApplyReward_Implementation(ACharacter* Player, const FRewardRow& Row)

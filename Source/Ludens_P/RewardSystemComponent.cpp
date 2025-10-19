@@ -103,8 +103,18 @@ void URewardSystemComponent::Client_ShowRewardUI_Implementation(const TArray<FNa
 	ActiveRewardWidget->AddToViewport();
 	ActiveRewardWidget->InitWithRows(OwnerChar, UIList);
 
+	// 입력 차단: 게임 입력을 UI로 전환
+	PC->SetShowMouseCursor(true);
+
+	FInputModeUIOnly Mode;
+	Mode.SetWidgetToFocus(ActiveRewardWidget->TakeWidget());
+	Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+	PC->SetInputMode(Mode);
+
+	// 이동/시야 이그노어 + 캐릭터 입력 자체 비활성화(발사 등 안전차단)
 	PC->SetIgnoreMoveInput(true);
 	PC->SetIgnoreLookInput(true);
+	OwnerChar->DisableInput(PC);
 }
 
 void URewardSystemComponent::Server_SelectReward_Implementation(FName PickedRowName)
@@ -130,17 +140,16 @@ void URewardSystemComponent::Client_EnableInputAfterReward_Implementation()
 	APlayerController* PC = Cast<APlayerController>(OwnerChar->GetController());
 	if (!PC) return;
 
-	PC->SetIgnoreMoveInput(false);
-	PC->SetIgnoreLookInput(false);
-	PC->bShowMouseCursor = false;
-	PC->SetInputMode(FInputModeGameOnly());
-
 	if (ActiveRewardWidget)
 	{
 		ActiveRewardWidget->RemoveSelf();
 		ActiveRewardWidget = nullptr;
 	}
 
+	// 입력 원복
+	PC->SetShowMouseCursor(false);
+	PC->SetInputMode(FInputModeGameOnly());
 	PC->SetIgnoreMoveInput(false);
 	PC->SetIgnoreLookInput(false);
+	OwnerChar->EnableInput(PC);
 }
