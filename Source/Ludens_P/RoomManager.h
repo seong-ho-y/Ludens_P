@@ -85,8 +85,7 @@ protected:
     // 전 플레이어에게 흔들림을 재생하는 헬퍼
     void StartShake_AllPlayers(TSubclassOf<UCameraShakeBase> ShakeClass, float Scale = 1.f) const;
 
-    void SetAllPlayersCinematic(bool bEnable, bool bAffectMovement = true, bool bAffectTurning = true,
-        bool bAffectHUD = false, bool bAffectCamera = false);
+    void LockAllPlayerInputs(bool bLock);
 
 public:
     UFUNCTION() void HandleStartElevatorReady();

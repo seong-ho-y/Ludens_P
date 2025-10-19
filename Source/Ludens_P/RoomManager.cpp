@@ -10,6 +10,7 @@
 #include "Engine/World.h"
 #include "Engine/Engine.h"
 #include "GameFramework/PlayerController.h"
+#include "GameFramework/Pawn.h"
 
 // Sets default values
 ARoomManager::ARoomManager()
@@ -53,30 +54,32 @@ void ARoomManager::BeginPlay()
         // 새 스테이지 시작 ‘덜컥’ (BP_StartArrival) — 스테이지 이동 직후
         if (StartArrivalShake)
         {
-            // 입력 잠금 ON
-            SetAllPlayersCinematic(true, /*Move*/true, /*Turn*/true, /*HUD*/false);
+            // 입력 전면 잠금 ON (대기 시작)
+            LockAllPlayerInputs(true);
 
+            // 아주 짧게 지연 후 흔들림 재생
             FTimerHandle TH;
             GetWorldTimerManager().SetTimer(TH, [this]()
                 {
                     StartShake_AllPlayers(StartArrivalShake, StartArrivalShakeScale);
 
-                    // 입력 잠금 OFF 시점 예약 (흔들림 길이에 맞춰 조절)
+                    // 흔들림 길이에 맞춰 해제
                     FTimerHandle UnlockTH;
                     GetWorldTimerManager().SetTimer(
                         UnlockTH,
-                        [this]() { SetAllPlayersCinematic(false); },
+                        [this]() { LockAllPlayerInputs(false); },
                         StartArrivalInputLockSeconds,
                         false
                     );
-                }, 1.5f, false); 
+
+                }, 1.f, false);
         }
     }
 }
 
 void ARoomManager::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    SetAllPlayersCinematic(false);
+    LockAllPlayerInputs(false);
     Super::EndPlay(EndPlayReason);
 }
 
@@ -312,8 +315,7 @@ void ARoomManager::StartShake_AllPlayers(TSubclassOf<UCameraShakeBase> ShakeClas
     }
 }
 
-void ARoomManager::SetAllPlayersCinematic(bool bEnable, bool bAffectMovement, bool bAffectTurning,
-    bool bAffectHUD, bool bAffectCamera)
+void ARoomManager::LockAllPlayerInputs(bool bLock)
 {
     if (UWorld* World = GetWorld())
     {
@@ -321,8 +323,48 @@ void ARoomManager::SetAllPlayersCinematic(bool bEnable, bool bAffectMovement, bo
         {
             if (APlayerController* PC = It->Get())
             {
-                // 클라이언트에서 적용되도록 RPC 사용
-                PC->ClientSetCinematicMode(bEnable, bAffectMovement, bAffectTurning, bAffectHUD);
+                if (bLock)
+                {
+                    // 1) 컨트롤러 입력 차단 + 시점/이동 무시
+                    PC->DisableInput(PC);
+                    PC->SetIgnoreMoveInput(true);
+                    PC->SetIgnoreLookInput(true);
+
+                    // 2) UIOnly로 전환 (게임 입력 라우팅 차단)
+                    FInputModeUIOnly UIOnly;
+                    PC->SetInputMode(UIOnly);
+                    PC->bShowMouseCursor = true;
+
+                    // 3) 클릭/마우스오버 이벤트도 차단 (좌클릭 눌림 자체를 막음)
+                    PC->bEnableClickEvents = false;
+                    PC->bEnableMouseOverEvents = false;
+
+                    // 4) Pawn도 안전하게 차단
+                    if (APawn* P = PC->GetPawn())
+                    {
+                        P->DisableInput(PC);
+                    }
+                }
+                else
+                {
+                    // 1) Pawn/PC 모두 해제
+                    if (APawn* P = PC->GetPawn())
+                    {
+                        P->EnableInput(PC);
+                    }
+                    PC->EnableInput(PC);
+                    PC->SetIgnoreMoveInput(false);
+                    PC->SetIgnoreLookInput(false);
+
+                    // 2) 게임 모드로 복귀
+                    FInputModeGameOnly GameOnly;
+                    PC->SetInputMode(GameOnly);
+                    PC->bShowMouseCursor = false;
+
+                    // 3) 클릭/오버 이벤트 복구
+                    PC->bEnableClickEvents = true;
+                    PC->bEnableMouseOverEvents = true;
+                }
             }
         }
     }
