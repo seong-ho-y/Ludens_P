@@ -59,4 +59,7 @@ public:
 
     // 복제 설정 함수
     virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
+    UFUNCTION(BlueprintPure, Category = "Door")
+    float GetAnimDuration() const { return OpenDuration; }
 };

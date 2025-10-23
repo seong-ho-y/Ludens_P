@@ -1,6 +1,8 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Ludens_PGameMode.h"
+
+#include "EnemyAIController.h"
 #include "EnemyPoolManager.h"
 #include "Ludens_PPlayerController.h"
 #include "PlayerState_Real.h"
@@ -176,51 +178,89 @@ void ALudens_PGameMode::AssignColorToPlayer(AController* NewPlayer)
 	}
 }
 
+bool ALudens_PGameMode::GetEnemyAllKilled() const
+{
+	if (!HasAuthority()) return false;
+	return EnemyCount <= 0;
+}
+
+void ALudens_PGameMode::HandleEnemyDied(AEnemyBase* EnemyBase)
+{
+	if (HasAuthority())
+	{
+		EnemyCount--;
+		//if (EnemyCount<=0) UE_LOG(LogTemp,Warning,TEXT("All Enemy Got Killed"));
+	}
+	
+}
+
 void ALudens_PGameMode::StartSpawningEnemies()
 {
 	if (!PoolManager)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("PoolManager를 찾을 수 없습니다!"));
-		return;
-	}
+    {
+        UE_LOG(LogTemp, Error, TEXT("PoolManager를 찾을 수 없습니다!"));
+        return;
+    }
 
-	// 1. 월드에 배치된 모든 스폰 포인트를 찾습니다.
-	TArray<AActor*> SpawnPointActors;
-	// 2. BP_EnemySpawnPoint 대신, 그것의 C++ 부모 클래스인 AEnemySpawnPoint를 찾습니다.
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEnemySpawnPoint::StaticClass(), SpawnPointActors);
+    // 1) 스폰 포인트 수집
+    TArray<AActor*> SpawnPointActors;
+    UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEnemySpawnPoint::StaticClass(), SpawnPointActors);
 
-	if (SpawnPointActors.Num() == 0)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("월드에 AEnemySpawnPoint 타입의 액터가 하나도 없습니다!"));
-		return;
-	}
-    
-	UE_LOG(LogTemp, Log, TEXT("%d개의 스폰 포인트를 찾았습니다. 스폰을 시작합니다."), SpawnPointActors.Num());
+    const int32 SpawnPointCount = SpawnPointActors.Num();
+    if (SpawnPointCount == 0)
+    {
+        UE_LOG(LogTemp, Error, TEXT("월드에 AEnemySpawnPoint 타입의 액터가 하나도 없습니다!"));
+        return;
+    }
 
-	// 2. 스폰할 적의 수를 정합니다. (예: 10마리)
-	const int32 NumberOfEnemiesToSpawn = 10;
-    
-	// 스폰 가능한 포인트 수보다 많이 스폰하지 않도록 보정합니다.
-	int32 ActualEnemiesToSpawn = FMath::Min(NumberOfEnemiesToSpawn, SpawnPointActors.Num());
-    
-	UE_LOG(LogTemp, Log, TEXT("%d개의 스폰 포인트 중 %d개의 적을 스폰합니다."), SpawnPointActors.Num(), ActualEnemiesToSpawn);
+    //UE_LOG(LogTemp, Log, TEXT("%d개의 스폰 포인트를 찾았습니다. 스폰을 시작합니다."), SpawnPointCount);
 
-	for (int32 i = 0; i < ActualEnemiesToSpawn; ++i)
-	{
-		// 3. 사용 가능한 스폰 포인트 중에서 랜덤하게 하나를 고릅니다.
-		int32 RandomIndex = FMath::RandRange(0, SpawnPointActors.Num() - 1);
-		AActor* SelectedSpawnPoint = SpawnPointActors[RandomIndex];
-		FVector SpawnLocation = SelectedSpawnPoint->GetActorLocation();
+    // 2) 스폰할 적 수 결정
+    const int32 NumberOfEnemiesToSpawn = 20;
+    const int32 ActualEnemiesToSpawn = FMath::Min(NumberOfEnemiesToSpawn, SpawnPointCount);
 
-		// 4. (중요!) 한 번 사용한 스폰 포인트는 목록에서 제거하여 중복 스폰을 방지합니다.
-		SpawnPointActors.RemoveAt(RandomIndex);
+    //UE_LOG(LogTemp, Log, TEXT("%d개의 스폰 포인트 중 %d개의 적을 스폰합니다."), SpawnPointCount, ActualEnemiesToSpawn);
 
-		// 5. CreateRandomEnemyProfile()을 호출하여 스폰할 적의 정보를 생성합니다.
-		FEnemySpawnProfile ProfileToSpawn = CreateRandomEnemyProfile();
-       
-		// 6. 생성된 프로필과 위치를 사용하여 PoolManager에게 스폰을 요청합니다.
-		PoolManager->SpawnEnemy(ProfileToSpawn, SpawnLocation, FRotator::ZeroRotator);
-	}
+    // ✅ 실제 스폰 수로 EnemyCount 설정 (핵심 수정)
+    EnemyCount = ActualEnemiesToSpawn;
+
+    // 3) 스폰 루프
+    for (int32 i = 0; i < ActualEnemiesToSpawn; ++i)
+    {
+        const int32 CurrentNum = SpawnPointActors.Num();
+        if (CurrentNum <= 0)
+        {
+            UE_LOG(LogTemp, Error, TEXT("SpawnPointActors가 비었습니다. 루프 중단."));
+            break;
+        }
+
+        // ✅ 배열 길이 기준(inclusive)으로 랜덤 인덱스 계산
+        const int32 RandomIndex = FMath::RandRange(0, CurrentNum - 1);
+
+        AActor* SelectedSpawnPoint = SpawnPointActors[RandomIndex];
+        const FVector SpawnLocation = SelectedSpawnPoint->GetActorLocation();
+
+        // 한 번 사용한 포인트 제거 → 다음 반복에서 Num()이 줄어듦
+        SpawnPointActors.RemoveAt(RandomIndex);
+
+        // 프로필 생성 및 스폰
+        const FEnemySpawnProfile ProfileToSpawn = CreateRandomEnemyProfile();
+        AEnemyBase* SpawnedEnemy = PoolManager->SpawnEnemy(ProfileToSpawn, SpawnLocation, FRotator::ZeroRotator);
+
+        if (SpawnedEnemy)
+        {
+            // C++ 전용 델리게이트 바인딩
+            SpawnedEnemy->OnEnemyDied.AddUObject(this, &ALudens_PGameMode::HandleEnemyDied);
+        }
+        else
+        {
+            // 스폰 실패 시 카운트 보정 (안전)
+            --EnemyCount;
+            UE_LOG(LogTemp, Error, TEXT("Enemy 스폰 실패: EnemyCount 보정 -> %d"), EnemyCount);
+        }
+    }
+
+    UE_LOG(LogTemp, Log, TEXT("최종 EnemyCount(살아있는 적 수): %d"), EnemyCount);
 }
 FEnemySpawnProfile ALudens_PGameMode::CreateRandomEnemyProfile()
 {
