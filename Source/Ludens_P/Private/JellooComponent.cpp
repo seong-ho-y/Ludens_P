@@ -4,6 +4,8 @@
 #include "JellooComponent.h"
 
 #include "NiagaraFunctionLibrary.h"
+#include "Components/WidgetComponent.h"
+#include "Ludens_P/EnemyHealthBarBase.h"
 
 // Sets default values for this component's properties
 UJellooComponent::UJellooComponent()
@@ -27,6 +29,14 @@ void UJellooComponent::BeginPlay()
 	Super::BeginPlay();
 
 	CurrentJellooHP = MaxJellooHP;
+
+	HealthBarWidget = GetOwner()->FindComponentByClass<UWidgetComponent>();
+
+	if (HealthBarWidget)
+	{
+		UUserWidget* Widget = HealthBarWidget->GetUserWidgetObject();
+		HealthBar = Cast<UEnemyHealthBarBase>(Widget); // 실제 UI 클래스 캐스팅
+	}
 }
 
 
@@ -41,6 +51,11 @@ void UJellooComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActo
 void UJellooComponent::OnRep_JellooHP()
 {
 	// CurrentJellooHP 값이 바뀌었을 때 처리 UI 처리 필요
+	if (HealthBar)
+	{
+		float Percent = static_cast<float>(CurrentJellooHP) / static_cast<float>(MaxJellooHP);
+		HealthBar->UpdateHealthBar(Percent);
+	}
 	
 	// 나이아가라 이펙트가 있다면 액터 위치에 스폰
 	if (JellooHit) // UNiagaraSystem* 타입 멤버 변수로 선언해야 함

@@ -7,8 +7,11 @@
 #include "Net/UnrealNetwork.h"
 #include "GameFramework/Actor.h"
 #include "NiagaraSystem.h"
+#include "Ludens_P/EnemyHealthBarBase.h"
 #include "JellooComponent.generated.h"
 
+
+class UWidgetComponent;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LUDENS_P_API UJellooComponent : public UActorComponent
@@ -20,12 +23,17 @@ public:
 	UNiagaraSystem* JellooDestroy;
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	UNiagaraSystem* JellooHit;
+	UEnemyHealthBarBase* HealthBar;
 	// Sets default values for this component's properties
 	UJellooComponent();
 
 protected:
 	// Called when the game starts
 	virtual void BeginPlay() override;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	UWidgetComponent* HealthBarWidget;
+
 
 public:	
 	// Called every frame
@@ -40,9 +48,9 @@ public:
 	
 protected:
 	UPROPERTY(EditAnywhere, Replicated, Category = "Jelloo")
-	int16 MaxJellooHP;
+	int MaxJellooHP;
 	UPROPERTY(EditAnywhere, Category = "Jelloo", ReplicatedUsing = OnRep_JellooHP)
-	int16 CurrentJellooHP;
+	int CurrentJellooHP;
 	
 	
 public:
