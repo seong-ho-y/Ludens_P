@@ -6,6 +6,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "TimerManager.h"
 #include "Net/UnrealNetwork.h"
+#include "Ludens_P/Ludens_PGameMode.h"
 
 
 // Sets default values for this component's properties
@@ -249,6 +250,12 @@ void UPlayerStateComponent::Dead()
 		Character->GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
 
 	OnRep_Dead();
+
+	// ▼ 한 명이라도 죽으면 게임오버 알림
+	if (ALudens_PGameMode* GM = GetWorld()->GetAuthGameMode<ALudens_PGameMode>())
+	{
+		GM->NotifyAnyPlayerDead();
+	}
 }
 
 void UPlayerStateComponent::ResetInvincibility() 
