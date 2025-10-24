@@ -24,6 +24,9 @@ public:
 	class ACharacter* Character;
 	UPROPERTY()
 	class APlayerState_Real* PSR;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Sound)
+	TObjectPtr<USoundBase> HitSound;
 	
 	// Sets default values for this component's properties
 	UPlayerStateComponent();
@@ -107,8 +110,14 @@ protected:
 	UFUNCTION()
 	void OnRep_PlayerColor();
 public:
+	UPROPERTY(BlueprintReadOnly)
 	FTimerHandle KnockedTimer; // 기절 한 뒤 죽을 때까지 작동하는 타이머
+	/*UPROPERTY(BlueprintReadOnly, Replicated)
+	float KnockedTimeRemaining; // Knocked 타이머의 남은 시간을 저장 (UI가 사용할 실제 값)
+	UPROPERTY(BlueprintReadOnly, Replicated)
+	bool bIsKnockedTimerPaused; // 타이머가 현재 일시 정지되었는지 여부*/
 
+	
 	// UI 업데이트를 위한 델리게이트 선언 (데미지 입는 시점)
 	// 이 델리게이트에 블루프린트 UI 함수를 바인딩합니다.
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnDamageTakenUI);
@@ -131,5 +140,7 @@ protected:
 
 	FTimerHandle VignetteTimerHandle;
 
-	void UpdateVignetteOpacity(); 
+	void UpdateVignetteOpacity();
+public:
+	void RevertMoveSpeed();
 };

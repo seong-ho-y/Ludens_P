@@ -26,6 +26,11 @@ protected:
 public:
 	void HandleRevive();
 	void HandleReviveComplete();
+
+protected:
+	UFUNCTION(Server,Reliable)
+	void Server_ReviveComplete(class UPlayerStateComponent* PlayerStateToRevive);
+	
 protected:
 	UPROPERTY()
 	UPlayerStateComponent* TargetPlayerState = nullptr;
@@ -33,7 +38,8 @@ protected:
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-protected:
+
+	UPROPERTY(BlueprintReadOnly)
 	FTimerHandle ReviveTimer;
 
 public:
