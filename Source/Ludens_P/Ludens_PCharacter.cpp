@@ -416,7 +416,15 @@ void ALudens_PCharacter::Dash(const FInputActionValue& Value)
 		LaunchCharacter(DashDirection * DashSpeed, true, true);
 		// Multicast로 이펙트 활성화 명령 전달**
 		// 서버에서 이 함수를 호출하면, 모든 클라이언트(서버 포함)에서 MulticastControlDashEffect_Implementation이 실행됩니다.
-		MulticastControlDashEffect(true); 
+		MulticastControlDashEffect(true);
+
+		// 대쉬 사운드 재생 -> 근데 오류 걸려서 안 나오길래 그냥 블루프린트로 했다 ㅋㅋ
+		/*if (DashSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), DashSound, GetActorLocation());
+			UE_LOG(LogTemp, Warning, TEXT("Dash sound"));
+		}*/
+		
 		CurrentDashCount--;
 		bCanDash = false;
 		

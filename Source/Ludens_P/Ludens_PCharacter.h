@@ -13,6 +13,8 @@
 #include "NiagaraSystem.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 #include "Ludens_PCharacter.generated.h"
 
 class UInputComponent;
@@ -22,6 +24,8 @@ class URewardSystemComponent;
 class UInputAction;
 class UInputMappingContext;
 class ULudensAppearanceData;
+
+
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -98,6 +102,9 @@ public:
 	class UTP_WeaponComponent* WeaponComponent;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	class UReviveComponent* ReviveComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	USoundBase* DashSound;
 	
 protected:
 	// **1. 나이아가라 컴포넌트 선언**

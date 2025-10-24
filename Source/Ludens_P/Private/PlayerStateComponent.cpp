@@ -7,6 +7,7 @@
 #include "TimerManager.h"
 #include "SWarningOrErrorBox.h"
 #include "DSP/Delay.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 
 
@@ -151,6 +152,15 @@ void UPlayerStateComponent::TakeDamage(float Amount)
 	else
 	{
 		Server_RequestDamageUI(); // 클라의 경우 서버에 UI 재생 요청
+	}
+
+	// 데미지 입었을 때 사운드
+	if (HitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,                 // WorldContextObject
+			HitSound,            // Sound
+			Character->GetActorLocation());
 	}
 	
 	// 쉴드가 남아 있을 경우 쉴드가 먼저 데미지를 받음.

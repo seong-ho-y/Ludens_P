@@ -24,6 +24,9 @@ public:
 	class ACharacter* Character;
 	UPROPERTY()
 	class APlayerState_Real* PSR;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = Sound)
+	TObjectPtr<USoundBase> HitSound;
 	
 	// Sets default values for this component's properties
 	UPlayerStateComponent();
