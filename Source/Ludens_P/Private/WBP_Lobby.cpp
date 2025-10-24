@@ -20,6 +20,9 @@
 #include "Ludens_P/EEnemyColor.h"
 #include "LobbyTypes.h"
 
+
+class UImage;
+
 int32 UWBP_Lobby::ColorToIdx(EEnemyColor Col) const
 {
     switch (Col)
@@ -97,12 +100,7 @@ void UWBP_Lobby::NativeConstruct()
 {
     Super::NativeConstruct();
 
-    // PS 변화 감지 바인딩
-    if (APlayerState_Real* PSR = GetOwningPlayer() ? GetOwningPlayer()->GetPlayerState<APlayerState_Real>() : nullptr) {
-
-    }
-    UpdatePortraitFromPS(); // 초기 1회
-
+    
 
     // 루트 위젯이 포커스를 가질 수 있게(마우스 캡처 안정성 ↑)
     SetIsFocusable(true);
@@ -137,6 +135,7 @@ void UWBP_Lobby::NativeConstruct()
 
             UpdateReadyToggleUI();
             UpdateGameStartUI();
+
         }
     }
     // ★ PS가 아직 없으면 0.25초 간격으로 재시도
@@ -155,6 +154,15 @@ void UWBP_Lobby::NativeConstruct()
         RebindOtherPSDelegates();
         RefreshOtherSlots();
     }
+
+    if (Btn_S0) Btn_S0->OnClicked.AddDynamic(this, &UWBP_Lobby::OnClick_S0);
+    if (Btn_S1) Btn_S1->OnClicked.AddDynamic(this, &UWBP_Lobby::OnClick_S1);
+    if (Btn_S2) Btn_S2->OnClicked.AddDynamic(this, &UWBP_Lobby::OnClick_S2);
+    if (Btn_S3) Btn_S3->OnClicked.AddDynamic(this, &UWBP_Lobby::OnClick_S3);
+
+
+    // 시작 시 기본 표시(원하면 0 대신 초기 인덱스)
+    UpdateSkillDetailFromIndex(0);
 
 }
 
@@ -186,6 +194,8 @@ void UWBP_Lobby::BindAppearanceButton(int32 Index, UButton* Btn)
 
 void UWBP_Lobby::OnPSChanged()
 {
+
+    if (PS_Cached) { UpdateSkillDetailFromIndex(PS_Cached->SubskillId); }
     UpdatePortraitFromPS();
 
     // 기존 UI 갱신 루틴 유지
@@ -334,11 +344,33 @@ void UWBP_Lobby::BindSkillButtons()
     if (Btn_S3) Btn_S3->OnClicked.AddDynamic(this, &UWBP_Lobby::OnClick_S3);
 }
 
-void UWBP_Lobby::OnClick_S0() { BP_SetSubskill(0); }
-void UWBP_Lobby::OnClick_S1() { BP_SetSubskill(1); }
-void UWBP_Lobby::OnClick_S2() { BP_SetSubskill(2); }
-void UWBP_Lobby::OnClick_S3() { BP_SetSubskill(3); }
-void UWBP_Lobby::OnClick_S4() { BP_SetSubskill(4); }
+void UWBP_Lobby::OnClick_S0() { 
+    BP_SetSubskill(0);
+    UpdateSkillDetailFromIndex(0);
+}
+void UWBP_Lobby::OnClick_S1() { 
+    BP_SetSubskill(1);
+    UpdateSkillDetailFromIndex(1);
+}
+void UWBP_Lobby::OnClick_S2() { 
+    BP_SetSubskill(2);
+    UpdateSkillDetailFromIndex(2);
+}
+void UWBP_Lobby::OnClick_S3() { 
+    BP_SetSubskill(3);
+    UpdateSkillDetailFromIndex(3);
+}
+
+void UWBP_Lobby::UpdateSkillDetailFromIndex(int32 Idx)
+{
+    const int32 SafeIdx = FMath::Clamp(Idx, 0, SkillNames.Num() - 1);
+    if (Txt_SkillName && SkillNames.IsValidIndex(SafeIdx))
+        Txt_SkillName->SetText(SkillNames[SafeIdx]);
+    if (Txt_SkillDesc && SkillDescs.IsValidIndex(SafeIdx))
+        Txt_SkillDesc->SetText(SkillDescs[SafeIdx]);
+}
+
+
 
 // ----- Skill Buttons -----
 
@@ -734,3 +766,5 @@ void UWBP_Lobby::OnA3Released() {}
 void UWBP_Lobby::OnA3Clicked() { BP_SetAppearance(3); }
 // ---- /Appearance Button Handlers ----
     
+
+
