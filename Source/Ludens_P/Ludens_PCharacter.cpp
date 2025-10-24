@@ -849,6 +849,14 @@ void ALudens_PCharacter::ApplyCosmeticsFromPSROnce()
 		}
 	}
 
+	// 1P 적용 추가
+	if (USkeletalMeshComponent* MeshFP = Mesh1P)
+	{
+		AppearanceDB->Apply1P(MeshFP, ApId, PSRLocal->PlayerColor);
+		UE_LOG(LogTemp, Display, TEXT("[Cosmetics1P] Applied Ap=%d Color=%d Auth=%d Pawn=%s"),
+			ApId, (int32)PSRLocal->PlayerColor, (int32)HasAuthority(), *GetName());
+	}
+
 }
 
 void ALudens_PCharacter::OnRep_PlayerState()

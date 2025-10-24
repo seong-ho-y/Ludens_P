@@ -77,3 +77,40 @@ void ULudensAppearanceData::ApplyToByEnemyColor(USkeletalMeshComponent* MeshComp
     // 내부적으로 기존 ELobbyColor 기반 구현을 재사용
     ApplyTo(MeshComp, AppearanceIdx, EnemyColor);
 }
+
+void ULudensAppearanceData::Apply1P(USkeletalMeshComponent* MeshComp, int32 Ap, EEnemyColor Color) const
+{
+    if (!MeshComp) return;
+
+    // 1) 1P 메쉬 교체
+    if (AppearanceMeshes1P.IsValidIndex(Ap))
+    {
+        if (USkeletalMesh* NewMesh = AppearanceMeshes1P[Ap])
+        {
+            if (MeshComp->GetSkeletalMeshAsset() != NewMesh)
+            {
+                MeshComp->SetSkeletalMesh(NewMesh);
+            }
+        }
+    }
+
+    // 2) 머티리얼은 3P와 공유 → 기존 세트/슬롯 재사용
+    if (CharacterSlotIndex.IsValidIndex(Ap) && CharacterSlotIndex[Ap] >= 0
+        && AppearanceMaterials.IsValidIndex(Ap))
+    {
+        const int32 Slot = CharacterSlotIndex[Ap];
+        if (UMaterialInterface* M = PickByColor_DefaultIsRed(AppearanceMaterials[Ap], Color))
+        {
+            MeshComp->SetMaterial(Slot, M);
+        }
+    }
+    if (WeaponSlotIndex.IsValidIndex(Ap) && WeaponSlotIndex[Ap] >= 0
+        && WeaponMaterials.IsValidIndex(Ap))
+    {
+        const int32 Slot = WeaponSlotIndex[Ap];
+        if (UMaterialInterface* M = PickByColor_DefaultIsRed(WeaponMaterials[Ap], Color))
+        {
+            MeshComp->SetMaterial(Slot, M);
+        }
+    }
+}
