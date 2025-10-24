@@ -110,9 +110,7 @@ void UWBP_Lobby::NativeConstruct()
     // debug log
     UE_LOG(LogTemp, Warning, TEXT("[UI] Construct: Focusable=1 Widget=%s"), *GetName());
 
-    // 기존 썸네일 초기화/바인딩
-    for (UBorder* B : AllDim()) if (B) B->SetVisibility(ESlateVisibility::Hidden);
-    for (UBorder* B : AllSel()) if (B) B->SetVisibility(ESlateVisibility::Hidden);
+
     BindAppearanceButton(0, Btn_A0);
     BindAppearanceButton(1, Btn_A1);
     BindAppearanceButton(2, Btn_A2);
@@ -136,7 +134,6 @@ void UWBP_Lobby::NativeConstruct()
         {
             PS_Cached->OnAnyLobbyFieldChanged.AddDynamic(this, &UWBP_Lobby::OnPSChanged);
             bPSBound = true;
-            UpdateAppearanceHighlight();
 
             UpdateReadyToggleUI();
             UpdateGameStartUI();
@@ -182,38 +179,16 @@ void UWBP_Lobby::BindAppearanceButton(int32 Index, UButton* Btn)
     }
 }
 
-void UWBP_Lobby::SetDimVisible(int32 Index, bool bVisible)
-{
-    TArray<UBorder*> D = AllDim();
-    if (D.IsValidIndex(Index) && D[Index])
-        D[Index]->SetVisibility(bVisible ? ESlateVisibility::SelfHitTestInvisible
-            : ESlateVisibility::Hidden);
-}
 
-void UWBP_Lobby::OnA0Pressed() { SetDimVisible(0, true); }
-void UWBP_Lobby::OnA0Released() { SetDimVisible(0, false); }
 
-void UWBP_Lobby::OnA1Pressed() { SetDimVisible(1, true); }
-void UWBP_Lobby::OnA1Released() { SetDimVisible(1, false); }
 
-void UWBP_Lobby::OnA2Pressed() { SetDimVisible(2, true); }
-void UWBP_Lobby::OnA2Released() { SetDimVisible(2, false); }
 
-void UWBP_Lobby::OnA3Pressed() { SetDimVisible(3, true); }
-void UWBP_Lobby::OnA3Released() { SetDimVisible(3, false); }
-
-// 외형
-void UWBP_Lobby::OnA0Clicked() { if (!PS_Cached || PS_Cached->bReady) return; SetDimVisible(0, false); BP_SetAppearance(0); }
-void UWBP_Lobby::OnA1Clicked() { if (!PS_Cached || PS_Cached->bReady) return; SetDimVisible(1, false); BP_SetAppearance(1); }
-void UWBP_Lobby::OnA2Clicked() { if (!PS_Cached || PS_Cached->bReady) return; SetDimVisible(2, false); BP_SetAppearance(2); }
-void UWBP_Lobby::OnA3Clicked() { if (!PS_Cached || PS_Cached->bReady) return; SetDimVisible(3, false); BP_SetAppearance(3); }
 
 void UWBP_Lobby::OnPSChanged()
 {
     UpdatePortraitFromPS();
 
     // 기존 UI 갱신 루틴 유지
-    UpdateAppearanceHighlight();
     UpdateReadyToggleUI();
     UpdateGameStartUI();
     RefreshOtherSlots();
@@ -276,18 +251,6 @@ void UWBP_Lobby::OnPSChanged()
 }
 
 
-void UWBP_Lobby::UpdateAppearanceHighlight()
-{
-    for (UBorder* B : AllSel()) if (B) B->SetVisibility(ESlateVisibility::Hidden);
-
-    int32 Idx = (PS_Cached ? PS_Cached->AppearanceId : -1);
-    if (Idx >= 0 && Idx <= 3)
-    {
-        TArray<UBorder*> S = AllSel();
-        if (S.IsValidIndex(Idx) && S[Idx])
-            S[Idx]->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-    }
-}
 
 
 void UWBP_Lobby::BindColorButtons()
@@ -347,7 +310,6 @@ void UWBP_Lobby::TryBindPS()
             PS_Cached->OnAnyLobbyFieldChanged.AddDynamic(this, &UWBP_Lobby::OnPSChanged);
             bPSBound = true;
 
-            UpdateAppearanceHighlight();
 
             UpdateReadyToggleUI();
             UpdateGameStartUI();

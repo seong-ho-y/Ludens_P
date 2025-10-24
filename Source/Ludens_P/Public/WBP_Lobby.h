@@ -3,8 +3,6 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Components/Border.h"
-#include "LobbyTypes.h"
 #include "Ludens_P/EEnemyColor.h"
 #include "WBP_Lobby.generated.h"
 
@@ -68,15 +66,8 @@ protected:
     UPROPERTY(meta = (BindWidget)) UButton* Btn_A2;
     UPROPERTY(meta = (BindWidget)) UButton* Btn_A3;
 
-    UPROPERTY(meta = (BindWidget)) UBorder* Dim_A0;
-    UPROPERTY(meta = (BindWidget)) UBorder* Dim_A1;
-    UPROPERTY(meta = (BindWidget)) UBorder* Dim_A2;
-    UPROPERTY(meta = (BindWidget)) UBorder* Dim_A3;
 
-    UPROPERTY(meta = (BindWidget)) UBorder* Sel_A0;
-    UPROPERTY(meta = (BindWidget)) UBorder* Sel_A1;
-    UPROPERTY(meta = (BindWidget)) UBorder* Sel_A2;
-    UPROPERTY(meta = (BindWidget)) UBorder* Sel_A3;
+
 
     // ----- RGB Buttons -----
     UPROPERTY(meta = (BindWidget)) UButton* Btn_ColorR;
@@ -138,8 +129,8 @@ protected:
 
 private:
     void BindAppearanceButton(int32 Index, UButton* Btn);
-    void SetDimVisible(int32 Index, bool bVisible);
-    void UpdateAppearanceHighlight();
+
+
 
     UFUNCTION() void OnA0Pressed();  UFUNCTION() void OnA0Released();  UFUNCTION() void OnA0Clicked();
     UFUNCTION() void OnA1Pressed();  UFUNCTION() void OnA1Released();  UFUNCTION() void OnA1Clicked();
@@ -150,8 +141,6 @@ private:
 
     UPROPERTY() class APlayerState_Real* PS_Cached = nullptr;
 
-    TArray<UBorder*> AllDim() const { return { Dim_A0, Dim_A1, Dim_A2, Dim_A3 }; }
-    TArray<UBorder*> AllSel() const { return { Sel_A0, Sel_A1, Sel_A2, Sel_A3 }; }
 
     void BindColorButtons();
 
