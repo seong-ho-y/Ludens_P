@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ToolBaseComponent.h"
 #include "ToolInterface.h"
 #include "Components/ActorComponent.h"
 #include "DecolorComp.generated.h"
@@ -11,7 +12,7 @@
 class ADeColorProjec;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class LUDENS_P_API UDecolorComp : public UActorComponent, public IToolInterface
+class LUDENS_P_API UDecolorComp : public UToolBaseComponent
 {
 	GENERATED_BODY()
 
@@ -29,8 +30,8 @@ protected:
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
-
-	void Interact_Implementation(APawn* InstigatorPawn) override;
+	
+	virtual void PerformToolAction(APawn* InstigatorPawn) override;
 
 	UFUNCTION(Server, Reliable)
 	void Server_Shoot();

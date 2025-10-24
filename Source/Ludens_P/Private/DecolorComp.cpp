@@ -10,8 +10,9 @@ UDecolorComp::UDecolorComp()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
-
+	PrimaryComponentTick.bCanEverTick = false;
+	CooldownTime = 10.0f;
+	bIsOnCooldown = false;
 	// ...
 }
 
@@ -34,11 +35,12 @@ void UDecolorComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorCom
 	// ...
 }
 
-void UDecolorComp::Interact_Implementation(APawn* InstigatorPawn)
+void UDecolorComp::PerformToolAction(APawn* InstigatorPawn)
 {
-	IToolInterface::Interact_Implementation(InstigatorPawn);
+	Super::PerformToolAction(InstigatorPawn);
 	Server_Shoot();
 }
+
 
 void UDecolorComp::Server_Shoot_Implementation()
 {

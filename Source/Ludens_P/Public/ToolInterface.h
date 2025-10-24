@@ -25,4 +25,7 @@ public:
 
 	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Interaction")
 	void Interact(APawn* InstigatorPawn);
+
+	UFUNCTION(BlueprintNativeEvent, BlueprintCallable, Category = "Tool")
+	bool CanUseTool() const;
 };
