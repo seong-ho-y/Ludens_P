@@ -454,7 +454,6 @@ void AEnemyBase::PlayAttackMontage_Implementation()
 		if (!AnimInstance->IsAnyMontagePlaying())
 		AnimInstance->Montage_Play(MeleeAttackMontage);
 	}
-	PlaySoundAtEnemy(AttackSound);
 }
 // 이 함수는 서버에서만 호출되어야 합니다.
 void AEnemyBase::ChangeColorType(EEnemyColor NewColor)
