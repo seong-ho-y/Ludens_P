@@ -94,7 +94,7 @@ protected:
 
 public:
 	// 한 명이라도 사망 시 서버에서 호출
-	UFUNCTION() void NotifyAnyPlayerDead();
+	UFUNCTION(BlueprintCallable) void NotifyAnyPlayerDead();
 
 	// 클라이언트가 "재시작 준비됨" 버튼을 눌렀다고 서버에 알림
 	UFUNCTION(Server, Reliable) void Server_ConfirmRestart(APlayerController* PC);
