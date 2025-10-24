@@ -107,7 +107,7 @@ void UReviveComponent::Server_ReviveComplete_Implementation(class UPlayerStateCo
     
 	// 2. HP/쉴드 설정 (서버에서 설정해야 클라이언트에 복제됩니다)
 	PlayerStateToRevive->CurrentHP = (PlayerStateToRevive->MaxHP) / 2.f;
-	PlayerStateToRevive->CurrentShield = (PlayerStateToRevive->MaxShield) / 2.f;
+	PlayerStateToRevive->CurrentShield = (PlayerStateToRevive->MaxShield) - 1;
     
 	// 3. 상태 및 이동 속도 복구
 	PlayerStateToRevive->IsKnocked = false;
@@ -119,6 +119,13 @@ void UReviveComponent::Server_ReviveComplete_Implementation(class UPlayerStateCo
     
 	// 5. 쉴드 재생 활성화
 	PlayerStateToRevive->EnableShieldRegen();
+
+	// ⭐⭐ 매우 중요! 변경된 HP/Shield 값 강제 복제 ⭐⭐
+	// 컴포넌트의 소유 액터(Character)에 대해 강제로 네트워크 업데이트를 요청합니다.
+	if (PlayerStateToRevive->GetOwner())
+	{
+		PlayerStateToRevive->GetOwner()->ForceNetUpdate(); 
+	}
 	
 	UE_LOG(LogTemp, Error, TEXT("Revive Complete!"));
 	UE_LOG(LogTemp, Error, TEXT("Server Revive Complete! Target HP: %f"), PlayerStateToRevive->CurrentHP);

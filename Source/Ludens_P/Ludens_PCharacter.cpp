@@ -324,7 +324,7 @@ void ALudens_PCharacter::TestAttack(const FInputActionValue& Value)
 {
 	if (PlayerStateComponent)
 	{
-		PlayerStateComponent->TakeDamage(100.0f);
+		PlayerStateComponent->TakeDamage(25.0f);
 	}
 }
 

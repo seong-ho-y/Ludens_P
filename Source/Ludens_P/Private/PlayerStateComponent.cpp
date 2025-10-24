@@ -349,7 +349,7 @@ void UPlayerStateComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	// 상성 색 복제 추가
 
 	DOREPLIFETIME(UPlayerStateComponent, PlayerColor);
-	DOREPLIFETIME(UPlayerStateComponent, bCanRegenShield); // 경고 해소
+	DOREPLIFETIME(UPlayerStateComponent, bCanRegenShield); 
 }
 
 static FORCEINLINE void OpApplyF(float& S, ERewardOpType Op, float V)
