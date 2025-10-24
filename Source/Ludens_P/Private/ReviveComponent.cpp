@@ -73,6 +73,9 @@ void UReviveComponent::HandleRevive()
 			if (TargetPlayerState->IsKnocked)
 			{
 				GetWorld()->GetTimerManager().SetTimer(ReviveTimer, this, &UReviveComponent::HandleReviveComplete, 5.f, false);
+				TargetPlayerState->KnockedTimeRemaining
+				= TargetPlayerState->GetWorld()->GetTimerManager().GetTimerRemaining(TargetPlayerState->KnockedTimer);
+				TargetPlayerState->bIsKnockedTimerPaused = true;
 				TargetPlayerState->GetWorld()->GetTimerManager().PauseTimer(TargetPlayerState->KnockedTimer);
 			}
 		}
@@ -84,9 +87,11 @@ void UReviveComponent::HandleReviveComplete()
 	// 소생 완료 후 타이머 클리어, 변수 초기화 등 추가 가능
 	TargetPlayerState->CurrentHP = (TargetPlayerState->MaxHP) / 2;
 	TargetPlayerState->IsKnocked = false;
+	TargetPlayerState->RevertMoveSpeed();
 	TargetPlayerState->UpdateMoveSpeed();
 	TargetPlayerState->OnRep_Knocked();
 	TargetPlayerState->TakeDamage(0.f);
+	TargetPlayerState->bIsKnockedTimerPaused = false;
 	UE_LOG(LogTemp, Error, TEXT("Revive Complete!"));
 	UE_LOG(LogTemp, Warning, TEXT("CurrentHP: %f"), TargetPlayerState->CurrentHP);
 	TargetPlayerState = nullptr;
