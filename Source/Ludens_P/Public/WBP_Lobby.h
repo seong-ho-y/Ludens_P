@@ -13,6 +13,13 @@ class UTextBlock;
 class APlayerState_Real;
 class UWidget;
 
+USTRUCT(BlueprintType)
+struct FPortraitSet {
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) TSoftObjectPtr<UTexture2D> C;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) TSoftObjectPtr<UTexture2D> M;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) TSoftObjectPtr<UTexture2D> Y;
+};
 
 UCLASS()
 class LUDENS_P_API UWBP_Lobby : public UUserWidget
@@ -44,6 +51,13 @@ public:
         class UTextureRenderTarget2D* SelfRT,
         class UTextureRenderTarget2D* LeftRT,
         class UTextureRenderTarget2D* RightRT);
+
+    // 4개 외형마다(인덱스 0~3) C/M/Y 텍스처를 담는다
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Portrait")
+    TArray<FPortraitSet> PortraitByAppearance; // 길이=4로 채워둘 것 (디테일 패널에서)
+
+    UPROPERTY(meta = (BindWidget)) class UImage* ImgPortrait;
+
 
 protected:
     virtual void NativeConstruct() override;
@@ -189,5 +203,9 @@ private:
 
     UPROPERTY(Transient)
     EEnemyColor CurrentColorCache = EEnemyColor::Red; // 폴백(초기값)
+
+
+    void UpdatePortraitFromPS();
+    int32 ColorToIdx(EEnemyColor Col) const;
 
 };
