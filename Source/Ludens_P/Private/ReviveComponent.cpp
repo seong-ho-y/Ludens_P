@@ -73,9 +73,9 @@ void UReviveComponent::HandleRevive()
 			if (TargetPlayerState->IsKnocked)
 			{
 				GetWorld()->GetTimerManager().SetTimer(ReviveTimer, this, &UReviveComponent::HandleReviveComplete, 5.f, false);
-				TargetPlayerState->KnockedTimeRemaining
+				/*TargetPlayerState->KnockedTimeRemaining
 				= TargetPlayerState->GetWorld()->GetTimerManager().GetTimerRemaining(TargetPlayerState->KnockedTimer);
-				TargetPlayerState->bIsKnockedTimerPaused = true;
+				TargetPlayerState->bIsKnockedTimerPaused = true;*/
 				TargetPlayerState->GetWorld()->GetTimerManager().PauseTimer(TargetPlayerState->KnockedTimer);
 			}
 		}
@@ -84,17 +84,45 @@ void UReviveComponent::HandleRevive()
 
 void UReviveComponent::HandleReviveComplete()
 {
-	// 소생 완료 후 타이머 클리어, 변수 초기화 등 추가 가능
-	TargetPlayerState->CurrentHP = (TargetPlayerState->MaxHP) / 2;
-	TargetPlayerState->IsKnocked = false;
-	TargetPlayerState->RevertMoveSpeed();
-	TargetPlayerState->UpdateMoveSpeed();
-	TargetPlayerState->OnRep_Knocked();
-	TargetPlayerState->TakeDamage(0.f);
-	TargetPlayerState->bIsKnockedTimerPaused = false;
-	UE_LOG(LogTemp, Error, TEXT("Revive Complete!"));
-	UE_LOG(LogTemp, Warning, TEXT("CurrentHP: %f"), TargetPlayerState->CurrentHP);
+	if (TargetPlayerState)
+	{
+		// 서버/클라이언트 모두 이 함수를 호출할 수 있으며, 실제 로직은 서버에서만 실행됨.
+		Server_ReviveComplete(TargetPlayerState);
+	}
+
+	// 로컬 타이머 클리어 및 TargetPlayerState 정리
+	GetWorld()->GetTimerManager().ClearTimer(ReviveTimer);
 	TargetPlayerState = nullptr;
+    
+	UE_LOG(LogTemp, Error, TEXT("Revive Complete Request Sent!"));
+}
+
+void UReviveComponent::Server_ReviveComplete_Implementation(class UPlayerStateComponent* PlayerStateToRevive)
+{
+	// ⭐ 서버(Authority)에서만 실행되어야 하는 핵심 상태 변경 로직
+	if (!PlayerStateToRevive) return;
+	
+	// 1. Knocked 타이머 클리어 (Dead() 호출 방지)
+	PlayerStateToRevive->GetWorld()->GetTimerManager().ClearTimer(PlayerStateToRevive->KnockedTimer);
+    
+	// 2. HP/쉴드 설정 (서버에서 설정해야 클라이언트에 복제됩니다)
+	PlayerStateToRevive->CurrentHP = (PlayerStateToRevive->MaxHP) / 2.f;
+	PlayerStateToRevive->CurrentShield = (PlayerStateToRevive->MaxShield) / 2.f;
+    
+	// 3. 상태 및 이동 속도 복구
+	PlayerStateToRevive->IsKnocked = false;
+	PlayerStateToRevive->RevertMoveSpeed();
+	PlayerStateToRevive->UpdateMoveSpeed();
+    
+	// 4. OnRep_Knocked 수동 호출 (서버 자신에게 로직 적용)
+	PlayerStateToRevive->OnRep_Knocked();
+    
+	// 5. 쉴드 재생 활성화
+	PlayerStateToRevive->EnableShieldRegen();
+	
+	UE_LOG(LogTemp, Error, TEXT("Revive Complete!"));
+	UE_LOG(LogTemp, Error, TEXT("Server Revive Complete! Target HP: %f"), PlayerStateToRevive->CurrentHP);
+	
 }
 
 
@@ -117,6 +145,7 @@ void UReviveComponent::CancelRevive()
 	UE_LOG(LogTemp, Warning, TEXT("CancelRevive"))
 	if (TargetPlayerState)
 	{
+		//TargetPlayerState->bIsKnockedTimerPaused = false;
 		GetWorld()->GetTimerManager().ClearTimer(ReviveTimer);
 		TargetPlayerState->GetWorld()->GetTimerManager().UnPauseTimer(TargetPlayerState->KnockedTimer);
 		TargetPlayerState = nullptr;

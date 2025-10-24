@@ -26,6 +26,11 @@ protected:
 public:
 	void HandleRevive();
 	void HandleReviveComplete();
+
+protected:
+	UFUNCTION(Server,Reliable)
+	void Server_ReviveComplete(class UPlayerStateComponent* PlayerStateToRevive);
+	
 protected:
 	UPROPERTY()
 	UPlayerStateComponent* TargetPlayerState = nullptr;

@@ -214,8 +214,8 @@ void UPlayerStateComponent::Knocked()
 	if (Character)
 		Character->GetCharacterMovement()->MaxWalkSpeed = KnockedMoveSpeed;
 
-	KnockedTimeRemaining = 15.0f;
-	bIsKnockedTimerPaused = false;
+	/*KnockedTimeRemaining = 15.0f;
+	bIsKnockedTimerPaused = false;*/
 	
 	// 서버는 UI를 띄워야 하므로 Multicast 호출
 	// Multicast_PlayDamageUI(); // Knocked가 되었을 때도 UI를 띄웁니다.
@@ -343,8 +343,8 @@ void UPlayerStateComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UPlayerStateComponent, IsKnocked);
 	DOREPLIFETIME(UPlayerStateComponent, IsDead);
 	DOREPLIFETIME(UPlayerStateComponent, MoveSpeed);
-	DOREPLIFETIME(UPlayerStateComponent, KnockedTimeRemaining);
-	DOREPLIFETIME(UPlayerStateComponent, bIsKnockedTimerPaused);
+	/*DOREPLIFETIME(UPlayerStateComponent, KnockedTimeRemaining);
+	DOREPLIFETIME(UPlayerStateComponent, bIsKnockedTimerPaused);*/
 	
 	// 상성 색 복제 추가
 
