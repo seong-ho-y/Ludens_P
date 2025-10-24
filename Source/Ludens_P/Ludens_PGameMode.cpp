@@ -15,6 +15,10 @@
 #include "UObject/ConstructorHelpers.h"
 #include "EnemySpawnPoint.h"
 #include "WorldPartition/ContentBundle/ContentBundleLog.h"
+#include "Engine/World.h"
+#include "Engine/Engine.h"
+#include "GameFramework/PlayerController.h"
+#include "Blueprint/UserWidget.h"
 
 class URewardSystemComponent;
 class UPlayerStateComponent;
@@ -50,6 +54,7 @@ ALudens_PGameMode::ALudens_PGameMode()
 	ColorRotation.Add(EEnemyColor::Green);
 	ColorRotation.Add(EEnemyColor::Blue);
 
+	bGameOver = false;
 }
 void ALudens_PGameMode::BeginPlay()
 {
@@ -306,6 +311,79 @@ FEnemySpawnProfile ALudens_PGameMode::CreateRandomEnemyProfile()
 	return Profile;
 }
 
+void ALudens_PGameMode::NotifyAnyPlayerDead()
+{
+    if (bGameOver) return;
+    bGameOver = true;
+
+    // 전원에게 게임오버 화면 지시
+    Multicast_ShowGameOverScreen();
+
+    // 만약 싱글 테스트 등으로 즉시 재시작을 원하면 여기서 바로 TryStartRestartCountdown()을 호출해도 됨
+}
+
+void ALudens_PGameMode::Multicast_ShowGameOverScreen_Implementation()
+{
+	// Ludens_PGameMode::NotifyAnyPlayerDead() 등에서
+	for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
+	{
+		if (ALudens_PPlayerController* PC = Cast<ALudens_PPlayerController>(It->Get()))
+		{
+			PC->Client_ShowGameOverScreen(); // 각 클라의 로컬에서 위젯 생성
+		}
+	}
+}
+
+void ALudens_PGameMode::Server_ConfirmRestart_Implementation(APlayerController* PC)
+{
+    if (!bGameOver || !PC) return;
+
+    // PlayerController ID를 집계(중복 방지)
+    const int32 Id = (PC->PlayerState) ? PC->PlayerState->GetPlayerId() : PC->GetUniqueID();
+    ConfirmedControllerIds.Add(Id);
+
+    // 필요한 인원이 모두 누르면 카운트다운
+    TryStartRestartCountdown();
+}
+
+void ALudens_PGameMode::TryStartRestartCountdown()
+{
+    if (ConfirmedControllerIds.Num() < RequiredPlayersForRestart) return;
+    if (GetWorldTimerManager().IsTimerActive(RestartTimer)) return;
+
+    GetWorldTimerManager().SetTimer(
+        RestartTimer,
+        this,
+        &ALudens_PGameMode::DoServerTravel,
+        RestartDelaySeconds,
+        false
+    );
+}
+
+void ALudens_PGameMode::DoServerTravel()
+{
+    if (!RestartMap.IsValid() && RestartMap.ToSoftObjectPath().IsNull())
+    {
+        UE_LOG(LogTemp, Error, TEXT("[GameMode] RestartMap is not set!"));
+        return;
+    }
+
+    // RoomManager의 안정적인 ServerTravel 로직을 재사용
+    // (패키지 경로만 남기고 listen은 리슨서버일 때만) 
+    const FString ObjPath = RestartMap.ToSoftObjectPath().ToString(); // "/Game/Maps/Lobby.Lobby"
+    FString PackagePath, ObjectName;
+    if (!ObjPath.Split(TEXT("."), &PackagePath, &ObjectName))
+    {
+        UE_LOG(LogTemp, Error, TEXT("[GameMode] Invalid map path: %s"), *ObjPath);
+        return;
+    }
+
+    const bool bIsListenServer = (GetNetMode() != NM_DedicatedServer);
+    const FString URL = bIsListenServer ? (PackagePath + TEXT("?listen")) : PackagePath;
+
+    UE_LOG(LogTemp, Log, TEXT("[GameMode] ServerTravel to: %s"), *URL);
+    GetWorld()->ServerTravel(URL, /*bAbsolute*/ false);
+}
 void ALudens_PGameMode::StartSpawningEnemiesInRoom(ARoom* Room)
 {
 	if (!Room)

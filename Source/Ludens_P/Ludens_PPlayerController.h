@@ -51,5 +51,34 @@ public:
 	// "적 스폰을 요청"하는 서버 RPC 함수를 선언합니다.
 	UFUNCTION(Server, Reliable)
 	void Server_RequestSpawnEnemy();
-protected:
+
+public:
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<UUserWidget> GameOverWidgetClass;
+
+	UPROPERTY() UUserWidget* GameOverWidget = nullptr;
+
+	// 중복 클릭 방지
+	UPROPERTY() bool bGameOverConfirmed = false;
+
+
+	// 디버그: 키로 내 캐릭터 즉시 사망
+	UFUNCTION(BlueprintCallable, Category = "Debug")
+	void DebugKillMe();
+
+	// 서버 권위로 사망 처리
+	UFUNCTION(Server, Reliable)
+	void Server_DebugKillMe();
+
+	// 버튼이 누를 때 위젯에서 호출할 함수 (클라에서 호출됨)
+	UFUNCTION(BlueprintCallable)
+	void OnGameOverConfirmClicked();
+
+	// 버튼 눌렀다고 서버에 알리는 RPC
+	UFUNCTION(Server, Reliable)
+	void Server_ConfirmRestart();
+
+	// 게임오버 화면을 "각 클라에서" 띄우는 RPC
+	UFUNCTION(Client, Reliable)
+	void Client_ShowGameOverScreen();
 };
