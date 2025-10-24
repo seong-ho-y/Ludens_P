@@ -7,6 +7,9 @@
 #include "Components/ActorComponent.h"
 #include "ToolBaseComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FToolCooldownUpdated, float, CooldownPercent);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FToolCooldownEnded);
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class LUDENS_P_API UToolBaseComponent : public UActorComponent, public IToolInterface
@@ -27,17 +30,35 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Tool|Sound")
 	virtual void PlayToolSound(APawn* InstigatorPawn);
 
+	UPROPERTY(ReplicatedUsing = OnRep_CooldownPercent, BlueprintReadOnly, Category = "Tool|Cooldown")
+	float CooldownPercent; // 0~1
+
+	UPROPERTY(Replicated, BlueprintReadOnly, Category = "Tool|Cooldown")
+	bool bIsOnCooldown;  // ← 반드시 Replicated 표시 필요!!
+
+	UFUNCTION()
+	void OnRep_CooldownPercent();
+
+	UFUNCTION(Server, Reliable)
+	void Server_StartCooldown();
+	
+
+	float ElapsedTime;
+
 public:	
 	// Called every frame
 	// 쿨타임 관련
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Tool|Cooldown")
 	float CooldownTime;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tool|Cooldown")
-	bool bIsOnCooldown;
-
+	float CooldownElapsed;
 	FTimerHandle CooldownTimerHandle;
 
+
+	UPROPERTY(BlueprintAssignable, Category="Tool|Event")
+	FToolCooldownUpdated OnCooldownUpdated;
+
+	UPROPERTY(BlueprintAssignable, Category="Tool|Event")
+	FToolCooldownEnded OnCooldownEnded;
 	UFUNCTION()
 	virtual void StartCooldown();
 

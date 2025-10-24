@@ -8,6 +8,7 @@
 #include "ReviveComponent.h"
 #include "Components/BoxComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Ludens_P/Ludens_PCharacter.h"
 
 // Sets default values
@@ -73,5 +74,9 @@ void AHealPack::SpawnHealVFX_Implementation()
 	if (HealVFX)
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), HealVFX, GetActorLocation());
+	}
+	if (HealSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), HealSound, GetActorLocation());
 	}
 }
