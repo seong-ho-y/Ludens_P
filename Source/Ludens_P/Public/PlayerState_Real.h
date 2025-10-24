@@ -56,13 +56,13 @@ public:
 	EEnemyColor PlayerColor;
 	
 	UPROPERTY(Replicated)
-	float MaxHP = 100.f;
+	float MaxHP = 50.f;
 
 	UPROPERTY(Replicated)
-	float MaxShield = 100.f;
+	float MaxShield = 10.f;
 
 	UPROPERTY(Replicated)
-	float MoveSpeed = 1000.f;
+	float MoveSpeed = 800.f;
 
 	UPROPERTY(Replicated)
 	float ShieldRegenSpeed = 0.5f; // 쉴드 재생 속도
@@ -82,7 +82,7 @@ public:
 	float JumpZVelocity = 600.f; // 점프력*/
 
 	UPROPERTY(Replicated)
-	float AttackDamage = 30.f; // 프로젝타일 공격력 ✅
+	float AttackDamage = 3.f; // 프로젝타일 공격력 ✅
 	// ****** ✅
 
 	UPROPERTY(Replicated)
@@ -92,13 +92,13 @@ public:
 	float CriticalRate = 0.1f; // ✅
 
 	UPROPERTY(Replicated)
-	float CriticalDamage = 1.5f; // ✅
+	float CriticalDamage = 1.2f; // ✅
 
 	UPROPERTY(Replicated)
 	float AbsorbDelay = 0.5f; // 젤루 흡수 딜레이 ✅
 
 	UPROPERTY(Replicated)
-	int MaxSavedAmmo = 500; // 최대 저장 가능한 탄알(젤루) ✅
+	int MaxSavedAmmo = 50; // 최대 저장 가능한 탄알(젤루) ✅
 
 	UPROPERTY(Replicated)
 	int MaxAmmo = 15; // 최대 재장전 가능한 탈알(젤루) ✅

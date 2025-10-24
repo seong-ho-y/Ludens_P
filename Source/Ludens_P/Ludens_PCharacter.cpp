@@ -324,7 +324,7 @@ void ALudens_PCharacter::TestAttack(const FInputActionValue& Value)
 {
 	if (PlayerStateComponent)
 	{
-		PlayerStateComponent->TakeDamage(100.0f);
+		PlayerStateComponent->TakeDamage(25.0f);
 	}
 }
 
@@ -416,7 +416,15 @@ void ALudens_PCharacter::Dash(const FInputActionValue& Value)
 		LaunchCharacter(DashDirection * DashSpeed, true, true);
 		// Multicast로 이펙트 활성화 명령 전달**
 		// 서버에서 이 함수를 호출하면, 모든 클라이언트(서버 포함)에서 MulticastControlDashEffect_Implementation이 실행됩니다.
-		MulticastControlDashEffect(true); 
+		MulticastControlDashEffect(true);
+
+		// 대쉬 사운드 재생 -> 근데 오류 걸려서 안 나오길래 그냥 블루프린트로 했다 ㅋㅋ
+		/*if (DashSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), DashSound, GetActorLocation());
+			UE_LOG(LogTemp, Warning, TEXT("Dash sound"));
+		}*/
+		
 		CurrentDashCount--;
 		bCanDash = false;
 		
@@ -669,7 +677,10 @@ void ALudens_PCharacter::Absorb(const FInputActionValue& Value)
 	{
 		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
 	}
-	// 라인 트레이스를 통해 앞에 있는 대상이 무엇인지 판별
+
+	WeaponComponent->HandleAbsorb();
+	
+	/*// 라인 트레이스를 통해 앞에 있는 대상이 무엇인지 판별
 	// 화면 중심에서 월드 방향 구하기
 	FVector WorldLocation = FirstPersonCameraComponent->GetComponentLocation();
 	FRotator CameraRotation = GetActorRotation();
@@ -698,7 +709,7 @@ void ALudens_PCharacter::Absorb(const FInputActionValue& Value)
 		{
 			WeaponComponent->HandleAbsorb();
 		}
-	}
+	}*/
 }
 
 void ALudens_PCharacter::Server_Absorb_Implementation(const FInputActionValue& Value)
@@ -831,6 +842,7 @@ void ALudens_PCharacter::OnInteract()
 	}
 }
 
+
 void ALudens_PCharacter::ApplyCosmeticsFromPSROnce()
 {
 	if (bCosmeticsApplied) { UE_LOG(LogTemp, Verbose, TEXT("[Cosmetics] Skip: already applied")); return; }
@@ -867,6 +879,14 @@ void ALudens_PCharacter::ApplyCosmeticsFromPSROnce()
 			// 폴백으로 적용했으면 잠그지 않음 → 이후 정상 값 들어오면 재적용 가능
 			UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] Applied with fallback; NOT locking (Auth=%d Pawn=%s)"), (int32)HasAuthority(), *GetName());
 		}
+	}
+
+	// 1P 적용 추가
+	if (USkeletalMeshComponent* MeshFP = Mesh1P)
+	{
+		AppearanceDB->Apply1P(MeshFP, ApId, PSRLocal->PlayerColor);
+		UE_LOG(LogTemp, Display, TEXT("[Cosmetics1P] Applied Ap=%d Color=%d Auth=%d Pawn=%s"),
+			ApId, (int32)PSRLocal->PlayerColor, (int32)HasAuthority(), *GetName());
 	}
 
 }

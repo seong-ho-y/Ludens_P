@@ -3,6 +3,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/SceneCaptureComponent2D.h"
 #include "Engine/TextureRenderTarget2D.h"
+#include "TimerManager.h"
 
 ALobbyPreviewRig::ALobbyPreviewRig()
 {
@@ -135,5 +136,7 @@ void ALobbyPreviewRig::ApplyPreviewFromDB()
     const int32 Ap = FMath::Max(0, CurrentAppearanceId);
 
     AppearanceDB->ApplyToByEnemyColor(PreviewMesh, Ap, ColorToShow);
-    RequestCapture();
+    PreviewMesh->MarkRenderStateDirty(); // 렌더 상태 갱신 요청
+    GetWorld()->GetTimerManager().SetTimerForNextTick(FTimerDelegate::CreateUObject(this, &ALobbyPreviewRig::RequestCapture));
+
 }
