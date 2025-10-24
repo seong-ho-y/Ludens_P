@@ -80,7 +80,7 @@ protected:
     UPROPERTY(meta = (BindWidget)) UButton* Btn_S1;
     UPROPERTY(meta = (BindWidget)) UButton* Btn_S2;
     UPROPERTY(meta = (BindWidget)) UButton* Btn_S3;
-    UPROPERTY(meta = (BindWidget)) UButton* Btn_S4;
+
 
     // (선택) 자기 슬롯 디버그 텍스트
     UPROPERTY(meta = (BindWidgetOptional)) UTextBlock* Txt_SkillSelf;

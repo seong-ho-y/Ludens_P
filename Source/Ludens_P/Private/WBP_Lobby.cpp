@@ -332,7 +332,6 @@ void UWBP_Lobby::BindSkillButtons()
     if (Btn_S1) Btn_S1->OnClicked.AddDynamic(this, &UWBP_Lobby::OnClick_S1);
     if (Btn_S2) Btn_S2->OnClicked.AddDynamic(this, &UWBP_Lobby::OnClick_S2);
     if (Btn_S3) Btn_S3->OnClicked.AddDynamic(this, &UWBP_Lobby::OnClick_S3);
-    if (Btn_S4) Btn_S4->OnClicked.AddDynamic(this, &UWBP_Lobby::OnClick_S4);
 }
 
 void UWBP_Lobby::OnClick_S0() { BP_SetSubskill(0); }
@@ -408,7 +407,6 @@ void UWBP_Lobby::UpdateReadyToggleUI()
     if (Btn_S1)     Btn_S1->SetIsEnabled(bEnableEdit);
     if (Btn_S2)     Btn_S2->SetIsEnabled(bEnableEdit);
     if (Btn_S3)     Btn_S3->SetIsEnabled(bEnableEdit);
-    if (Btn_S4)     Btn_S4->SetIsEnabled(bEnableEdit);
 
     // ★ 외형 버튼도 함께 잠금
     if (Btn_A0) Btn_A0->SetIsEnabled(bEnableEdit);
@@ -717,3 +715,22 @@ void UWBP_Lobby::UpdatePortraitFromPS() {
 void UWBP_Lobby::RefreshOtherSlots()
 {
 }
+
+// ---- Appearance Button Handlers ----
+void UWBP_Lobby::OnA0Pressed() {}
+void UWBP_Lobby::OnA0Released() {}
+void UWBP_Lobby::OnA0Clicked() { BP_SetAppearance(0); }
+
+void UWBP_Lobby::OnA1Pressed() {}
+void UWBP_Lobby::OnA1Released() {}
+void UWBP_Lobby::OnA1Clicked() { BP_SetAppearance(1); }
+
+void UWBP_Lobby::OnA2Pressed() {}
+void UWBP_Lobby::OnA2Released() {}
+void UWBP_Lobby::OnA2Clicked() { BP_SetAppearance(2); }
+
+void UWBP_Lobby::OnA3Pressed() {}
+void UWBP_Lobby::OnA3Released() {}
+void UWBP_Lobby::OnA3Clicked() { BP_SetAppearance(3); }
+// ---- /Appearance Button Handlers ----
+    
