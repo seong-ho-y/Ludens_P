@@ -17,6 +17,9 @@ public:
 	// Sets default values for this actor's properties
 	AElevator();
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
+    int32 RequiredPlayers = 3;
+
     // 3�� ����� ��ε�ĳ��Ʈ �� RoomManager�� ����
     UPROPERTY(BlueprintAssignable, Category = "Elevator")
     FOnAllPlayersReady OnAllPlayersReady;

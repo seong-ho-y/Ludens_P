@@ -46,6 +46,9 @@ public:
 	// Sets default values for this actor's properties
 	ARoomManager();
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
+    int32 RequiredPlayers = 3;
+
     // 총 몇 개의 방을 만들 것인지
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Room")
     int32 NumRoomsToSpawn = 5;
