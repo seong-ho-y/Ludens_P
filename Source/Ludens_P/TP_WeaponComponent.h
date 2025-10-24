@@ -55,6 +55,10 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	UNiagaraSystem* FireNiagara;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UNiagaraSystem* AbsorbNiagara;
+	
 protected:
 	UPROPERTY()
 	class UJellooComponent* TargetJelloo = nullptr; // 현재 흡수하고 있는 젤루

@@ -188,7 +188,8 @@ void UTP_WeaponComponent::HandleAbsorb()
 	// 화면 중심에서 월드 방향 구하기
 	FVector WorldLocation = Ludens_PCharacter->FirstPersonCameraComponent->GetComponentLocation();
 	FRotator CameraRotation = Character->GetActorRotation();
-	if (APlayerController* PC = Cast<APlayerController>(Character->GetController()))
+	APlayerController* PC = Cast<APlayerController>(Character->GetController());
+	if (PC)
 	{
 		CameraRotation = PC->PlayerCameraManager->GetCameraRotation();
 	}
@@ -214,11 +215,35 @@ void UTP_WeaponComponent::HandleAbsorb()
 		UE_LOG(LogTemp, Error, TEXT("[PlayerStateComponent] PSR is nullptr! in HandleAbsorb"));
 		return;
 	}
-
+	
 	// 몽타주 재생
 	if (!GetWorld()->GetTimerManager().IsTimerActive(AbsorbMontageTimerHandle))
 	{
 		GetWorld()->GetTimerManager().SetTimer(AbsorbMontageTimerHandle, this, &UTP_WeaponComponent::AbsorbMontageFunction, AbsorbDelay, false);
+	}
+
+	// *** 흡수 나이아가라 ***
+	FRotator SpawnRotation = PC->PlayerCameraManager->GetCameraRotation();
+	
+	// Pitch 보정용 쿼터니언 생성(위쪽으로 7도 회전)
+	FQuat PitchAdjustment = FQuat(Character->GetActorRightVector(), FMath::DegreesToRadians(-7.0f));
+
+	// 회전 쿼터니언에 보정 곱하기
+	FQuat SpawnQuat = SpawnRotation.Quaternion();
+	SpawnQuat = PitchAdjustment * SpawnQuat;
+
+	// 다시 Rotator로 변환
+	SpawnRotation = SpawnQuat.Rotator();
+	
+	// 총구 앞쪽에서 발사
+	constexpr float Distance = 10.0f;
+	FVector FireDirection = SpawnRotation.Vector();
+	FVector SpawnLocation = GetMuzzleLocation() + FireDirection * Distance;
+
+	if (AbsorbNiagara)
+	{
+		FRotator NiagaraRotation(0.0f, SpawnRotation.Yaw, 0.0f);
+		MulticastSpawnEffect(AbsorbNiagara, SpawnLocation - FVector(20,0,0), NiagaraRotation); // 흡수할 때 총구 쪽에 나이아가라 재생
 	}
 	
 	// 6. CreatureCombatComponent가 있으면 데미지 적용
