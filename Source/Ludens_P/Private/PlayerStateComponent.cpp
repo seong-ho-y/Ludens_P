@@ -107,6 +107,11 @@ void UPlayerStateComponent::UpdateVignetteOpacity()
 	}
 }
 
+void UPlayerStateComponent::RevertMoveSpeed()
+{
+	MoveSpeed = PSR->MoveSpeed;
+}
+
 void UPlayerStateComponent::Multicast_PlayDamageUI_Implementation()
 {
 	// 이 함수는 서버와 모든 클라이언트에서 실행됩니다.
