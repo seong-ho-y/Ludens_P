@@ -55,6 +55,10 @@ public:
 
 	UPROPERTY(BlueprintReadWrite, EditAnywhere)
 	UNiagaraSystem* FireNiagara;
+
+	UPROPERTY(BlueprintReadWrite, EditAnywhere)
+	UNiagaraSystem* AbsorbNiagara;
+	
 protected:
 	UPROPERTY()
 	class UJellooComponent* TargetJelloo = nullptr; // 현재 흡수하고 있는 젤루
@@ -90,6 +94,8 @@ public:
 	void HandleAbsorb(); // 서버에서 실행되는 젤루 흡수 로직
 	void PerformAbsorb();
 	void StopPerformAbsorb();
+	void AbsorbMontageFunction();
+	
 protected:
 	UPROPERTY()
 	float AbsorbRange = 200.f; // 젤루 흡수 사거리
@@ -98,6 +104,7 @@ protected:
 	UPROPERTY(Replicated)
 	int16 AbsorbAmount = 1; // 젤루 흡수 양 -> 나중에 이 수를 증가 시켜 젤루 흡수 속도 증가 같은 강화 요소로 쓸 수 있을 듯
 	FTimerHandle AbsorbDelayTimer;
+	FTimerHandle AbsorbMontageTimerHandle;
 	bool bIsAbsorbing = false;
 	
 	/** Ends gameplay for this component. */

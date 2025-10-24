@@ -7,6 +7,7 @@
 #include "TimerManager.h"
 #include "SWarningOrErrorBox.h"
 #include "DSP/Delay.h"
+#include "Kismet/GameplayStatics.h"
 #include "Net/UnrealNetwork.h"
 #include "Ludens_P/Ludens_PGameMode.h"
 
@@ -153,6 +154,15 @@ void UPlayerStateComponent::TakeDamage(float Amount)
 	{
 		Server_RequestDamageUI(); // 클라의 경우 서버에 UI 재생 요청
 	}
+
+	// 데미지 입었을 때 사운드
+	if (HitSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(
+			this,                 // WorldContextObject
+			HitSound,            // Sound
+			Character->GetActorLocation());
+	}
 	
 	// 쉴드가 남아 있을 경우 쉴드가 먼저 데미지를 받음.
 	if (CurrentShield > 0)
@@ -213,8 +223,11 @@ void UPlayerStateComponent::Knocked()
 	IsKnocked = true;
 	MoveSpeed = KnockedMoveSpeed;
 	if (Character)
-		Character->GetCharacterMovement()->MaxWalkSpeed = MoveSpeed;
+		Character->GetCharacterMovement()->MaxWalkSpeed = KnockedMoveSpeed;
 
+	/*KnockedTimeRemaining = 15.0f;
+	bIsKnockedTimerPaused = false;*/
+	
 	// 서버는 UI를 띄워야 하므로 Multicast 호출
 	// Multicast_PlayDamageUI(); // Knocked가 되었을 때도 UI를 띄웁니다.
 
@@ -330,6 +343,11 @@ void UPlayerStateComponent::UpdateMoveSpeed()
 	}	
 }
 
+void UPlayerStateComponent::RevertMoveSpeed()
+{
+	MoveSpeed = PSR->MoveSpeed;
+}
+
 void UPlayerStateComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
@@ -342,11 +360,13 @@ void UPlayerStateComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>
 	DOREPLIFETIME(UPlayerStateComponent, IsKnocked);
 	DOREPLIFETIME(UPlayerStateComponent, IsDead);
 	DOREPLIFETIME(UPlayerStateComponent, MoveSpeed);
-
+	/*DOREPLIFETIME(UPlayerStateComponent, KnockedTimeRemaining);
+	DOREPLIFETIME(UPlayerStateComponent, bIsKnockedTimerPaused);*/
+	
 	// 상성 색 복제 추가
 
 	DOREPLIFETIME(UPlayerStateComponent, PlayerColor);
-	DOREPLIFETIME(UPlayerStateComponent, bCanRegenShield); // 경고 해소
+	DOREPLIFETIME(UPlayerStateComponent, bCanRegenShield); 
 }
 
 static FORCEINLINE void OpApplyF(float& S, ERewardOpType Op, float V)
@@ -446,3 +466,4 @@ void UPlayerStateComponent::SyncMoveSpeedFromPSR(APlayerState_Real* PS_R)
 
 	UpdateMoveSpeed();
 }
+
