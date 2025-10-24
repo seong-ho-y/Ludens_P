@@ -7,6 +7,7 @@
 #include "Components/BoxComponent.h"
 #include "Room.generated.h"
 
+class AEnemySpawnPoint;
 class ARoomManager;
 class ADoor;
 
@@ -18,33 +19,34 @@ class LUDENS_P_API ARoom : public AActor
 public:
 	// Sets default values for this actor's properties
 	ARoom();
+    // Room.h
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Enemy")
+    TArray<AEnemySpawnPoint*> RoomSpawnPoints;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
-    int32 RequiredPlayers = 3;
 
-    // ¹®°ú ¿¬°áÇÒ ¼ö ÀÖµµ·Ï º¯¼ö ³ëÃâ
+    // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Öµï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Door")
-    ADoor* EntryDoor;   // ÀÔ±¸ ÂÊ ¹® (´ÙÀ½ ¹æ ÀÔÀå ÈÄ ´ÝÈ÷°Ô µÉ ¹®)
+    ADoor* EntryDoor;   // ï¿½Ô±ï¿½ ï¿½ï¿½ ï¿½ï¿½ (ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½)
 
     UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Door")
-    ADoor* ExitDoor;    // ¹æÀÌ Å¬¸®¾îµÇ¸é ¿­¸± ¹®
+    ADoor* ExitDoor;    // ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½Ç¸ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
 
-    // ¾î¶² Á¾·ùÀÇ ¹®À» »ý¼ºÇÒÁö °áÁ¤ÇÏ´Â Å¬·¡½º º¯¼ö
+    // ï¿½î¶² ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½Ï´ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     UPROPERTY(EditAnywhere, Category = "Door")
     TSubclassOf<ADoor> DoorClass;
 
-    // ¹® »ý¼º À§Ä¡
+    // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½Ä¡
     UPROPERTY(EditAnywhere, Category = "Door|Layout")
     FVector2D EntryDoorOffset = FVector2D(-1000.f, 0.f);
 
     UPROPERTY(EditAnywhere, Category = "Door|Layout")
     FVector2D ExitDoorOffset = FVector2D(1000.f, 0.f);
 
-    // ¹æ ÀÔÀå Ã¼Å©¿ë Æ®¸®°Å
+    // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ Ã¼Å©ï¿½ï¿½ Æ®ï¿½ï¿½ï¿½ï¿½
     UPROPERTY(VisibleAnywhere, Category = "Room")
     UBoxComponent* EntryTrigger;
 
-    // ¹æ Å©±â (XÃà ±âÁØ)
+    // ï¿½ï¿½ Å©ï¿½ï¿½ (Xï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
     UPROPERTY(EditAnywhere, Category = "Room|Layout")
     float RoomSize = 2000.f;
 
@@ -52,20 +54,20 @@ protected:
 	virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-    TSet<AActor*> EnteredPlayers;  // Áßº¹ ¹æÁö¸¦ À§ÇÑ ÁýÇÕ
+    TSet<AActor*> EnteredPlayers;  // ï¿½ßºï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
 
     // void AutoClear();
 
 public:
-    // ¹æ ½ÃÀÛ (5ÃÊ ÈÄ ÀÚµ¿ Å¬¸®¾î)
+    // ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ (5ï¿½ï¿½ ï¿½ï¿½ ï¿½Úµï¿½ Å¬ï¿½ï¿½ï¿½ï¿½)
     void StartRoom();
 
-    // RoomManager¿¡¼­ È£Ãâ
+    // RoomManagerï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½
     void SetManager(ARoomManager* InManager);
 
     void SetRoomIndex(int32 Index);
 
-    // Æ®¸®°Å ¿À¹ö·¦ Ã³¸®
+    // Æ®ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
     UFUNCTION()
     virtual void OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
         UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
@@ -75,26 +77,27 @@ public:
     FVector GetEntryDoorWorldPos() const { return GetActorLocation() + FVector(EntryDoorOffset.X, EntryDoorOffset.Y, 0.f); }
     FVector GetExitDoorWorldPos()  const { return GetActorLocation() + FVector(ExitDoorOffset.X, ExitDoorOffset.Y, 0.f); }
 
-private:
+protected:
     UPROPERTY() ARoomManager* Manager;
 
+private:
     int32 RoomIndex = -1;
     bool bIsCleared = false;
 
-    // Áö¿¬ Å¬¸®¾î¡± ¼³Á¤°ª (BP¿¡¼­ Á¶Àý °¡´É)
+    // ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½î¡± ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ (BPï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½)
     UPROPERTY(EditDefaultsOnly, Category = "Room|Clear")
-    float ClearDelaySeconds = 1.5f;   // 0.8~1.5s ÃßÃµ
+    float ClearDelaySeconds = 1.5f;   // 0.8~1.5s ï¿½ï¿½Ãµ
 
-    // Áßº¹ ¿¹¾à ¹æÁö/Ãë¼Ò¿ë
+    // ï¿½ßºï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½/ï¿½ï¿½Ò¿ï¿½
     bool bClearPending = false;
     FTimerHandle ClearDelayTimer;
 
-    // ¸ðµÎ Ã³Ä¡ ÀÌº¥Æ® ÄÝ¹é
+    // ï¿½ï¿½ï¿½ Ã³Ä¡ ï¿½Ìºï¿½Æ® ï¿½Ý¹ï¿½
     UFUNCTION() void HandleAllEnemiesKilled();
 
-    void ScheduleClearWithDelay();   // Áö¿¬ Å¬¸®¾î ¿¹¾à
-    void CancelPendingClear();       // ÇÊ¿ä ½Ã ¿¹¾à Ãë¼Ò
-    void DoClear();                  // ½ÇÁ¦ Å¬¸®¾î Ã³¸®
+    void ScheduleClearWithDelay();   // ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
+    void CancelPendingClear();       // ï¿½Ê¿ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
+    void DoClear();                  // ï¿½ï¿½ï¿½ï¿½ Å¬ï¿½ï¿½ï¿½ï¿½ Ã³ï¿½ï¿½
 
 public:
     UFUNCTION(BlueprintCallable, Category = "Room|Trigger")

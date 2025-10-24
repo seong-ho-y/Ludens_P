@@ -34,6 +34,19 @@ public:
 
 	AEnemyBase();
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* AttackSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* HitSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* DeathSound;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
+	USoundBase* SpawnSound;
+
+	
 	FOnEnemyDied OnEnemyDied;
 	
 	void Deactivate();
@@ -63,6 +76,7 @@ protected:
 	virtual void BeginPlay() override;
 public:
 	void InitializeEnemy(const FEnemySpawnProfile& Profile);
+	void PlaySoundAtEnemy(USoundBase* Sound);
 
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const;
 

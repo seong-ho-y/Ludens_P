@@ -3,6 +3,7 @@
 
 #include "Room.h"
 #include "Door.h"
+#include "EnemySpawnPoint.h"
 #include "RoomManager.h"
 #include "Engine/Engine.h"
 #include "Engine/World.h"
@@ -33,6 +34,18 @@ void ARoom::BeginPlay()
 
     if (HasAuthority())
     {
+        TArray<AActor*> AttachedActors;
+        GetAttachedActors(AttachedActors);
+
+        for (AActor* Actor : AttachedActors)
+        {
+            if (AEnemySpawnPoint* SpawnPoint = Cast<AEnemySpawnPoint>(Actor))
+            {
+                RoomSpawnPoints.Add(SpawnPoint);
+            }
+        }
+
+        UE_LOG(LogTemp, Log, TEXT("[Room] %s found %d SpawnPoints"), *GetName(), RoomSpawnPoints.Num());
         if (EntryTrigger)
         {
             EntryTrigger->OnComponentBeginOverlap.AddDynamic(this, &ARoom::OnEntryTriggerBegin);
@@ -85,7 +98,8 @@ void ARoom::StartRoom()
             GM->OnAllEnemiesKilled.RemoveDynamic(this, &ARoom::HandleAllEnemiesKilled);
             GM->OnAllEnemiesKilled.AddDynamic(this, &ARoom::HandleAllEnemiesKilled);
 
-            GM->StartSpawningEnemies();
+            // ✅ 기존 StartSpawningEnemies() 대신, 이 방의 포인트만 사용하도록 변경
+            GM->StartSpawningEnemiesInRoom(this);
 
             // 방에 적이 하나도 없다면, 즉시가 아니라 “짧은 지연 후” 클리어
             if (GM->GetAliveEnemyCount() <= 0)
@@ -260,18 +274,18 @@ void ARoom::OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* Oth
     // 부모에서 승격한 EnteredPlayers 사용
     EnteredPlayers.Add(OverlappingCharacter);
 
-    if (HasAuthority())
+    if (HasAuthority() && Manager)
     {
         if (GEngine)
         {
-            FString Msg = FString::Printf(TEXT("[Room] Waiting: %d / %d"), EnteredPlayers.Num(), RequiredPlayers);
+            FString Msg = FString::Printf(TEXT("[Room] Waiting: %d / %d"), EnteredPlayers.Num(), Manager->RequiredPlayers);
             GEngine->AddOnScreenDebugMessage(4, 4.f, FColor::White, Msg);
         }
 
-        if (EnteredPlayers.Num() == RequiredPlayers)
+        if (EnteredPlayers.Num() == Manager->RequiredPlayers)
         {
             if (EntryDoor) EntryDoor->Close();      // 문 닫고
-            if (Manager) Manager->StartNextRoom();  // 다음 방 시작
+            Manager->StartNextRoom();  // 다음 방 시작
 
             DisableEntryTrigger(true);
         }
