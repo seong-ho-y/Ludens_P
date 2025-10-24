@@ -183,9 +183,17 @@ void ARoomManager::NotifyRoomCleared(int32 RoomIndex)
 void ARoomManager::LayoutChain()
 {
     TArray<ARoom*> Chain;
-    if (StartElevator) { Chain.Add(StartElevator); }
+    if (StartElevator)
+    { 
+        Chain.Add(StartElevator);
+        StartElevator->SetManager(this);
+    }
     Chain.Append(SpawnedRooms);
-    if (EndElevator) { Chain.Add(EndElevator); }
+    if (EndElevator)
+    { 
+        Chain.Add(EndElevator);
+        EndElevator->SetManager(this);
+    }
 
     if (Chain.Num() == 0) return;
 

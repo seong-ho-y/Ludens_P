@@ -19,9 +19,6 @@ public:
 	// Sets default values for this actor's properties
 	ARoom();
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Player")
-    int32 RequiredPlayers = 3;
-
     // 문과 연결할 수 있도록 변수 노출
     UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category = "Door")
     ADoor* EntryDoor;   // 입구 쪽 문 (다음 방 입장 후 닫히게 될 문)
@@ -75,9 +72,10 @@ public:
     FVector GetEntryDoorWorldPos() const { return GetActorLocation() + FVector(EntryDoorOffset.X, EntryDoorOffset.Y, 0.f); }
     FVector GetExitDoorWorldPos()  const { return GetActorLocation() + FVector(ExitDoorOffset.X, ExitDoorOffset.Y, 0.f); }
 
-private:
+protected:
     UPROPERTY() ARoomManager* Manager;
 
+private:
     int32 RoomIndex = -1;
     bool bIsCleared = false;
 

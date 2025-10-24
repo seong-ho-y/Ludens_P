@@ -260,18 +260,18 @@ void ARoom::OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* Oth
     // 부모에서 승격한 EnteredPlayers 사용
     EnteredPlayers.Add(OverlappingCharacter);
 
-    if (HasAuthority())
+    if (HasAuthority() && Manager)
     {
         if (GEngine)
         {
-            FString Msg = FString::Printf(TEXT("[Room] Waiting: %d / %d"), EnteredPlayers.Num(), RequiredPlayers);
+            FString Msg = FString::Printf(TEXT("[Room] Waiting: %d / %d"), EnteredPlayers.Num(), Manager->RequiredPlayers);
             GEngine->AddOnScreenDebugMessage(4, 4.f, FColor::White, Msg);
         }
 
-        if (EnteredPlayers.Num() == RequiredPlayers)
+        if (EnteredPlayers.Num() == Manager->RequiredPlayers)
         {
             if (EntryDoor) EntryDoor->Close();      // 문 닫고
-            if (Manager) Manager->StartNextRoom();  // 다음 방 시작
+            Manager->StartNextRoom();  // 다음 방 시작
 
             DisableEntryTrigger(true);
         }
