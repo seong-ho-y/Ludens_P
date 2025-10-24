@@ -167,6 +167,14 @@ void AEnemyBase::InitializeEnemy(const FEnemySpawnProfile& Profile)
 			  false);
 	}
 }
+
+void AEnemyBase::PlaySoundAtEnemy(USoundBase* Sound)
+{
+	if (Sound && GetWorld())
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), Sound, GetActorLocation());
+	}
+}
 void AEnemyBase::OnHealthUpdated(float NewCurrentHP, float NewMaxHP)
 {
 	// 위젯에 업데이트 명령을 내립니다.
@@ -368,6 +376,7 @@ void AEnemyBase::PlaySpawnVFX_Implementation()
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), SpawnVFX, GetActorLocation());
 	}
+	PlaySoundAtEnemy(SpawnSound);
 }
 
 FLinearColor AEnemyBase::GetColorValue(EEnemyColor Color) const
@@ -445,6 +454,7 @@ void AEnemyBase::PlayAttackMontage_Implementation()
 		if (!AnimInstance->IsAnyMontagePlaying())
 		AnimInstance->Montage_Play(MeleeAttackMontage);
 	}
+	PlaySoundAtEnemy(AttackSound);
 }
 // 이 함수는 서버에서만 호출되어야 합니다.
 void AEnemyBase::ChangeColorType(EEnemyColor NewColor)
@@ -606,7 +616,7 @@ float AEnemyBase::TakeDamage(float DamageAmount, FDamageEvent const& DamageEvent
 	 */
 	
 	HitFeedbackComponent->PlayHitEffects(Loc);
-	
+	PlaySoundAtEnemy(HitSound);
 	return DamageAmount;
 }
 
@@ -621,6 +631,7 @@ void AEnemyBase::HandleDied()
     // 0. 적이 죽었음을 방송하기 (EnemyCount 세는 용도)
 	OnEnemyDied.Broadcast(this);
 
+	PlaySoundAtEnemy(DeathSound);
 	// 0-1. 죽었을 때 VFX
 	SpawnDeadVFX();
 	
