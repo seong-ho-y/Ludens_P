@@ -189,7 +189,12 @@ void ALudens_PGameMode::HandleEnemyDied(AEnemyBase* EnemyBase)
 	if (HasAuthority())
 	{
 		EnemyCount--;
-		//if (EnemyCount<=0) UE_LOG(LogTemp,Warning,TEXT("All Enemy Got Killed"));
+		UE_LOG(LogTemp, Error, TEXT("Enemy Got Killed"));
+		if (EnemyCount<=0)
+		{
+			OnAllEnemiesKilled.Broadcast();
+			UE_LOG(LogTemp,Warning,TEXT("All Enemy Got Killed"));
+		}
 	}
 	
 }
@@ -302,34 +307,66 @@ FEnemySpawnProfile ALudens_PGameMode::CreateRandomEnemyProfile()
 }
 
 void ALudens_PGameMode::StartSpawningEnemiesInRoom(ARoom* Room)
-{if (!Room || !PoolManager)
 {
-	UE_LOG(LogTemp, Error, TEXT("Room 또는 PoolManager가 유효하지 않습니다."));
-	return;
-}
-
-	const TArray<AEnemySpawnPoint*>& SpawnPoints = Room->RoomSpawnPoints;
-	if (SpawnPoints.Num() == 0)
+	if (!Room)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("⚠️ 방에 스폰포인트가 없습니다."));
+		UE_LOG(LogTemp, Error, TEXT("❌ StartSpawningEnemiesInRoom: Room이 nullptr입니다."));
 		return;
 	}
 
-	EnemyCount = SpawnPoints.Num();
-
-	for (AEnemySpawnPoint* Point : SpawnPoints)
+	if (!PoolManager)
 	{
-		FVector Loc = Point->GetActorLocation();
-		const FEnemySpawnProfile Profile = CreateRandomEnemyProfile();
-		if (AEnemyBase* Enemy = PoolManager->SpawnEnemy(Profile, Loc, FRotator::ZeroRotator))
-		{
-			Enemy->OnEnemyDied.AddUObject(this, &ALudens_PGameMode::HandleEnemyDied);
-		}
-		else
-		{
-			--EnemyCount;
-		}
+		UE_LOG(LogTemp, Error, TEXT("❌ StartSpawningEnemiesInRoom: PoolManager를 찾을 수 없습니다!"));
+		return;
 	}
 
-	UE_LOG(LogTemp, Display, TEXT("[GameMode] %s에서 %d명의 적 스폰 완료"), *Room->GetName(), EnemyCount);
+	// ✅ 1) 스폰 포인트 수집
+	const TArray<AEnemySpawnPoint*>& SpawnPoints = Room->RoomSpawnPoints;
+	const int32 SpawnPointCount = SpawnPoints.Num();
+
+	if (SpawnPointCount == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("⚠️ [%s] 방에는 EnemySpawnPoint가 없습니다."), *Room->GetName());
+		return;
+	}
+
+	// ✅ 2) 스폰 수 결정
+	const int32 NumberOfEnemiesToSpawn = SpawnPointCount; // 방에 있는 포인트 수 기준
+	EnemyCount = NumberOfEnemiesToSpawn;
+
+	// ✅ 3) 실제 스폰 루프
+	for (int32 i = 0; i < NumberOfEnemiesToSpawn; ++i)
+	{
+		AEnemySpawnPoint* SpawnPoint = SpawnPoints[i];
+		if (!SpawnPoint)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("[%s] SpawnPoint[%d]가 nullptr입니다. 건너뜁니다."), *Room->GetName(), i);
+			--EnemyCount;
+			continue;
+		}
+
+		const FVector SpawnLoc = SpawnPoint->GetActorLocation();
+		const FRotator SpawnRot = SpawnPoint->GetActorRotation();
+
+		const FEnemySpawnProfile Profile = CreateRandomEnemyProfile();
+
+		AEnemyBase* SpawnedEnemy = PoolManager->SpawnEnemy(Profile, SpawnLoc, SpawnRot);
+		if (!SpawnedEnemy)
+		{
+			UE_LOG(LogTemp, Error, TEXT("[%s] Enemy 스폰 실패 (인덱스 %d)."), *Room->GetName(), i);
+			--EnemyCount;
+			continue;
+		}
+
+		// ✅ C++ 델리게이트 바인딩 복구
+		SpawnedEnemy->OnEnemyDied.AddUObject(this, &ALudens_PGameMode::HandleEnemyDied);
+
+		// ✅ 로그로 스폰 확인
+		UE_LOG(LogTemp, Verbose, TEXT("[%s] Enemy #%d 스폰 완료: %s"),
+			*Room->GetName(), i, *SpawnedEnemy->GetName());
+	}
+
+	UE_LOG(LogTemp, Display, TEXT("[GameMode] ✅ %s 방에서 총 %d마리 적 스폰 완료."),
+		*Room->GetName(), EnemyCount);
 }
+

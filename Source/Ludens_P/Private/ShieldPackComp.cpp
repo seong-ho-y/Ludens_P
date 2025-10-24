@@ -35,13 +35,12 @@ void UShieldPackComp::TickComponent(float DeltaTime, ELevelTick TickType, FActor
 	// ...
 }
 
-void UShieldPackComp::Interact_Implementation(APawn* InstigatorPawn)
+void UShieldPackComp::PerformToolAction(APawn* InstigatorPawn)
 {
-	IToolInterface::Interact_Implementation(InstigatorPawn);
-
+	Super::PerformToolAction(InstigatorPawn);
 	Server_GetShield();
-	
 }
+
 
 void UShieldPackComp::Server_GetShield_Implementation()
 {

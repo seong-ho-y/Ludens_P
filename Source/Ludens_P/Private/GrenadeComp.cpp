@@ -11,7 +11,8 @@ UGrenadeComp::UGrenadeComp()
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
 	PrimaryComponentTick.bCanEverTick = true;
-
+	CooldownTime = 15.0f;
+	bIsOnCooldown = false;
 	// ...
 }
 
@@ -25,19 +26,16 @@ void UGrenadeComp::BeginPlay()
 	
 }
 
-
-// Called every frame
-void UGrenadeComp::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+bool UGrenadeComp::CanUseTool_Implementation() const
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
+	return !bIsOnCooldown;
 }
 
-void UGrenadeComp::Interact_Implementation(APawn* InstigatorPawn)
+void UGrenadeComp::PerformToolAction(APawn* InstigatorPawn)
 {
-	IToolInterface::Interact_Implementation(InstigatorPawn);
-	UE_LOG(LogTemp, Log, TEXT("Grenade Tool Interact Called"));
+	Super::PerformToolAction(InstigatorPawn);
+	UE_LOG(LogTemp, Log, TEXT("Grenade Tool Fired!"));
+	PlayToolSound(InstigatorPawn); // 공통 재생 함수 호출
 	Server_ThrowGrenade();
 }
 

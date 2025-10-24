@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ToolBaseComponent.h"
 #include "ToolInterface.h"
 #include "Components/ActorComponent.h"
 #include "ShieldPackComp.generated.h"
@@ -11,7 +12,7 @@
 class UNiagaraSystem;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
-class LUDENS_P_API UShieldPackComp : public UActorComponent, public IToolInterface
+class LUDENS_P_API UShieldPackComp : public UToolBaseComponent
 {
 	GENERATED_BODY()
 
@@ -43,8 +44,7 @@ public:
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	void Interact_Implementation(APawn* InstigatorPawn) override;
-
+	virtual void PerformToolAction(APawn* InstigatorPawn) override;
 	
 	void RestoreShield();
 
