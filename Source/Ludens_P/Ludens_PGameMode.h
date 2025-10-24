@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
 #include "EEnemyColor.h"
+#include "Room.h"
 #include "Ludens_PGameMode.generated.h"
 
 
@@ -70,6 +71,7 @@ public:
 	
 	// 랜덤 스폰 프로필을 생성하는 함수
 	FEnemySpawnProfile CreateRandomEnemyProfile();
+	void StartSpawningEnemiesInRoom(ARoom* Room);
 	int32 NumLoggedInPlayers = 0;
 	TArray<EEnemyColor> ColorRotation;
 

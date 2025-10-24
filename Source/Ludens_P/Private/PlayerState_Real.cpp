@@ -12,6 +12,7 @@ APlayerState_Real::APlayerState_Real()
 void APlayerState_Real::BeginPlay()
 {
 	Super::BeginPlay();
+	SelectedTool = EToolType::Grenade;
 }
 
 void APlayerState_Real::OnRep_PlayerColor()
