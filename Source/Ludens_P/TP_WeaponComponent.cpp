@@ -184,7 +184,7 @@ void UTP_WeaponComponent::HandleAbsorb()
 		UE_LOG(LogTemp, Error, TEXT("OwnerCharacter is not ALudens_PCharacter!"));
 		return;
 	}
-		
+	
 	// 화면 중심에서 월드 방향 구하기
 	FVector WorldLocation = Ludens_PCharacter->FirstPersonCameraComponent->GetComponentLocation();
 	FRotator CameraRotation = Character->GetActorRotation();
@@ -213,6 +213,12 @@ void UTP_WeaponComponent::HandleAbsorb()
 	{
 		UE_LOG(LogTemp, Error, TEXT("[PlayerStateComponent] PSR is nullptr! in HandleAbsorb"));
 		return;
+	}
+
+	// 몽타주 재생
+	if (!GetWorld()->GetTimerManager().IsTimerActive(AbsorbMontageTimerHandle))
+	{
+		GetWorld()->GetTimerManager().SetTimer(AbsorbMontageTimerHandle, this, &UTP_WeaponComponent::AbsorbMontageFunction, AbsorbDelay, false);
 	}
 	
 	// 6. CreatureCombatComponent가 있으면 데미지 적용
@@ -245,7 +251,6 @@ void UTP_WeaponComponent::PerformAbsorb()
 		GetWorld()->GetTimerManager().ClearTimer(AbsorbDelayTimer);
 		return;
 	}
-	PlayMontage(AbsorbMontage, 1.f);
 	TargetJelloo->JellooTakeDamage(AbsorbAmount);
 	Character->SavedAmmo += AbsorbAmount;
 }
@@ -255,6 +260,11 @@ void UTP_WeaponComponent::StopPerformAbsorb()
 	UE_LOG(LogTemp, Error, TEXT("StopPerformAbsorb"));
 	TargetJelloo = nullptr;
 	GetWorld()->GetTimerManager().ClearTimer(AbsorbDelayTimer);
+}
+
+void UTP_WeaponComponent::AbsorbMontageFunction()
+{
+	PlayMontage(AbsorbMontage, 1.f);
 }
 
 void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) //필요 없을거같은데

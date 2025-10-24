@@ -669,7 +669,10 @@ void ALudens_PCharacter::Absorb(const FInputActionValue& Value)
 	{
 		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
 	}
-	// 라인 트레이스를 통해 앞에 있는 대상이 무엇인지 판별
+
+	WeaponComponent->HandleAbsorb();
+	
+	/*// 라인 트레이스를 통해 앞에 있는 대상이 무엇인지 판별
 	// 화면 중심에서 월드 방향 구하기
 	FVector WorldLocation = FirstPersonCameraComponent->GetComponentLocation();
 	FRotator CameraRotation = GetActorRotation();
@@ -698,7 +701,7 @@ void ALudens_PCharacter::Absorb(const FInputActionValue& Value)
 		{
 			WeaponComponent->HandleAbsorb();
 		}
-	}
+	}*/
 }
 
 void ALudens_PCharacter::Server_Absorb_Implementation(const FInputActionValue& Value)
