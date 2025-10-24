@@ -20,7 +20,16 @@
 #include "Ludens_P/EEnemyColor.h"
 #include "LobbyTypes.h"
 
-
+int32 UWBP_Lobby::ColorToIdx(EEnemyColor Col) const
+{
+    switch (Col)
+    {
+    case EEnemyColor::Red:   return 0;
+    case EEnemyColor::Green: return 1;
+    case EEnemyColor::Blue:  return 2;
+    default:                 return 0;
+    }
+}
 
 
 void UWBP_Lobby::InitPreviewRefs(ALobbyPreviewRig* InSelf, ALobbyPreviewRig* InOtherL, ALobbyPreviewRig* InOtherR)
@@ -40,7 +49,7 @@ void UWBP_Lobby::BP_SetPreviewColor(EEnemyColor InColor)
 {
     CurrentColorCache = InColor; // 위젯 내부 캐시 업데이트
 
-    if (auto* PC = Cast<ALobbyPlayerController>(GetWorld()->GetFirstPlayerController()))
+    if (auto* PC = GetOwningPlayer<ALobbyPlayerController>())
     {
         PC->ServerSetPreviewColor(InColor); // 컨트롤러는 EnemyColor 버전 RPC로 수정해 둔 상태
     }
@@ -59,7 +68,7 @@ void UWBP_Lobby::BP_ReadyOn()
     EEnemyColor FinalColor = CurrentColorCache;
 
     // 2) 안전망: 캐시가 초기값/유효하지 않다고 판단되면 PS의 PreviewColor를 읽어 변환
-    if (auto* PC = Cast<ALobbyPlayerController>(GetWorld()->GetFirstPlayerController()))
+    if (auto* PC = GetOwningPlayer<ALobbyPlayerController>())
     {
         if (auto* PS = PC->GetLobbyPS())
         {
@@ -88,15 +97,20 @@ void UWBP_Lobby::NativeConstruct()
 {
     Super::NativeConstruct();
 
+    // PS 변화 감지 바인딩
+    if (APlayerState_Real* PSR = GetOwningPlayer() ? GetOwningPlayer()->GetPlayerState<APlayerState_Real>() : nullptr) {
+
+    }
+    UpdatePortraitFromPS(); // 초기 1회
+
+
     // 루트 위젯이 포커스를 가질 수 있게(마우스 캡처 안정성 ↑)
     SetIsFocusable(true);
 
     // debug log
     UE_LOG(LogTemp, Warning, TEXT("[UI] Construct: Focusable=1 Widget=%s"), *GetName());
 
-    // 기존 썸네일 초기화/바인딩
-    for (UBorder* B : AllDim()) if (B) B->SetVisibility(ESlateVisibility::Hidden);
-    for (UBorder* B : AllSel()) if (B) B->SetVisibility(ESlateVisibility::Hidden);
+
     BindAppearanceButton(0, Btn_A0);
     BindAppearanceButton(1, Btn_A1);
     BindAppearanceButton(2, Btn_A2);
@@ -120,7 +134,6 @@ void UWBP_Lobby::NativeConstruct()
         {
             PS_Cached->OnAnyLobbyFieldChanged.AddDynamic(this, &UWBP_Lobby::OnPSChanged);
             bPSBound = true;
-            UpdateAppearanceHighlight();
 
             UpdateReadyToggleUI();
             UpdateGameStartUI();
@@ -166,46 +179,27 @@ void UWBP_Lobby::BindAppearanceButton(int32 Index, UButton* Btn)
     }
 }
 
-void UWBP_Lobby::SetDimVisible(int32 Index, bool bVisible)
-{
-    TArray<UBorder*> D = AllDim();
-    if (D.IsValidIndex(Index) && D[Index])
-        D[Index]->SetVisibility(bVisible ? ESlateVisibility::SelfHitTestInvisible
-            : ESlateVisibility::Hidden);
-}
 
-void UWBP_Lobby::OnA0Pressed() { SetDimVisible(0, true); }
-void UWBP_Lobby::OnA0Released() { SetDimVisible(0, false); }
 
-void UWBP_Lobby::OnA1Pressed() { SetDimVisible(1, true); }
-void UWBP_Lobby::OnA1Released() { SetDimVisible(1, false); }
 
-void UWBP_Lobby::OnA2Pressed() { SetDimVisible(2, true); }
-void UWBP_Lobby::OnA2Released() { SetDimVisible(2, false); }
 
-void UWBP_Lobby::OnA3Pressed() { SetDimVisible(3, true); }
-void UWBP_Lobby::OnA3Released() { SetDimVisible(3, false); }
-
-// 외형
-void UWBP_Lobby::OnA0Clicked() { if (!PS_Cached || PS_Cached->bReady) return; SetDimVisible(0, false); BP_SetAppearance(0); }
-void UWBP_Lobby::OnA1Clicked() { if (!PS_Cached || PS_Cached->bReady) return; SetDimVisible(1, false); BP_SetAppearance(1); }
-void UWBP_Lobby::OnA2Clicked() { if (!PS_Cached || PS_Cached->bReady) return; SetDimVisible(2, false); BP_SetAppearance(2); }
-void UWBP_Lobby::OnA3Clicked() { if (!PS_Cached || PS_Cached->bReady) return; SetDimVisible(3, false); BP_SetAppearance(3); }
 
 void UWBP_Lobby::OnPSChanged()
 {
+    UpdatePortraitFromPS();
 
     // 기존 UI 갱신 루틴 유지
-    UpdateAppearanceHighlight();
     UpdateReadyToggleUI();
     UpdateGameStartUI();
     RefreshOtherSlots();
-
+    
+    /*
     // 중앙 프리뷰 반영 (이제 '값이 바뀐 경우'에만 적용)
     if (!Rig_Self || !PS_Cached)
     {
         return;
     }
+    
 
     const int32      NewAppearanceId = PS_Cached->AppearanceId;
     const bool       bReady = PS_Cached->bReady;
@@ -253,21 +247,10 @@ void UWBP_Lobby::OnPSChanged()
 
         bLastReady = bReady;
     }
+    */
 }
 
 
-void UWBP_Lobby::UpdateAppearanceHighlight()
-{
-    for (UBorder* B : AllSel()) if (B) B->SetVisibility(ESlateVisibility::Hidden);
-
-    int32 Idx = (PS_Cached ? PS_Cached->AppearanceId : -1);
-    if (Idx >= 0 && Idx <= 3)
-    {
-        TArray<UBorder*> S = AllSel();
-        if (S.IsValidIndex(Idx) && S[Idx])
-            S[Idx]->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-    }
-}
 
 
 void UWBP_Lobby::BindColorButtons()
@@ -327,7 +310,6 @@ void UWBP_Lobby::TryBindPS()
             PS_Cached->OnAnyLobbyFieldChanged.AddDynamic(this, &UWBP_Lobby::OnPSChanged);
             bPSBound = true;
 
-            UpdateAppearanceHighlight();
 
             UpdateReadyToggleUI();
             UpdateGameStartUI();
@@ -350,7 +332,6 @@ void UWBP_Lobby::BindSkillButtons()
     if (Btn_S1) Btn_S1->OnClicked.AddDynamic(this, &UWBP_Lobby::OnClick_S1);
     if (Btn_S2) Btn_S2->OnClicked.AddDynamic(this, &UWBP_Lobby::OnClick_S2);
     if (Btn_S3) Btn_S3->OnClicked.AddDynamic(this, &UWBP_Lobby::OnClick_S3);
-    if (Btn_S4) Btn_S4->OnClicked.AddDynamic(this, &UWBP_Lobby::OnClick_S4);
 }
 
 void UWBP_Lobby::OnClick_S0() { BP_SetSubskill(0); }
@@ -426,7 +407,6 @@ void UWBP_Lobby::UpdateReadyToggleUI()
     if (Btn_S1)     Btn_S1->SetIsEnabled(bEnableEdit);
     if (Btn_S2)     Btn_S2->SetIsEnabled(bEnableEdit);
     if (Btn_S3)     Btn_S3->SetIsEnabled(bEnableEdit);
-    if (Btn_S4)     Btn_S4->SetIsEnabled(bEnableEdit);
 
     // ★ 외형 버튼도 함께 잠금
     if (Btn_A0) Btn_A0->SetIsEnabled(bEnableEdit);
@@ -510,6 +490,7 @@ static FLinearColor ColorForSlot(const APlayerState_Real* PS)
     }
 }
 
+/*
 void UWBP_Lobby::RefreshOtherSlots()
 {
     // GS/PC 확보
@@ -553,13 +534,15 @@ void UWBP_Lobby::RefreshOtherSlots()
 
     // ★ Ready 된 상대만 썸네일 캡처 (동적 RT에 1프레임)
     // 썸네일 처리
-    if (L && L->bReady) { PC->CaptureMiniFor(L, /*Left*/true); }
-    else { PC->ClearMiniRT(/*Left*/true); }      // ★ Unready/없음 → 리셋
+    if (L && L->bReady) { PC->CaptureMiniFor(L, true); }
+    else { PC->ClearMiniRT(true); }      // ★ Unready/없음 → 리셋
 
-    if (R && R->bReady) { PC->CaptureMiniFor(R, /*Left*/false); }
-    else { PC->ClearMiniRT(/*Left*/false); }     // ★ Unready/없음 → 리셋
+    if (R && R->bReady) { PC->CaptureMiniFor(R, false); }
+    else { PC->ClearMiniRT(/false); }     // ★ Unready/없음 → 리셋
 
 }
+*/
+
 
 void UWBP_Lobby::RebindOtherPSDelegates()
 {
@@ -690,6 +673,7 @@ static void SetImageRT(UImage* Img, UTextureRenderTarget2D* RT)
     Img->SetBrush(Brush);
 }
 
+
 void UWBP_Lobby::SetPreviewRenderTargets(UTextureRenderTarget2D* SelfRT,
     UTextureRenderTarget2D* LeftRT,
     UTextureRenderTarget2D* RightRT)
@@ -700,3 +684,53 @@ void UWBP_Lobby::SetPreviewRenderTargets(UTextureRenderTarget2D* SelfRT,
 
 }
 
+
+void UWBP_Lobby::UpdatePortraitFromPS() {
+    if (!ImgPortrait) return;
+
+    APlayerState_Real* PSR = GetOwningPlayer() ? GetOwningPlayer()->GetPlayerState<APlayerState_Real>() : nullptr;
+    if (!PSR) return;
+
+    const int32 ApId = FMath::Clamp(PSR->AppearanceId, 0, 3);
+
+    // Ready라면 확정색(SelectedColor), 편집 중이면 프리뷰색(PreviewColor)
+    const EEnemyColor UseColor = PSR->bReady ? PSR->SelectedColor : PSR->PreviewColor;
+    const int32 ColIdx = ColorToIdx(UseColor);
+
+    if (!PortraitByAppearance.IsValidIndex(ApId)) return;
+
+    TSoftObjectPtr<UTexture2D> SoftTex;
+    const FPortraitSet& Set = PortraitByAppearance[ApId];
+    if (ColIdx == 0) SoftTex = Set.C;
+    else if (ColIdx == 1) SoftTex = Set.M;
+    else                  SoftTex = Set.Y;
+
+    if (SoftTex.IsNull()) return;
+
+    // 필요 시 동기 로드(12장 규모라서 OK)
+    UTexture2D* Tex = SoftTex.LoadSynchronous();
+    ImgPortrait->SetBrushFromTexture(Tex, /*bMatchSize=*/true);
+}
+
+void UWBP_Lobby::RefreshOtherSlots()
+{
+}
+
+// ---- Appearance Button Handlers ----
+void UWBP_Lobby::OnA0Pressed() {}
+void UWBP_Lobby::OnA0Released() {}
+void UWBP_Lobby::OnA0Clicked() { BP_SetAppearance(0); }
+
+void UWBP_Lobby::OnA1Pressed() {}
+void UWBP_Lobby::OnA1Released() {}
+void UWBP_Lobby::OnA1Clicked() { BP_SetAppearance(1); }
+
+void UWBP_Lobby::OnA2Pressed() {}
+void UWBP_Lobby::OnA2Released() {}
+void UWBP_Lobby::OnA2Clicked() { BP_SetAppearance(2); }
+
+void UWBP_Lobby::OnA3Pressed() {}
+void UWBP_Lobby::OnA3Released() {}
+void UWBP_Lobby::OnA3Clicked() { BP_SetAppearance(3); }
+// ---- /Appearance Button Handlers ----
+    

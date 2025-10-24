@@ -53,7 +53,10 @@ public:
 
     UPROPERTY(EditDefaultsOnly, Category = "Cosmetics|Slots")
     TArray<int32> WeaponSlotIndex;
-    // (선택) 슬롯 이름까지 쓸 계획이면 여기에 FName 배열도 추가해 이름 우선/인덱스 폴백 가능    
+    // (선택) 슬롯 이름까지 쓸 계획이면 여기에 FName 배열도 추가해 이름 우선/인덱스 폴백 가능
+    // 
+    UPROPERTY(EditDefaultsOnly, Category="Cosmetics|1P")
+    TArray<USkeletalMesh*> AppearanceMeshes1P;
 
 public:
     /** 메쉬 교체 + [캐릭터/무기] 슬롯에 색상별 머티리얼 적용 (프리뷰/인게임 공용) */
@@ -63,4 +66,9 @@ public:
     // ULudensAppearanceData (public:)
     UFUNCTION(BlueprintCallable, Category = "Cosmetics")
     void ApplyToByEnemyColor(class USkeletalMeshComponent* MeshComp, int32 AppearanceIdx, EEnemyColor EnemyColor) const;
+
+    UFUNCTION(BlueprintCallable, Category = "Cosmetics|1P")
+    void Apply1P(class USkeletalMeshComponent* MeshComp, int32 Ap, EEnemyColor Color) const;
+
 };
+
