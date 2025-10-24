@@ -2,8 +2,9 @@
 
 
 #include "ToolBaseComponent.h"
-
+#include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
+#include "Net/UnrealNetwork.h"
 
 // Sets default values for this component's properties
 UToolBaseComponent::UToolBaseComponent()
@@ -17,6 +18,7 @@ UToolBaseComponent::UToolBaseComponent()
 void UToolBaseComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	SetIsReplicated(true);
 }
 
 void UToolBaseComponent::PlayToolSound(APawn* InstigatorPawn)
@@ -41,9 +43,49 @@ void UToolBaseComponent::PlayToolSound(APawn* InstigatorPawn)
 	UGameplayStatics::PlaySoundAtLocation(World, UseSound, Location);
 }
 
+void UToolBaseComponent::OnRep_CooldownPercent()
+{
+	OnCooldownUpdated.Broadcast(CooldownPercent);
+}
+
+void UToolBaseComponent::Server_StartCooldown_Implementation()
+{
+	if (bIsOnCooldown) return;
+	bIsOnCooldown = true;
+	ElapsedTime = 0.f;
+	CooldownPercent = 1.f;
+
+	GetWorld()->GetTimerManager().SetTimer(CooldownTimerHandle, [this]()
+	{
+		if (!bIsOnCooldown) return;
+
+		ElapsedTime += 0.1f;
+		CooldownPercent = FMath::Clamp(1.f - (ElapsedTime / CooldownTime), 0.f, 1.f);
+
+		if (ElapsedTime >= CooldownTime)
+		{
+			bIsOnCooldown = false;
+			CooldownPercent = 0.f;
+			GetWorld()->GetTimerManager().ClearTimer(CooldownTimerHandle);
+		}
+
+		// Replication 업데이트 (변경 감지)
+		MarkPackageDirty();
+
+	}, 0.1f, true);
+}
+
+void UToolBaseComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(UToolBaseComponent, CooldownPercent);
+	DOREPLIFETIME(UToolBaseComponent, bIsOnCooldown);
+}
 void UToolBaseComponent::StartCooldown()
 {
 	bIsOnCooldown = true;
+	CooldownElapsed = 0.f;
 	GetWorld()->GetTimerManager().SetTimer(
 		CooldownTimerHandle,
 		this,

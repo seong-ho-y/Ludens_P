@@ -21,7 +21,7 @@ public:
 	UDecolorComp();
 
 	UPROPERTY(EditAnywhere, Category = "Projectile")
-	TSubclassOf<ADeColorProjec> DeColorProjectile;  
+	TSubclassOf<ADeColorProjec> DeColorProjectile;
 
 protected:
 	// Called when the game starts
