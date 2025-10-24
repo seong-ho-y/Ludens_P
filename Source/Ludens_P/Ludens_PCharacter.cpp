@@ -809,15 +809,36 @@ void ALudens_PCharacter::PossessedBy(AController* NewController)
 
 void ALudens_PCharacter::OnInteract()
 {
-	// 현재 활성화된 도구 컴포넌트가 있는지 확인
-	if (ToolComponent)
+	if (!ToolComponent)
 	{
-		// 컴포넌트가 ToolInterface를 구현했는지 확인
-		if (ToolComponent->GetClass()->ImplementsInterface(UToolInterface::StaticClass()))
-		{
-			// 인터페이스 함수를 호출
-			IToolInterface::Execute_Interact(ToolComponent, this);
-		}
+		UE_LOG(LogTemp, Error, TEXT("ToolComponent is nullptr"));
+		return;
+	}
+
+	UClass* ToolClass = ToolComponent->GetClass();
+	if (!ToolClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ToolComponent has no valid class"));
+		return;
+	}
+
+	if (!ToolClass->ImplementsInterface(UToolInterface::StaticClass()))
+	{
+		UE_LOG(LogTemp, Error, TEXT("ToolComponent %s does not implement ToolInterface"), *ToolClass->GetName());
+		return;
+	}
+
+	const bool bCanUse = IToolInterface::Execute_CanUseTool(ToolComponent);
+	UE_LOG(LogTemp, Log, TEXT("CanUseTool = %s"), bCanUse ? TEXT("true") : TEXT("false"));
+
+	if (bCanUse)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Calling Execute_Interact on %s"), *ToolClass->GetName());
+		IToolInterface::Execute_Interact(ToolComponent, this);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Tool is on cooldown!"));
 	}
 }
 

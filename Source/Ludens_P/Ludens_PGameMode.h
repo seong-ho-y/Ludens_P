@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/GameMode.h"
 #include "EEnemyColor.h"
+#include "Room.h"
 #include "Ludens_PGameMode.generated.h"
 
 
@@ -70,6 +71,7 @@ public:
 	
 	// 랜덤 스폰 프로필을 생성하는 함수
 	FEnemySpawnProfile CreateRandomEnemyProfile();
+	void StartSpawningEnemiesInRoom(ARoom* Room);
 	int32 NumLoggedInPlayers = 0;
 	TArray<EEnemyColor> ColorRotation;
 
@@ -90,5 +92,43 @@ public:
 protected:
 	int EnemyCount = 0;
 
+public:
+	// 한 명이라도 사망 시 서버에서 호출
+	UFUNCTION() void NotifyAnyPlayerDead();
+
+	// 클라이언트가 "재시작 준비됨" 버튼을 눌렀다고 서버에 알림
+	UFUNCTION(Server, Reliable) void Server_ConfirmRestart(APlayerController* PC);
+
+protected:
+	// 게임오버 화면을 전원에게 띄움(클라 RPC)
+	UFUNCTION(NetMulticast, Reliable) void Multicast_ShowGameOverScreen();
+
+	// 게임오버 해제/재시작 카운트다운 시작
+	void TryStartRestartCountdown();
+
+	// 실제 맵 이동
+	void DoServerTravel();
+
+	// ====== 설정값 ======
+	// 게임오버 후 이동할 맵(예: /Game/Maps/Lobby.Lobby)
+	UPROPERTY(EditAnywhere, Category = "GameOver")
+	TSoftObjectPtr<UWorld> RestartMap;
+
+	// 필요한 플레이어 수(기본 3)
+	UPROPERTY(EditAnywhere, Category = "GameOver")
+	int32 RequiredPlayersForRestart = 3;
+
+	// 카운트다운 초
+	UPROPERTY(EditAnywhere, Category = "GameOver")
+	float RestartDelaySeconds = 3.f;
+
+	// ====== 상태 ======
+	UPROPERTY(VisibleInstanceOnly)
+	bool bGameOver = false;
+
+	// 버튼을 누른 플레이어 컨트롤러의 ID 집합
+	TSet<int32> ConfirmedControllerIds;
+
+	FTimerHandle RestartTimer;
 };
 

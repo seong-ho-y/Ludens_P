@@ -56,6 +56,10 @@ void AGrenadeProjectile::SpawnExploVFX_Implementation()
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ExplosionVFX, GetActorLocation());
 	}
+	if (ExplosionSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ExplosionSound, GetOwner()->GetActorLocation());
+	}
 }
 
 void AGrenadeProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
