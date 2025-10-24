@@ -38,6 +38,10 @@ public:
 	UPROPERTY(EditAnywhere, Category = "VFX")
 	UNiagaraSystem* ExplosionVFX;
 
+	
+	UPROPERTY(EditDefaultsOnly, Category = "Tool|Sound")
+	USoundBase* ExplosionSound; // 수류탄 폭발 사운드
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

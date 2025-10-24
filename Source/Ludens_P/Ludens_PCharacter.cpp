@@ -324,7 +324,7 @@ void ALudens_PCharacter::TestAttack(const FInputActionValue& Value)
 {
 	if (PlayerStateComponent)
 	{
-		PlayerStateComponent->TakeDamage(100.0f);
+		PlayerStateComponent->TakeDamage(25.0f);
 	}
 }
 
@@ -416,7 +416,15 @@ void ALudens_PCharacter::Dash(const FInputActionValue& Value)
 		LaunchCharacter(DashDirection * DashSpeed, true, true);
 		// Multicast로 이펙트 활성화 명령 전달**
 		// 서버에서 이 함수를 호출하면, 모든 클라이언트(서버 포함)에서 MulticastControlDashEffect_Implementation이 실행됩니다.
-		MulticastControlDashEffect(true); 
+		MulticastControlDashEffect(true);
+
+		// 대쉬 사운드 재생 -> 근데 오류 걸려서 안 나오길래 그냥 블루프린트로 했다 ㅋㅋ
+		/*if (DashSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(GetWorld(), DashSound, GetActorLocation());
+			UE_LOG(LogTemp, Warning, TEXT("Dash sound"));
+		}*/
+		
 		CurrentDashCount--;
 		bCanDash = false;
 		
@@ -669,7 +677,10 @@ void ALudens_PCharacter::Absorb(const FInputActionValue& Value)
 	{
 		ReviveComponent->CancelRevive(); // ← ReviveTimer 해제 + KnockedTimer 재개
 	}
-	// 라인 트레이스를 통해 앞에 있는 대상이 무엇인지 판별
+
+	WeaponComponent->HandleAbsorb();
+	
+	/*// 라인 트레이스를 통해 앞에 있는 대상이 무엇인지 판별
 	// 화면 중심에서 월드 방향 구하기
 	FVector WorldLocation = FirstPersonCameraComponent->GetComponentLocation();
 	FRotator CameraRotation = GetActorRotation();
@@ -698,7 +709,7 @@ void ALudens_PCharacter::Absorb(const FInputActionValue& Value)
 		{
 			WeaponComponent->HandleAbsorb();
 		}
-	}
+	}*/
 }
 
 void ALudens_PCharacter::Server_Absorb_Implementation(const FInputActionValue& Value)
@@ -798,15 +809,36 @@ void ALudens_PCharacter::PossessedBy(AController* NewController)
 
 void ALudens_PCharacter::OnInteract()
 {
-	// 현재 활성화된 도구 컴포넌트가 있는지 확인
-	if (ToolComponent)
+	if (!ToolComponent)
 	{
-		// 컴포넌트가 ToolInterface를 구현했는지 확인
-		if (ToolComponent->GetClass()->ImplementsInterface(UToolInterface::StaticClass()))
-		{
-			// 인터페이스 함수를 호출
-			IToolInterface::Execute_Interact(ToolComponent, this);
-		}
+		UE_LOG(LogTemp, Error, TEXT("ToolComponent is nullptr"));
+		return;
+	}
+
+	UClass* ToolClass = ToolComponent->GetClass();
+	if (!ToolClass)
+	{
+		UE_LOG(LogTemp, Error, TEXT("ToolComponent has no valid class"));
+		return;
+	}
+
+	if (!ToolClass->ImplementsInterface(UToolInterface::StaticClass()))
+	{
+		UE_LOG(LogTemp, Error, TEXT("ToolComponent %s does not implement ToolInterface"), *ToolClass->GetName());
+		return;
+	}
+
+	const bool bCanUse = IToolInterface::Execute_CanUseTool(ToolComponent);
+	UE_LOG(LogTemp, Log, TEXT("CanUseTool = %s"), bCanUse ? TEXT("true") : TEXT("false"));
+
+	if (bCanUse)
+	{
+		UE_LOG(LogTemp, Log, TEXT("Calling Execute_Interact on %s"), *ToolClass->GetName());
+		IToolInterface::Execute_Interact(ToolComponent, this);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Tool is on cooldown!"));
 	}
 }
 
