@@ -205,7 +205,7 @@ void ALudens_PGameMode::StartSpawningEnemies()
     // 1) 스폰 포인트 수집
     TArray<AActor*> SpawnPointActors;
     UGameplayStatics::GetAllActorsOfClass(GetWorld(), AEnemySpawnPoint::StaticClass(), SpawnPointActors);
-
+	
     const int32 SpawnPointCount = SpawnPointActors.Num();
     if (SpawnPointCount == 0)
     {
@@ -299,4 +299,37 @@ FEnemySpawnProfile ALudens_PGameMode::CreateRandomEnemyProfile()
 	}
 
 	return Profile;
+}
+
+void ALudens_PGameMode::StartSpawningEnemiesInRoom(ARoom* Room)
+{if (!Room || !PoolManager)
+{
+	UE_LOG(LogTemp, Error, TEXT("Room 또는 PoolManager가 유효하지 않습니다."));
+	return;
+}
+
+	const TArray<AEnemySpawnPoint*>& SpawnPoints = Room->RoomSpawnPoints;
+	if (SpawnPoints.Num() == 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("⚠️ 방에 스폰포인트가 없습니다."));
+		return;
+	}
+
+	EnemyCount = SpawnPoints.Num();
+
+	for (AEnemySpawnPoint* Point : SpawnPoints)
+	{
+		FVector Loc = Point->GetActorLocation();
+		const FEnemySpawnProfile Profile = CreateRandomEnemyProfile();
+		if (AEnemyBase* Enemy = PoolManager->SpawnEnemy(Profile, Loc, FRotator::ZeroRotator))
+		{
+			Enemy->OnEnemyDied.AddUObject(this, &ALudens_PGameMode::HandleEnemyDied);
+		}
+		else
+		{
+			--EnemyCount;
+		}
+	}
+
+	UE_LOG(LogTemp, Display, TEXT("[GameMode] %s에서 %d명의 적 스폰 완료"), *Room->GetName(), EnemyCount);
 }
