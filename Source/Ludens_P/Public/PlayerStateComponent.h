@@ -37,13 +37,13 @@ public:
 	
 	// 플레이어 체력
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,  Category = "Player", Replicated)
-	float MaxHP = 100.0f;
+	float MaxHP = 50;
 	UPROPERTY(VisibleAnywhere,BlueprintReadOnly, Category = "Player", Replicated)
 	float CurrentHP;
 
 	// 플레이어 쉴드
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Player", Replicated)
-	float MaxShield = 100.0f;
+	float MaxShield = 10;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Player", Replicated)
 	float CurrentShield;
 
