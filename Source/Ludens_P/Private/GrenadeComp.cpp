@@ -34,6 +34,14 @@ bool UGrenadeComp::CanUseTool_Implementation() const
 void UGrenadeComp::PerformToolAction(APawn* InstigatorPawn)
 {
 	Super::PerformToolAction(InstigatorPawn);
+	if (GetOwnerRole() == ROLE_Authority)
+	{
+		Server_StartCooldown();
+	}
+	else
+	{
+		Server_StartCooldown();
+	}
 	UE_LOG(LogTemp, Log, TEXT("Grenade Tool Fired!"));
 	PlayToolSound(InstigatorPawn); // 공통 재생 함수 호출
 	Server_ThrowGrenade();

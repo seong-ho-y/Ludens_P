@@ -33,9 +33,7 @@ public:
 	void SetStealthAmount(float X);
 
 	AEnemyBase();
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
-	USoundBase* AttackSound;
+	
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Audio")
 	USoundBase* HitSound;
