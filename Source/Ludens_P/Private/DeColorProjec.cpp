@@ -78,5 +78,9 @@ void ADeColorProjec::SpawnExploVFX_Implementation()
 	{
 		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ExploVFX, GetActorLocation());
 	}
+	if (HitSound)
+	{
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(),HitSound, GetActorLocation());
+	}
 }
 

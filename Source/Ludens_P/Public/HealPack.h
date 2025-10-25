@@ -40,6 +40,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "VFX")
 	UNiagaraSystem* HealVFX;
+
+	UPROPERTY(EditAnywhere, Category = "VFX")
+	USoundBase* HealSound;
 	
 
 	UFUNCTION()
