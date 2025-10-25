@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "EnemyPMComponent.h"
+#include "NiagaraSystem.h"
 #include "GameFramework/Actor.h"
 #include "EnemyProjectile.generated.h"
 
@@ -36,5 +37,13 @@ public:
 	USphereComponent* GetCollisionComp() const { return CollisionComp; }
 	/** Returns ProjectileMovement subobject **/
 	UEnemyPMComponent* GetProjectileMovement() const { return ProjectileMovement; }
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "VFX")
+	UNiagaraSystem* ExploVfx;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	USoundBase* ExploSound;
+
+	UFUNCTION(NetMulticast, Reliable)
+	void SpawnVFX();
 };
 

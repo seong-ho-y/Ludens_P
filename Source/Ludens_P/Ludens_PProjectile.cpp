@@ -3,6 +3,7 @@
 #include "Ludens_PProjectile.h"
 
 #include "EnemyBase.h"
+#include "NiagaraFunctionLibrary.h"
 #include "PlayerState_Real.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
@@ -43,7 +44,8 @@ void ALudens_PProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor
 	{
 		return;
 	}
-	
+
+	SpawnVFX();
 	// 안전하게 캐스팅하여 할당
 	PSR = Cast<APlayerState_Real>(Cast<ACharacter>(GetOwner())->GetPlayerState());
 
@@ -96,4 +98,16 @@ void ALudens_PProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor
 
 	// 5. 적에게 닿았거나, 다른 무언가에 부딪혔으므로 이제 프로젝타일을 파괴합니다.
 	Destroy();
+}
+
+void ALudens_PProjectile::SpawnVFX_Implementation()
+{
+	if (ExploVfx)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ExploVfx, GetActorLocation());
+	}
+	if (ExploSound)
+	{
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), ExploSound, GetActorLocation());
+	}
 }

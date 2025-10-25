@@ -56,6 +56,18 @@ public:
 
     UPROPERTY(meta = (BindWidget)) class UImage* ImgPortrait;
 
+    // 텍스트 블록(UMG에 이미 배치한 두 위젯 이름과 일치해야 함)
+    UPROPERTY(meta = (BindWidget)) class UTextBlock* Txt_SkillName;
+    UPROPERTY(meta = (BindWidget)) class UTextBlock* Txt_SkillDesc;
+
+    // 에디터에서 채울 데이터(4개)
+    UPROPERTY(EditAnywhere, Category = "Skill")
+    TArray<FText> SkillNames;   // 길이 4
+    UPROPERTY(EditAnywhere, Category = "Skill")
+    TArray<FText> SkillDescs;   // 길이 4
+
+    // 내부 헬퍼
+    void UpdateSkillDetailFromIndex(int32 Idx);
 
 protected:
     virtual void NativeConstruct() override;
@@ -159,7 +171,6 @@ private:
     UFUNCTION() void OnClick_S1();
     UFUNCTION() void OnClick_S2();
     UFUNCTION() void OnClick_S3();
-    UFUNCTION() void OnClick_S4();
 
     // ----- Ready (toggle) -----
     void BindReadyToggle();
