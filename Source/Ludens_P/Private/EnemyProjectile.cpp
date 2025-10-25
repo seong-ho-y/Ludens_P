@@ -4,6 +4,7 @@
 #include "EnemyProjectile.h"
 
 #include "EnemyPMComponent.h"
+#include "NiagaraFunctionLibrary.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
@@ -89,7 +90,7 @@ void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, U
 	{
 		return;
 	}
-
+	SpawnVFX();
 	// 충돌 설정이 올바르다면, 이 함수는 플레이어 또는 월드(벽)와 부딪혔을 때만 호출됩니다.
 	// 따라서 적 클래스인지 확인할 필요가 없습니다.
 
@@ -120,4 +121,16 @@ void AEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, U
 
 	// 5. 플레이어에게 닿았거나, 벽과 같은 다른 무언가에 부딪혔으므로 이제 프로젝타일을 파괴합니다.
 	Destroy();
+}
+
+void AEnemyProjectile::SpawnVFX_Implementation()
+{
+	if (ExploVfx)
+	{
+		UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), ExploVfx, GetActorLocation());
+	}
+	if (ExploSound)
+	{
+		UGameplayStatics::SpawnSoundAtLocation(GetWorld(), ExploSound, GetActorLocation());
+	}
 }
