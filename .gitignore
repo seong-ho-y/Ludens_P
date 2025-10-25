@@ -11,13 +11,13 @@ Content/Developers
 Content/MonsterForSurvivalGame
 Content/DownloadAsset
 #Content/Enemy
-Content/Characters
+#Content/Characters
 
 # 에셋
 #Content/Vefects
 #Content/Basic_VFX
 Content/StylizedProjectileVFX_Pack
-Content/NiagaraTrailEffect
+#Content/NiagaraTrailEffect
 #Content/Hun0FX
 Content/Hit_vol1
 Content/A_Surface_Footstep
