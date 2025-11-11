@@ -844,6 +844,7 @@ void ALudens_PCharacter::OnInteract()
 	}
 }
 
+
 void ALudens_PCharacter::ApplyCosmeticsFromPSROnce()
 {
 	if (bCosmeticsApplied) { UE_LOG(LogTemp, Verbose, TEXT("[Cosmetics] Skip: already applied")); return; }
@@ -880,6 +881,14 @@ void ALudens_PCharacter::ApplyCosmeticsFromPSROnce()
 			// 폴백으로 적용했으면 잠그지 않음 → 이후 정상 값 들어오면 재적용 가능
 			UE_LOG(LogTemp, Warning, TEXT("[Cosmetics] Applied with fallback; NOT locking (Auth=%d Pawn=%s)"), (int32)HasAuthority(), *GetName());
 		}
+	}
+
+	// 1P 적용 추가
+	if (USkeletalMeshComponent* MeshFP = Mesh1P)
+	{
+		AppearanceDB->Apply1P(MeshFP, ApId, PSRLocal->PlayerColor);
+		UE_LOG(LogTemp, Display, TEXT("[Cosmetics1P] Applied Ap=%d Color=%d Auth=%d Pawn=%s"),
+			ApId, (int32)PSRLocal->PlayerColor, (int32)HasAuthority(), *GetName());
 	}
 
 }

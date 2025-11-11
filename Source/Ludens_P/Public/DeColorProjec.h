@@ -35,6 +35,9 @@ public:
 	UPROPERTY(EditAnywhere, Category = "VFX")
 	UNiagaraSystem* ExploVFX;
 
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	USoundBase* HitSound;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;

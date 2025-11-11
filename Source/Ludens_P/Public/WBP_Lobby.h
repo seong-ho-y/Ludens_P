@@ -3,8 +3,6 @@
 #pragma once
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
-#include "Components/Border.h"
-#include "LobbyTypes.h"
 #include "Ludens_P/EEnemyColor.h"
 #include "WBP_Lobby.generated.h"
 
@@ -13,6 +11,13 @@ class UTextBlock;
 class APlayerState_Real;
 class UWidget;
 
+USTRUCT(BlueprintType)
+struct FPortraitSet {
+    GENERATED_BODY()
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) TSoftObjectPtr<UTexture2D> C;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) TSoftObjectPtr<UTexture2D> M;
+    UPROPERTY(EditAnywhere, BlueprintReadOnly) TSoftObjectPtr<UTexture2D> Y;
+};
 
 UCLASS()
 class LUDENS_P_API UWBP_Lobby : public UUserWidget
@@ -45,6 +50,25 @@ public:
         class UTextureRenderTarget2D* LeftRT,
         class UTextureRenderTarget2D* RightRT);
 
+    // 4개 외형마다(인덱스 0~3) C/M/Y 텍스처를 담는다
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Portrait")
+    TArray<FPortraitSet> PortraitByAppearance; // 길이=4로 채워둘 것 (디테일 패널에서)
+
+    UPROPERTY(meta = (BindWidget)) class UImage* ImgPortrait;
+
+    // 텍스트 블록(UMG에 이미 배치한 두 위젯 이름과 일치해야 함)
+    UPROPERTY(meta = (BindWidget)) class UTextBlock* Txt_SkillName;
+    UPROPERTY(meta = (BindWidget)) class UTextBlock* Txt_SkillDesc;
+
+    // 에디터에서 채울 데이터(4개)
+    UPROPERTY(EditAnywhere, Category = "Skill")
+    TArray<FText> SkillNames;   // 길이 4
+    UPROPERTY(EditAnywhere, Category = "Skill")
+    TArray<FText> SkillDescs;   // 길이 4
+
+    // 내부 헬퍼
+    void UpdateSkillDetailFromIndex(int32 Idx);
+
 protected:
     virtual void NativeConstruct() override;
     virtual void NativeDestruct() override;
@@ -54,15 +78,8 @@ protected:
     UPROPERTY(meta = (BindWidget)) UButton* Btn_A2;
     UPROPERTY(meta = (BindWidget)) UButton* Btn_A3;
 
-    UPROPERTY(meta = (BindWidget)) UBorder* Dim_A0;
-    UPROPERTY(meta = (BindWidget)) UBorder* Dim_A1;
-    UPROPERTY(meta = (BindWidget)) UBorder* Dim_A2;
-    UPROPERTY(meta = (BindWidget)) UBorder* Dim_A3;
 
-    UPROPERTY(meta = (BindWidget)) UBorder* Sel_A0;
-    UPROPERTY(meta = (BindWidget)) UBorder* Sel_A1;
-    UPROPERTY(meta = (BindWidget)) UBorder* Sel_A2;
-    UPROPERTY(meta = (BindWidget)) UBorder* Sel_A3;
+
 
     // ----- RGB Buttons -----
     UPROPERTY(meta = (BindWidget)) UButton* Btn_ColorR;
@@ -75,7 +92,7 @@ protected:
     UPROPERTY(meta = (BindWidget)) UButton* Btn_S1;
     UPROPERTY(meta = (BindWidget)) UButton* Btn_S2;
     UPROPERTY(meta = (BindWidget)) UButton* Btn_S3;
-    UPROPERTY(meta = (BindWidget)) UButton* Btn_S4;
+
 
     // (선택) 자기 슬롯 디버그 텍스트
     UPROPERTY(meta = (BindWidgetOptional)) UTextBlock* Txt_SkillSelf;
@@ -124,8 +141,8 @@ protected:
 
 private:
     void BindAppearanceButton(int32 Index, UButton* Btn);
-    void SetDimVisible(int32 Index, bool bVisible);
-    void UpdateAppearanceHighlight();
+
+
 
     UFUNCTION() void OnA0Pressed();  UFUNCTION() void OnA0Released();  UFUNCTION() void OnA0Clicked();
     UFUNCTION() void OnA1Pressed();  UFUNCTION() void OnA1Released();  UFUNCTION() void OnA1Clicked();
@@ -136,8 +153,6 @@ private:
 
     UPROPERTY() class APlayerState_Real* PS_Cached = nullptr;
 
-    TArray<UBorder*> AllDim() const { return { Dim_A0, Dim_A1, Dim_A2, Dim_A3 }; }
-    TArray<UBorder*> AllSel() const { return { Sel_A0, Sel_A1, Sel_A2, Sel_A3 }; }
 
     void BindColorButtons();
 
@@ -156,7 +171,6 @@ private:
     UFUNCTION() void OnClick_S1();
     UFUNCTION() void OnClick_S2();
     UFUNCTION() void OnClick_S3();
-    UFUNCTION() void OnClick_S4();
 
     // ----- Ready (toggle) -----
     void BindReadyToggle();
@@ -189,5 +203,9 @@ private:
 
     UPROPERTY(Transient)
     EEnemyColor CurrentColorCache = EEnemyColor::Red; // 폴백(초기값)
+
+
+    void UpdatePortraitFromPS();
+    int32 ColorToIdx(EEnemyColor Col) const;
 
 };
