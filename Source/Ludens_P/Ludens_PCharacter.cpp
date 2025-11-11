@@ -284,6 +284,8 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 		EnhancedInputComponent->BindAction(AbsorbAction, ETriggerEvent::Completed, this, &ALudens_PCharacter::AbsorbComplete);
 
 		PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ALudens_PCharacter::OnInteract);
+
+		EnhancedInputComponent->BindAction(InfoAction, ETriggerEvent::Triggered, this, &ALudens_PCharacter::ToggleInfo);
 	}
 }
 
@@ -887,4 +889,36 @@ void ALudens_PCharacter::OnRep_PlayerState()
 	Super::OnRep_PlayerState();
 	UE_LOG(LogTemp, Log, TEXT("[Char] OnRep PS Pawn=%s Local=%d"), *GetName(), (int)IsLocallyControlled());
 	ApplyCosmeticsFromPSROnce(); // 클라: PSR 복제 완료 직후 1회 더 시도
+}
+
+void ALudens_PCharacter::ToggleInfo(const FInputActionValue& /*Value*/)
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC || !PC->IsLocalController()) return;
+
+	if (!InfoWidget.IsValid())
+	{
+		// 에디터에서 WBP_GameInfo를 지정한 위젯 클래스로 생성
+		if (TSubclassOf<UUserWidget> InfoClass = InfoWidgetClass)
+		{
+			UUserWidget* W = CreateWidget<UUserWidget>(PC, InfoClass);
+			if (W)
+			{
+				W->AddToViewport(1000);
+				// 필요시 마우스/입력 모드 전환
+				// PC->bShowMouseCursor = true;
+				// PC->SetInputMode(FInputModeUIOnly{});
+				InfoWidget = W;
+			}
+		}
+		return;
+	}
+
+	if (UUserWidget* W = InfoWidget.Get())
+	{
+		W->RemoveFromParent();
+		InfoWidget = nullptr;
+		// PC->SetInputMode(FInputModeGameOnly{});
+		// PC->bShowMouseCursor = false;
+	}
 }

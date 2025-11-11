@@ -46,6 +46,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	URewardSystemComponent* RewardSystem;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Info")
+	TSubclassOf<UUserWidget> InfoWidgetClass;
+
 private:
 	/** Jump Input Action */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category=Input, meta=(AllowPrivateAccess = "true"))
@@ -82,7 +85,12 @@ private:
 	// 젤루 흡수 Input Action
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* AbsorbAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+	class UInputAction* InfoAction;
 	
+	UPROPERTY() TWeakObjectPtr<UUserWidget> InfoWidget; // 2D 팝업 보관용
+
 public:
 	UPROPERTY()
 	class APlayerState_Real* PSR = nullptr;
@@ -140,6 +148,8 @@ protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	// End of APawn interface
+
+	void ToggleInfo(const FInputActionValue& Value);
 
 public:
 	/** Returns Mesh1P subobject **/
