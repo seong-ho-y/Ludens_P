@@ -26,7 +26,7 @@
 #include "LudensAppearanceData.h"
 #include "ShieldPackComp.h"
 #include "ToolInterface.h"
-
+#include "Blueprint/UserWidget.h"
 #include "Engine/LocalPlayer.h"
 #include "Net/UnrealNetwork.h"
 
@@ -209,41 +209,6 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 	if (!PSR) return;
     
 	// 이후 안전하게 PSR 멤버 사용 가능
-	
-	/*
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
-	{
-		int32 SlotBase = 0;
-
-		if (APlayerState* PS = PC->PlayerState)
-		{
-			SlotBase = PS->GetPlayerId();        // 권장: 매치 내 고유 ID
-		}
-		else if (UPlayer* P = PC->Player)
-		{
-			SlotBase = P->GetUniqueID();         // 대안: 에디터 런타임 고유
-		}
-
-		SlotBase = (SlotBase % 10000) * 100;
-
-		if (PC->IsLocalController() && GEngine)
-		{
-			GEngine->AddOnScreenDebugMessage(SlotBase + 70, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxHP: %f"), SlotBase, PSR->MaxHP));
-			GEngine->AddOnScreenDebugMessage(SlotBase + 71, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxShield: %f"), SlotBase, PSR->MaxShield));
-			GEngine->AddOnScreenDebugMessage(SlotBase + 72, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MoveSpeed: %f |||||| %f"), SlotBase, PSR->MoveSpeed, GetCharacterMovement()->MaxWalkSpeed));
-			GEngine->AddOnScreenDebugMessage(SlotBase + 73, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] ShieldRegenSpeed: %f"), SlotBase, PSR->ShieldRegenSpeed));
-			GEngine->AddOnScreenDebugMessage(SlotBase + 74, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] DashRechargeTime: %f"), SlotBase, PSR->DashRechargeTime));
-			GEngine->AddOnScreenDebugMessage(SlotBase + 75, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxDashCount: %d"), SlotBase, PSR->MaxDashCount));
-			GEngine->AddOnScreenDebugMessage(SlotBase + 76, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] AttackDamage: %f"), SlotBase, PSR->AttackDamage));
-			GEngine->AddOnScreenDebugMessage(SlotBase + 77, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] WeaponAttackCoolTime: %f"), SlotBase, PSR->WeaponAttackCoolTime));
-			GEngine->AddOnScreenDebugMessage(SlotBase + 78, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] CriticalRate: %f"), SlotBase, PSR->CriticalRate));
-			GEngine->AddOnScreenDebugMessage(SlotBase + 79, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] CriticalDamage: %f"), SlotBase, PSR->CriticalDamage));
-			GEngine->AddOnScreenDebugMessage(SlotBase + 80, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] AbsorbDelay: %f"), SlotBase, PSR->AbsorbDelay));
-			GEngine->AddOnScreenDebugMessage(SlotBase + 81, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxSavedAmmo: %d"), SlotBase, PSR->MaxSavedAmmo));
-			GEngine->AddOnScreenDebugMessage(SlotBase + 82, 1.f, FColor::Emerald, FString::Printf(TEXT("[%d] MaxAmmo: %d"), SlotBase, PSR->MaxAmmo));
-		}
-	}
-	*/
 }
 
 void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -285,7 +250,9 @@ void ALudens_PCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 
 		PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &ALudens_PCharacter::OnInteract);
 
-		EnhancedInputComponent->BindAction(InfoAction, ETriggerEvent::Triggered, this, &ALudens_PCharacter::ToggleInfo);
+		EnhancedInputComponent->BindAction(InfoAction, ETriggerEvent::Started, this, &ALudens_PCharacter::OnInfoPressed);
+		EnhancedInputComponent->BindAction(InfoCloseAction, ETriggerEvent::Started, this, &ALudens_PCharacter::OnInfoClosePressed);
+
 	}
 }
 
@@ -900,34 +867,79 @@ void ALudens_PCharacter::OnRep_PlayerState()
 	ApplyCosmeticsFromPSROnce(); // 클라: PSR 복제 완료 직후 1회 더 시도
 }
 
-void ALudens_PCharacter::ToggleInfo(const FInputActionValue& /*Value*/)
+void ALudens_PCharacter::OnInfoPressed(const FInputActionValue&)
 {
-	APlayerController* PC = Cast<APlayerController>(GetController());
-	if (!PC || !PC->IsLocalController()) return;
+	if (InfoWidgetClasses.Num() <= 0) return;
 
-	if (!InfoWidget.IsValid())
+	// 열려 있으면 다음 위젯으로 '순환'
+	if (IsInfoOpen())
 	{
-		// 에디터에서 WBP_GameInfo를 지정한 위젯 클래스로 생성
-		if (TSubclassOf<UUserWidget> InfoClass = InfoWidgetClass)
-		{
-			UUserWidget* W = CreateWidget<UUserWidget>(PC, InfoClass);
-			if (W)
-			{
-				W->AddToViewport(1000);
-				// 필요시 마우스/입력 모드 전환
-				// PC->bShowMouseCursor = true;
-				// PC->SetInputMode(FInputModeUIOnly{});
-				InfoWidget = W;
-			}
-		}
+		const int32 NewIndex = (InfoWidgetIndex + 1) % InfoWidgetClasses.Num();
+		OpenInfoAtIndex(NewIndex);
 		return;
 	}
 
-	if (UUserWidget* W = InfoWidget.Get())
+	// 닫힌 상태면 '마지막 보던 인덱스'로 다시 열기 (없으면 0)
+	const int32 OpenIndex = (InfoWidgetIndex >= 0) ? InfoWidgetIndex : 0;
+	OpenInfoAtIndex(OpenIndex);
+}
+
+void ALudens_PCharacter::OnInfoClosePressed(const FInputActionValue&)
+{
+	// Esc: 닫기만 하고 인덱스는 유지(요구사항)
+	if (IsInfoOpen()) CloseInfo();
+}
+
+void ALudens_PCharacter::OpenInfoAtIndex(int32 Index)
+{
+	if (!GetController() || !GetController()->IsLocalController()) return;
+	if (!InfoWidgetClasses.IsValidIndex(Index)) return;
+
+	// 기존 위젯 정리
+	if (InfoWidgetInst)
 	{
-		W->RemoveFromParent();
-		InfoWidget = nullptr;
-		// PC->SetInputMode(FInputModeGameOnly{});
-		// PC->bShowMouseCursor = false;
+		InfoWidgetInst->RemoveFromParent();
+		InfoWidgetInst = nullptr;
+	}
+
+	// 새 위젯 생성/표시
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+
+	TSubclassOf<UUserWidget> InfoClass = InfoWidgetClasses[Index];
+	if (!*InfoClass) return;
+
+	InfoWidgetInst = CreateWidget<UUserWidget>(PC, InfoClass);
+	if (InfoWidgetInst)
+	{
+		InfoWidgetInst->AddToViewport(1000);
+		InfoWidgetIndex = Index; // ★ 보고 있던 인덱스 저장
+
+		// 포커스/커서 세팅(게임+UI)
+		FInputModeGameAndUI Mode;
+		Mode.SetWidgetToFocus(InfoWidgetInst->TakeWidget());
+		Mode.SetHideCursorDuringCapture(false);
+		Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+		PC->SetInputMode(Mode);
+		PC->bShowMouseCursor = true;
 	}
 }
+
+void ALudens_PCharacter::CloseInfo()
+{
+	APlayerController* PC = Cast<APlayerController>(GetController());
+
+	if (InfoWidgetInst)
+	{
+		InfoWidgetInst->RemoveFromParent();
+		InfoWidgetInst = nullptr;
+	}
+
+	if (PC)
+	{
+		PC->SetInputMode(FInputModeGameOnly());
+		PC->bShowMouseCursor = false;
+	}
+}
+
+bool ALudens_PCharacter::IsInfoOpen() const { return InfoWidgetInst && InfoWidgetInst->IsInViewport(); }

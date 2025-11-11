@@ -24,8 +24,7 @@ class URewardSystemComponent;
 class UInputAction;
 class UInputMappingContext;
 class ULudensAppearanceData;
-
-
+class UUserWidget;
 struct FInputActionValue;
 
 DECLARE_LOG_CATEGORY_EXTERN(LogTemplateCharacter, Log, All);
@@ -45,9 +44,6 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components", meta = (AllowPrivateAccess = "true"))
 	URewardSystemComponent* RewardSystem;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "UI|Info")
-	TSubclassOf<UUserWidget> InfoWidgetClass;
 
 private:
 	/** Jump Input Action */
@@ -86,10 +82,11 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 	class UInputAction* AbsorbAction;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	class UInputAction* InfoAction;
-	
-	UPROPERTY() TWeakObjectPtr<UUserWidget> InfoWidget; // 2D 팝업 보관용
+	// 입력 액션 (I, Esc)
+	UPROPERTY(EditAnywhere, Category = "Input|UI")
+	UInputAction* InfoAction;          // I
+	UPROPERTY(EditAnywhere, Category = "Input|UI")
+	UInputAction* InfoCloseAction;     // Esc
 
 public:
 	UPROPERTY()
@@ -148,8 +145,6 @@ protected:
 	// APawn interface
 	virtual void SetupPlayerInputComponent(UInputComponent* InputComponent) override;
 	// End of APawn interface
-
-	void ToggleInfo(const FInputActionValue& Value);
 
 public:
 	/** Returns Mesh1P subobject **/
@@ -305,4 +300,24 @@ public:
 	UFUNCTION()
 	void ApplyCosmeticsFromPSROnce();
 	virtual void OnRep_PlayerState() override;   // 클라: PS 세팅 복제 시
+
+protected:
+	// 순환할 위젯들(원하는 순서대로 지정)
+	UPROPERTY(EditAnywhere, Category = "UI|Info")
+	TArray<TSubclassOf<UUserWidget>> InfoWidgetClasses;
+
+	// 현재 떠 있는 위젯 인스턴스와 인덱스 저장
+	UPROPERTY() UUserWidget* InfoWidgetInst = nullptr;
+	UPROPERTY(VisibleInstanceOnly, Category = "UI|Info")
+	int32 InfoWidgetIndex = -1; // 마지막 본 위젯 인덱스(닫아도 유지)
+
+	// 입력 핸들러
+	void OnInfoPressed(const struct FInputActionValue& Value);
+	void OnInfoClosePressed(const struct FInputActionValue& Value);
+
+	// 열기/닫기 헬퍼
+	void OpenInfoAtIndex(int32 Index);
+	void CloseInfo();
+	bool IsInfoOpen() const;
+
 };
