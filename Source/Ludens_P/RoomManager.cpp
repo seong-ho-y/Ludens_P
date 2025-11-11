@@ -144,11 +144,6 @@ void ARoomManager::StartNextRoom()
     {
         if (ARoom* RoomToStart = SpawnedRooms[CurrentRoomIndex]) { RoomToStart->StartRoom(); }
     }
-    else
-    {
-        // 게임 종료 처리
-        if (GEngine) GEngine->AddOnScreenDebugMessage(2, 5.f, FColor::Red, TEXT("All Room Cleared!"));
-    }
 }
 
 void ARoomManager::NotifyRoomCleared(int32 RoomIndex)
