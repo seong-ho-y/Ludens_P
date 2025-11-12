@@ -581,22 +581,22 @@ void ALudens_PCharacter::Reload(const FInputActionValue& Value)
 
 void ALudens_PCharacter::HandleReload()
 {
-	if (bIsReloading) return; // 이미 재장전 중이면 리턴
-
+	if (bIsReloading || (CurrentAmmo == MaxAmmo)) return; // 이미 재장전 중이면 리턴
+	bIsReloading = true;
+	if (SavedAmmo <= 0)
+	{
+		bIsReloading = false;
+		return;
+	}
+	
 	GetWorld()->GetTimerManager().SetTimer(ReloadTimerHandle, this, &ALudens_PCharacter::EndReload, ReloadTime, false);
 }
 
 void ALudens_PCharacter::EndReload()
 {
-	bIsReloading = true;
 	if (CurrentAmmo != MaxAmmo)
 	{
-		if (SavedAmmo <= 0)
-		{
-			bIsReloading = false;
-			return;
-		}
-		else if (SavedAmmo - (MaxAmmo - CurrentAmmo) <= 0)
+		if (SavedAmmo - (MaxAmmo - CurrentAmmo) <= 0)
 		{
 			CurrentAmmo += SavedAmmo;
 			SavedAmmo = 0;
