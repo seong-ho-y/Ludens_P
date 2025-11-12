@@ -3,6 +3,7 @@
 
 #include "ShieldPackComp.h"
 
+#include "PlayerStateComponent.h"
 #include "PlayerState_Real.h"
 #include "Ludens_P/Ludens_PCharacter.h"
 
@@ -47,8 +48,9 @@ void UShieldPackComp::Server_GetShield_Implementation()
 	AActor* Owner = GetOwner();
 	if (!Owner) return;
 
-	APlayerState_Real* PSR = Cast<APlayerState_Real>(Cast<ACharacter>(Owner)->GetPlayerState());
-	if (!PSR) return;
+	APlayerState_Real* PSR = Cast<ALudens_PCharacter>(Owner)->PSR;
+	UPlayerStateComponent* PSC = Owner->GetComponentByClass<UPlayerStateComponent>();
+	if (!PSR || !PSC) return;
 
 	UE_LOG(LogTemp, Warning, TEXT("GetShield Called"))
 	// 버프 중복 방지
@@ -61,12 +63,14 @@ void UShieldPackComp::Server_GetShield_Implementation()
 	if (!bIsShieldBuffActive)
 	{
 		OriginalMaxShield = PSR->MaxShield;
+		OriginalCurrentShield = PSC->CurrentShield;
 		bIsShieldBuffActive = true;
 	}
 
 	SpawnShieldVFX();
 	// 쉴드 증가
 	PSR->MaxShield += ShieldAmount;
+	PSC->CurrentShield += ShieldAmount;
 
 	// 일정 시간 후 복귀
 	GetWorld()->GetTimerManager().SetTimer(
@@ -83,10 +87,12 @@ void UShieldPackComp::RestoreShield()
 	AActor* Owner = GetOwner();
 	if (!Owner) return;
 
-	APlayerState_Real* PSR = Cast<APlayerState_Real>(Cast<ACharacter>(Owner)->GetPlayerState());
-	if (!PSR) return;
+	APlayerState_Real* PSR = Cast<ALudens_PCharacter>(Owner)->PSR;
+	UPlayerStateComponent* PSC = Owner->GetComponentByClass<UPlayerStateComponent>();
+	if (!PSR || !PSC) return;
 	
 	PSR->MaxShield = OriginalMaxShield;
+	PSC->CurrentShield = OriginalCurrentShield;
 
 	UE_LOG(LogTemp, Log, TEXT("Shield reverted to %.1f"), PSR->MaxShield);
 }
@@ -103,6 +109,10 @@ void UShieldPackComp::SpawnShieldVFX_Implementation()
     FRotator::ZeroRotator,                // 회전
     EAttachLocation::KeepRelativeOffset,  // 상대 위치 유지
     true                                  // 액터가 없어지면 자동 파괴
-);
+		);
+	}
+	if (ShieldSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(GetWorld(), ShieldSound, GetOwner()->GetActorLocation());
 	}
 }

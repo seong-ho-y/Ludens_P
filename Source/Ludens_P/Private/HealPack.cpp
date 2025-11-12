@@ -15,6 +15,9 @@
 AHealPack::AHealPack()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
+
+	bReplicates = true;
+	
 	PrimaryActorTick.bCanEverTick = true;
 	Collision = CreateDefaultSubobject<UBoxComponent>(TEXT("Collision"));
 	RootComponent = Collision;
@@ -62,7 +65,7 @@ void AHealPack::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
 		APlayerState_Real* PSR = Player->PSR;
 		UReviveComponent* RevC = Player->GetComponentByClass<UReviveComponent>();
 		if (PSC->IsKnocked) RevC->HandleReviveComplete();
-		PSR->MaxHP += 50;
+		PSC->CurrentHP += 50;
 		SpawnHealVFX();
 		Destroy();
 	}

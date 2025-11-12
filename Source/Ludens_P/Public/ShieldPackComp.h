@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "PlayerStateComponent.h"
 #include "ToolBaseComponent.h"
 #include "ToolInterface.h"
 #include "Components/ActorComponent.h"
@@ -40,6 +41,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, Category = "VFX")
 	UNiagaraSystem* ShiledVFX;
+	float OriginalCurrentShield;
+	UPROPERTY(EditAnywhere, Category = "Sound")
+	USoundBase* ShieldSound;
+
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
