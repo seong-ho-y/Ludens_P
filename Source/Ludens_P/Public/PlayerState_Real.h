@@ -95,7 +95,7 @@ public:
 	float CriticalDamage = 1.2f; // ✅
 
 	UPROPERTY(Replicated)
-	float AbsorbDelay = 0.5f; // 젤루 흡수 딜레이 ✅
+	float AbsorbDelay = 0.2f; // 젤루 흡수 딜레이 ✅
 
 	UPROPERTY(Replicated)
 	int MaxSavedAmmo = 50; // 최대 저장 가능한 탄알(젤루) ✅
