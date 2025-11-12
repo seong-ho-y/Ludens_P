@@ -10,6 +10,7 @@
 #include "EnhancedInputSubsystems.h"
 #include "InputMappingContext.h"
 #include "InputAction.h"
+#include "Ludens_PGameMode.h"
 #include "NiagaraSystem.h"
 #include "NiagaraFunctionLibrary.h"
 #include "NiagaraComponent.h"
@@ -125,6 +126,7 @@ public:
 protected:
 	virtual void BeginPlay();
 	void SetActiveToolByState();
+	void SetProjectileColor(EEnemyColor EnemyColor);
 	void Tick(float DeltaTime) override;
 
 public:
@@ -257,6 +259,10 @@ protected:
 	void OnRep_SavedAmmo();
 	UFUNCTION()
 	void OnRep_CurrentAmmo();
+
+	
+	UFUNCTION(Server, Reliable)
+	void ServerSetProjectileColor(EEnemyColor Color);
 public:
 	int GetCurrentAmmo() const;
 

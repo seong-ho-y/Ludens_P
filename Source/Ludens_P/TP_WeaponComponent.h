@@ -3,6 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "EEnemyColor.h"
 #include "Components/ActorComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Ludens_PProjectile.h"
@@ -113,7 +114,26 @@ protected:
 
 	UFUNCTION(NetMulticast, Reliable)
 	void MulticastSpawnEffect(UNiagaraSystem* NiagaraEffect,FVector Location, FRotator Rotation);
+
+	UFUNCTION(Server, Reliable)
+	void ServerUpdateProjectileColor(EEnemyColor Color);
 public:
 	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
 	void PlayMontage(UAnimMontage* Montage, float PlaySpeed);
+
+	UFUNCTION()
+	void UpdateProjectileColor(EEnemyColor EnemyColor);
+	
+	UPROPERTY(EditDefaultsOnly, Category="Projectile", Replicated)
+	TSubclassOf<ALudens_PProjectile> RedProjectileBP;
+
+	UPROPERTY(EditDefaultsOnly, Category="Projectile", Replicated)
+	TSubclassOf<ALudens_PProjectile> BlueProjectileBP;
+
+	UPROPERTY(EditDefaultsOnly, Category="Projectile", Replicated)
+	TSubclassOf<ALudens_PProjectile> GreenProjectileBP;
+
+	UPROPERTY(Replicated)
+	TSubclassOf<ALudens_PProjectile> CurrentProjectileClass;
+
 };
