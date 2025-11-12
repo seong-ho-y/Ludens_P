@@ -26,9 +26,10 @@
 #include "LudensAppearanceData.h"
 #include "ShieldPackComp.h"
 #include "ToolInterface.h"
-#include "Blueprint/UserWidget.h"
 #include "Engine/LocalPlayer.h"
 #include "Net/UnrealNetwork.h"
+#include "GameInfoWidget.h"
+#include "TimerManager.h"
 
 
 DEFINE_LOG_CATEGORY(LogTemplateCharacter);
@@ -871,17 +872,15 @@ void ALudens_PCharacter::OnInfoPressed(const FInputActionValue&)
 {
 	if (InfoWidgetClasses.Num() <= 0) return;
 
-	// 열려 있으면 다음 위젯으로 '순환'
 	if (IsInfoOpen())
 	{
 		const int32 NewIndex = (InfoWidgetIndex + 1) % InfoWidgetClasses.Num();
-		OpenInfoAtIndex(NewIndex);
+		StartSwitchToIndex(NewIndex); // 교체 애니메이션 경로
 		return;
 	}
 
-	// 닫힌 상태면 '마지막 보던 인덱스'로 다시 열기 (없으면 0)
 	const int32 OpenIndex = (InfoWidgetIndex >= 0) ? InfoWidgetIndex : 0;
-	OpenInfoAtIndex(OpenIndex);
+	OpenInfoAtIndex(OpenIndex); // 처음 열 때는 바로 오픈 애니메이션
 }
 
 void ALudens_PCharacter::OnInfoClosePressed(const FInputActionValue&)
@@ -890,19 +889,95 @@ void ALudens_PCharacter::OnInfoClosePressed(const FInputActionValue&)
 	if (IsInfoOpen()) CloseInfo();
 }
 
-void ALudens_PCharacter::OpenInfoAtIndex(int32 Index)
+bool ALudens_PCharacter::IsInfoOpen() const { return InfoWidgetInst && InfoWidgetInst->IsInViewport(); }
+
+// 새 위젯 열 때: 중앙 등장 (조작 유지)
+void ALudens_PCharacter::PlayOpenAnimIfSliding(UUserWidget* W)
+{
+	if (UGameInfoWidget* S = Cast<UGameInfoWidget>(W))
+	{
+		// 혹시 생성 직후 Visible인 경우가 있어도 애니가 시작되며 HitTestInvisible로 바뀝니다.
+		S->PlayAppearFromCenter();
+	}
+}
+
+// Esc 닫기: 중앙으로 서서히 사라짐 후 정리 (조작 유지)
+void ALudens_PCharacter::CloseInfo()
+{
+	UUserWidget* ToClose = InfoWidgetInst;
+
+	if (UGameInfoWidget* S = Cast<UGameInfoWidget>(ToClose))
+	{
+		S->PlayDisappearToCenter();
+
+		const float Delay = S->DisappearDuration + 0.01f;
+		FTimerHandle LocalHandle;
+		GetWorldTimerManager().SetTimer(
+			LocalHandle,
+			FTimerDelegate::CreateWeakLambda(this, [this]()
+				{
+					if (InfoWidgetInst)
+					{
+						InfoWidgetInst->RemoveFromParent();
+						InfoWidgetInst = nullptr;
+					}
+					// 입력 모드/커서 유지 (아무 것도 건드리지 않음)
+				}),
+			Delay,
+			false
+		);
+	}
+	else
+	{
+		if (InfoWidgetInst)
+		{
+			InfoWidgetInst->RemoveFromParent();
+			InfoWidgetInst = nullptr;
+		}
+	}
+}
+
+// 위젯 순환: 이전 위젯은 즉시 제거, 새 위젯만 중앙 등장 (조작 유지)
+void ALudens_PCharacter::StartSwitchToIndex(int32 Index)
 {
 	if (!GetController() || !GetController()->IsLocalController()) return;
 	if (!InfoWidgetClasses.IsValidIndex(Index)) return;
 
-	// 기존 위젯 정리
+	APlayerController* PC = Cast<APlayerController>(GetController());
+	if (!PC) return;
+
 	if (InfoWidgetInst)
 	{
 		InfoWidgetInst->RemoveFromParent();
 		InfoWidgetInst = nullptr;
 	}
 
-	// 새 위젯 생성/표시
+	TSubclassOf<UUserWidget> InfoClass = InfoWidgetClasses[Index];
+	if (!*InfoClass) return;
+
+	InfoWidgetInst = CreateWidget<UUserWidget>(PC, InfoClass);
+	if (!InfoWidgetInst) return;
+
+	// 게임 조작 방해하지 않도록 바로 히트테스트 불가로
+	InfoWidgetInst->SetVisibility(ESlateVisibility::HitTestInvisible);
+	InfoWidgetInst->AddToViewport(1000);
+	InfoWidgetIndex = Index;
+
+	PlayOpenAnimIfSliding(InfoWidgetInst);
+}
+
+// 처음 열기: 중앙 등장 (조작 유지)
+void ALudens_PCharacter::OpenInfoAtIndex(int32 Index)
+{
+	if (!GetController() || !GetController()->IsLocalController()) return;
+	if (!InfoWidgetClasses.IsValidIndex(Index)) return;
+
+	if (InfoWidgetInst)
+	{
+		InfoWidgetInst->RemoveFromParent();
+		InfoWidgetInst = nullptr;
+	}
+
 	APlayerController* PC = Cast<APlayerController>(GetController());
 	if (!PC) return;
 
@@ -912,34 +987,10 @@ void ALudens_PCharacter::OpenInfoAtIndex(int32 Index)
 	InfoWidgetInst = CreateWidget<UUserWidget>(PC, InfoClass);
 	if (InfoWidgetInst)
 	{
+		InfoWidgetInst->SetVisibility(ESlateVisibility::HitTestInvisible);
 		InfoWidgetInst->AddToViewport(1000);
-		InfoWidgetIndex = Index; // ★ 보고 있던 인덱스 저장
+		InfoWidgetIndex = Index;
 
-		// 포커스/커서 세팅(게임+UI)
-		FInputModeGameAndUI Mode;
-		Mode.SetWidgetToFocus(InfoWidgetInst->TakeWidget());
-		Mode.SetHideCursorDuringCapture(false);
-		Mode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
-		PC->SetInputMode(Mode);
-		PC->bShowMouseCursor = true;
+		PlayOpenAnimIfSliding(InfoWidgetInst);
 	}
 }
-
-void ALudens_PCharacter::CloseInfo()
-{
-	APlayerController* PC = Cast<APlayerController>(GetController());
-
-	if (InfoWidgetInst)
-	{
-		InfoWidgetInst->RemoveFromParent();
-		InfoWidgetInst = nullptr;
-	}
-
-	if (PC)
-	{
-		PC->SetInputMode(FInputModeGameOnly());
-		PC->bShowMouseCursor = false;
-	}
-}
-
-bool ALudens_PCharacter::IsInfoOpen() const { return InfoWidgetInst && InfoWidgetInst->IsInViewport(); }
