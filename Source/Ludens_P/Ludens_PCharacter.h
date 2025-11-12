@@ -235,9 +235,10 @@ protected:
 	void EndReload();
 	
 	//** 재장전 쿨타임
+	UPROPERTY(BlueprintReadOnly)
 	FTimerHandle ReloadTimerHandle;
 	bool bIsReloading = false; // 재장전하는 중인지 확인
-	UPROPERTY(EditDefaultsOnly, Category = "Reload")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Reload")
 	float ReloadTime = 2.f; // 재장전 시간
 	
 	//** 재장전 시스템 변수
