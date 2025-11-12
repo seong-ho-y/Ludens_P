@@ -28,6 +28,19 @@ UTP_WeaponComponent::UTP_WeaponComponent()
 {
 	// Default offset from the character location for projectiles to spawn
 	MuzzleOffset = FVector(50.0f, 100.0f, 0.0f);
+
+	//에디터에서 할당이 너무 안돼서 하드코딩함
+	static ConstructorHelpers::FClassFinder<ALudens_PProjectile> RedBP(TEXT("/Game/FirstPerson/Blueprints/BP/MyLudens_PProjectileRed"));
+	static ConstructorHelpers::FClassFinder<ALudens_PProjectile> BlueBP(TEXT("/Game/FirstPerson/Blueprints/BP/MyLudens_PProjectileBlue"));
+	static ConstructorHelpers::FClassFinder<ALudens_PProjectile> GreenBP(TEXT("/Game/FirstPerson/Blueprints/BP/MyLudens_PProjectileGreen"));
+
+	if (RedBP.Succeeded()) RedProjectileBP = RedBP.Class;
+	if (BlueBP.Succeeded()) BlueProjectileBP = BlueBP.Class;
+	if (GreenBP.Succeeded()) GreenProjectileBP = GreenBP.Class;
+
+	// 기본값도 세팅
+	ProjectileClass = RedProjectileBP;
+	CurrentProjectileClass = ProjectileClass;
 }
 
 void UTP_WeaponComponent::BeginPlay()
@@ -83,10 +96,26 @@ void UTP_WeaponComponent::ServerFire_Implementation(FVector_NetQuantize SpawnLoc
 void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotator& SpawnRotation) //서버에서 쓰는 Fire (얘가 진짜 Projectile을 쏘는거임)
 {
 	bIsWeaponAttacking = true; // 공격 했다는 걸 bool타입으로 표시
-	
-	if (!ProjectileClass) //프로젝타일 null값 방지
+	if (GetOwner()->HasAuthority())
+	{
+		FString CheckStr = FString::Printf(TEXT("Server: Red=%s Blue=%s Green=%s"),
+			*GetNameSafe(RedProjectileBP),
+			*GetNameSafe(BlueProjectileBP),
+			*GetNameSafe(GreenProjectileBP));
+		//GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Yellow, CheckStr);
+	}
+	if (!CurrentProjectileClass) //프로젝타일 null값 방지
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ ProjectileClass is null"));
+		/*if (GetOwner()->HasAuthority())
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Red, TEXT("Server sees CurrentProjectileClass null"));
+		}
+		else
+		{
+			GEngine->AddOnScreenDebugMessage(-1, 5.f, FColor::Cyan, TEXT("Client sees CurrentProjectileClass OK"));
+		}
+		*/
 		return;
 	}
 
@@ -109,10 +138,11 @@ void UTP_WeaponComponent::HandleFire(const FVector& SpawnLocation, const FRotato
 		MulticastSpawnEffect(FireNiagara, SpawnLocation - FVector(20,0,0), NiagaraRotation); // 발사할 때 총구 쪽에 나이아가라 재생
 	}
 
-	ALudens_PProjectile* Projectile = GetWorld()->SpawnActor<ALudens_PProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, SpawnParams); // (스폰 위치, 방향, 액터가 게임 월드가 스폰될 때 디테알한 부분을 조정 가능.)
+	ALudens_PProjectile* Projectile = GetWorld()->SpawnActor<ALudens_PProjectile>(CurrentProjectileClass, SpawnLocation, SpawnRotation, SpawnParams); // (스폰 위치, 방향, 액터가 게임 월드가 스폰될 때 디테알한 부분을 조정 가능.)
 	if (!Projectile)
 	{
 		UE_LOG(LogTemp, Error, TEXT("❌ Projectile spawn failed"));
+		//GEngine->AddOnScreenDebugMessage(-2, 5.f, FColor::Red, TEXT("Projectile spawn failed"));
 		return;
 	}
 
@@ -308,6 +338,39 @@ void UTP_WeaponComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) //�
 	}
 }
 
+void UTP_WeaponComponent::ServerUpdateProjectileColor_Implementation(EEnemyColor Color)
+{
+	UpdateProjectileColor(Color);
+}
+
+void UTP_WeaponComponent::UpdateProjectileColor(EEnemyColor Color)
+{
+	switch (Color)
+	{
+	case EEnemyColor::Red:
+		CurrentProjectileClass = RedProjectileBP;
+		break;
+	case EEnemyColor::Blue:
+		CurrentProjectileClass = BlueProjectileBP;
+		break;
+	case EEnemyColor::Green:
+		CurrentProjectileClass = GreenProjectileBP;
+		break;
+	default:
+		CurrentProjectileClass = ProjectileClass;
+		break;
+	}
+
+	if (GetOwner()->HasAuthority())
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Server updated projectile to %s"), *GetNameSafe(CurrentProjectileClass));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Client updated projectile to %s"), *GetNameSafe(CurrentProjectileClass));
+		
+	}
+}
 void UTP_WeaponComponent::MulticastSpawnEffect_Implementation(UNiagaraSystem* NiagaraEffect, FVector Location, FRotator Rotation)
 {
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), NiagaraEffect, Location, Rotation);
@@ -337,5 +400,6 @@ void UTP_WeaponComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& 
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(UTP_WeaponComponent, AbsorbAmount);
+	DOREPLIFETIME(UTP_WeaponComponent, CurrentProjectileClass);
 	
 }

@@ -201,6 +201,9 @@ void ALudens_PCharacter::Tick(float DeltaTime)
 				}
 			}
 
+			// Set Projectile Color
+			WeaponComponent->UpdateProjectileColor(PSR->SelectedColor);
+			
 			SetActiveToolByState();
 			bPSRInitialized = true;  // 한 번만 실행되도록
 			UE_LOG(LogTemplateCharacter, Log, TEXT("PSR Completed in Ludens_PCharacter!"));
@@ -617,6 +620,14 @@ void ALudens_PCharacter::OnRep_SavedAmmo()
 void ALudens_PCharacter::OnRep_CurrentAmmo()
 {
 	// 재장전 시 변경되는 UI, 사운드 등
+}
+
+void ALudens_PCharacter::ServerSetProjectileColor_Implementation(EEnemyColor Color)
+{
+	if (WeaponComponent)
+	{
+		WeaponComponent->UpdateProjectileColor(Color);
+	}
 }
 
 int ALudens_PCharacter::GetCurrentAmmo() const // PlayerAttackComponent에서 현재 탄알 수 확인용
