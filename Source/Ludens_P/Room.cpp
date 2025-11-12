@@ -85,12 +85,6 @@ void ARoom::StartRoom()
     bClearPending = false;
     CancelPendingClear();
 
-    if (GEngine)
-    {
-        FString Msg = FString::Printf(TEXT("Room %d Start"), RoomIndex);
-        GEngine->AddOnScreenDebugMessage(3, 5.f, FColor::Yellow, Msg);
-    }
-
     if (HasAuthority())
     {
         if (ALudens_PGameMode* GM = GetWorld()->GetAuthGameMode<ALudens_PGameMode>())
@@ -178,12 +172,6 @@ void ARoom::DoClear()
     bIsCleared = true;
     bClearPending = false;
 
-    if (GEngine)
-    {
-        FString Msg = FString::Printf(TEXT("Room %d Cleared"), RoomIndex);
-        GEngine->AddOnScreenDebugMessage(3, 5.f, FColor::Cyan, Msg);
-    }
-
     // 더 이상 이벤트 받을 필요 없음
     if (ALudens_PGameMode* GM = GetWorld()->GetAuthGameMode<ALudens_PGameMode>())
     {
@@ -226,42 +214,6 @@ void ARoom::EndPlay(const EEndPlayReason::Type EndPlayReason)
     Super::EndPlay(EndPlayReason);
 }
 
-/*
-void ARoom::AutoClear()
-{
-    if (bIsCleared) return;
-    bIsCleared = true;
-
-    if (GEngine && HasAuthority())
-    {
-        FString Msg = FString::Printf(TEXT("Room %d Cleared"), RoomIndex);
-        GEngine->AddOnScreenDebugMessage(3, 5.f, FColor::Cyan, Msg);
-    }
-
-    if (Manager)
-    {
-        Manager->NotifyRoomCleared(RoomIndex);
-    }
-
-    // 모든 플레이어에게 보상 UI 띄우기
-    for (FConstPlayerControllerIterator It = GetWorld()->GetPlayerControllerIterator(); It; ++It)
-    {
-        if (APlayerController* PC = Cast<APlayerController>(*It))
-        {
-            ACharacter* PlayerChar = Cast<ACharacter>(PC->GetPawn());
-            if (PlayerChar)
-            {
-                URewardSystemComponent* RewardComp = PlayerChar->FindComponentByClass<URewardSystemComponent>();
-                if (RewardComp)
-                {
-                    RewardComp->Server_ShowRewardOptions();
-                }
-            }
-        }
-    }
-}
-*/
-
 void ARoom::OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor,
     UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep,
     const FHitResult& SweepResult)
@@ -276,12 +228,6 @@ void ARoom::OnEntryTriggerBegin(UPrimitiveComponent* OverlappedComp, AActor* Oth
 
     if (HasAuthority() && Manager)
     {
-        if (GEngine)
-        {
-            FString Msg = FString::Printf(TEXT("[Room] Waiting: %d / %d"), EnteredPlayers.Num(), Manager->RequiredPlayers);
-            GEngine->AddOnScreenDebugMessage(4, 4.f, FColor::White, Msg);
-        }
-
         if (EnteredPlayers.Num() == Manager->RequiredPlayers)
         {
             if (EntryDoor) EntryDoor->Close();      // 문 닫고
