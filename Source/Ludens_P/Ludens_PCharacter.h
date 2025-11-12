@@ -307,7 +307,8 @@ protected:
 	TArray<TSubclassOf<UUserWidget>> InfoWidgetClasses;
 
 	// 현재 떠 있는 위젯 인스턴스와 인덱스 저장
-	UPROPERTY() UUserWidget* InfoWidgetInst = nullptr;
+	UPROPERTY() UUserWidget* InfoWidgetInst = nullptr; // 타입은 유지(캐스팅해서 사용)
+	UPROPERTY() UUserWidget* PendingNextInfoWidget = nullptr; // 교체 전 대기 위젯
 	UPROPERTY(VisibleInstanceOnly, Category = "UI|Info")
 	int32 InfoWidgetIndex = -1; // 마지막 본 위젯 인덱스(닫아도 유지)
 
@@ -319,5 +320,8 @@ protected:
 	void OpenInfoAtIndex(int32 Index);
 	void CloseInfo();
 	bool IsInfoOpen() const;
+
+	void StartSwitchToIndex(int32 NewIndex);      // 열려있는 상태에서 다음으로 넘어갈 때
+	void PlayOpenAnimIfSliding(UUserWidget* W);
 
 };
