@@ -943,6 +943,7 @@ void ALudens_PCharacter::CloseInfo()
 	{
 		if (InfoWidgetInst)
 		{
+			if (auto* GI = Cast<UGameInfoWidget>(InfoWidgetInst)) { GI->PlaySFX(); }
 			InfoWidgetInst->RemoveFromParent();
 			InfoWidgetInst = nullptr;
 		}
@@ -975,6 +976,7 @@ void ALudens_PCharacter::StartSwitchToIndex(int32 Index)
 	InfoWidgetInst->AddToViewport(1000);
 	InfoWidgetIndex = Index;
 
+	if (auto* GI = Cast<UGameInfoWidget>(InfoWidgetInst)) { GI->PlaySFX(); }
 	PlayOpenAnimIfSliding(InfoWidgetInst);
 }
 
@@ -1003,6 +1005,7 @@ void ALudens_PCharacter::OpenInfoAtIndex(int32 Index)
 		InfoWidgetInst->AddToViewport(1000);
 		InfoWidgetIndex = Index;
 
+		if (auto* GI = Cast<UGameInfoWidget>(InfoWidgetInst)) { GI->PlaySFX(); }
 		PlayOpenAnimIfSliding(InfoWidgetInst);
 	}
 }

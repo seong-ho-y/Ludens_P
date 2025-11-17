@@ -2,6 +2,8 @@
 
 
 #include "GameInfoWidget.h"
+#include "Kismet/GameplayStatics.h"
+#include "Sound/SoundBase.h"
 
 void UGameInfoWidget::NativeDestruct()
 {
@@ -108,4 +110,12 @@ bool UGameInfoWidget::HandleTick(float DeltaTime)
     }
 
     return true;
+}
+
+void UGameInfoWidget::PlaySFX()
+{
+    if (WidgetSFX)
+    {
+        UGameplayStatics::PlaySound2D(this, WidgetSFX);
+    }
 }

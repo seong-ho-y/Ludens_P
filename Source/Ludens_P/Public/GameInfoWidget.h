@@ -7,6 +7,8 @@
 #include "Containers/Ticker.h"
 #include "GameInfoWidget.generated.h"
 
+class USoundBase;
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnSlideFinished);
 
 UCLASS()
@@ -35,6 +37,12 @@ public:
 
     UFUNCTION(BlueprintCallable, Category = "CenterAppear")
     void PlayDisappearToCenter();
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "SFX")
+    USoundBase* WidgetSFX = nullptr;
+
+    UFUNCTION(BlueprintCallable, Category = "UI")
+    void PlaySFX();
 
 protected:
     virtual void NativeDestruct() override;
