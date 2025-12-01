@@ -51,7 +51,7 @@ public:
 
 	virtual void PerformToolAction(APawn* InstigatorPawn) override;
 	
-	void RestoreShield();
+	void RevertShield();
 
 	UFUNCTION(Server, Reliable)
 	void Server_GetShield();

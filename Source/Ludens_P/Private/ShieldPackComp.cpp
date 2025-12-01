@@ -63,26 +63,25 @@ void UShieldPackComp::Server_GetShield_Implementation()
 	if (!bIsShieldBuffActive)
 	{
 		OriginalMaxShield = PSR->MaxShield;
-		OriginalCurrentShield = PSC->CurrentShield;
 		bIsShieldBuffActive = true;
 	}
 
 	SpawnShieldVFX();
 	// 쉴드 증가
 	PSR->MaxShield += ShieldAmount;
-	PSC->CurrentShield += ShieldAmount;
+	PSC->EnableShieldRegen();
 
 	// 일정 시간 후 복귀
 	GetWorld()->GetTimerManager().SetTimer(
 		ShieldDurationHandle,
 		this,
-		&UShieldPackComp::RestoreShield,
+		&UShieldPackComp::RevertShield,
 		ShieldDuration,
 		false
 	);
 
 }
-void UShieldPackComp::RestoreShield()
+void UShieldPackComp::RevertShield()
 {
 	AActor* Owner = GetOwner();
 	if (!Owner) return;
@@ -92,7 +91,6 @@ void UShieldPackComp::RestoreShield()
 	if (!PSR || !PSC) return;
 	
 	PSR->MaxShield = OriginalMaxShield;
-	PSC->CurrentShield = OriginalCurrentShield;
 
 	UE_LOG(LogTemp, Log, TEXT("Shield reverted to %.1f"), PSR->MaxShield);
 }

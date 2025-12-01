@@ -170,7 +170,7 @@ void UPlayerStateComponent::TakeDamage(float Amount)
 		UE_LOG(LogTemp, Warning, TEXT("HP: %f"), CurrentHP);
 	}
 
-	GetWorld()->GetTimerManager().SetTimer(bCanRegenShieldTimer, this, &UPlayerStateComponent::EnableShieldRegen, 3.0f, false);
+	GetWorld()->GetTimerManager().SetTimer(bCanRegenShieldTimer, this, &UPlayerStateComponent::EnableShieldRegen, 6.0f, false);
 	
 	if (CurrentHP <= 0.f) Knocked();
 	else
@@ -202,7 +202,7 @@ void UPlayerStateComponent::RegenShieldHandle()
 		GetWorld()->GetTimerManager().ClearTimer(RegenShieldTimer);
 		return;
 	}
-	CurrentShield += 1.f;
+	CurrentShield += 5.f;
 	//UE_LOG(LogTemp, Log, TEXT("Shield Regen: %f"), CurrentShield);
 }
 
